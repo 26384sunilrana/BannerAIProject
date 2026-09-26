@@ -1,5 +1,7 @@
 namespace BannerService.Domain.Entities;
 
+using ValueObjects;
+
 public class Component
 {
     public Guid Id { get; set; }

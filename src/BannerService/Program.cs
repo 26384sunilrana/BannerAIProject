@@ -59,7 +59,7 @@ builder.Services.AddAuthentication("Bearer")
 
 builder.Services.AddAuthorization();
 
-var app = builder.CreateBuilder();
+var app = builder.Build();
 
 // Middleware pipeline
 app.UseSwagger();

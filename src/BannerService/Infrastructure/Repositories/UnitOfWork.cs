@@ -7,20 +7,22 @@ using Microsoft.EntityFrameworkCore.Storage;
 public class UnitOfWork : IUnitOfWork
 {
     private readonly ApplicationDbContext _context;
+    private readonly IShopContextAccessor _shopContextAccessor;
     private IDbContextTransaction? _transaction;
     private IBannerRepository? _bannerRepository;
     private IComponentRepository? _componentRepository;
 
-    public UnitOfWork(ApplicationDbContext context)
+    public UnitOfWork(ApplicationDbContext context, IShopContextAccessor shopContextAccessor)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _shopContextAccessor = shopContextAccessor ?? throw new ArgumentNullException(nameof(shopContextAccessor));
     }
 
     public IBannerRepository BannerRepository
     {
         get
         {
-            _bannerRepository ??= new BannerRepository(_context, GetShopContextAccessor());
+            _bannerRepository ??= new BannerRepository(_context, _shopContextAccessor);
             return _bannerRepository;
         }
     }
@@ -79,11 +81,5 @@ public class UnitOfWork : IUnitOfWork
             await _transaction.DisposeAsync();
 
         await _context.DisposeAsync();
-    }
-
-    private IShopContextAccessor GetShopContextAccessor()
-    {
-        // This would be injected in real implementation
-        throw new NotImplementedException("ShopContextAccessor must be injected via DI");
     }
 }

@@ -1,0 +1,8 @@
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\src\BannerService\obj\Debug\net8.0\BannerService.csproj.AssemblyReference.cache
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\src\BannerService\obj\Debug\net8.0\rpswa.dswa.cache.json
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\src\BannerService\obj\Debug\net8.0\BannerService.GeneratedMSBuildEditorConfig.editorconfig
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\src\BannerService\obj\Debug\net8.0\BannerService.AssemblyInfoInputs.cache
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\src\BannerService\obj\Debug\net8.0\BannerService.AssemblyInfo.cs
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\src\BannerService\obj\Debug\net8.0\BannerService.csproj.CoreCompileInputs.cache
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\src\BannerService\obj\Debug\net8.0\BannerService.MvcApplicationPartsAssemblyInfo.cs
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\src\BannerService\obj\Debug\net8.0\BannerService.MvcApplicationPartsAssemblyInfo.cache
