@@ -31,6 +31,7 @@ builder.Services.AddScoped<IBannerRepository, BannerRepository>();
 builder.Services.AddScoped<IComponentRepository, ComponentRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ComponentValidationService>();
+builder.Services.AddScoped<BannerService.Domain.Services.LayerManagementService>();
 builder.Services.AddScoped<IBannerService, BannerService.Application.Services.BannerService>();
 
 builder.Services.AddControllers();
