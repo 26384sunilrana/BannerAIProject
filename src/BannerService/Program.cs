@@ -29,9 +29,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IShopContextAccessor, ShopContextAccessor>();
 builder.Services.AddScoped<IBannerRepository, BannerRepository>();
 builder.Services.AddScoped<IComponentRepository, ComponentRepository>();
+builder.Services.AddScoped<IBannerVersionRepository, BannerVersionRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ComponentValidationService>();
 builder.Services.AddScoped<BannerService.Domain.Services.LayerManagementService>();
+builder.Services.AddScoped<IVersionControlService, VersionControlService>();
 builder.Services.AddScoped<IBannerService, BannerService.Application.Services.BannerService>();
 
 builder.Services.AddControllers();

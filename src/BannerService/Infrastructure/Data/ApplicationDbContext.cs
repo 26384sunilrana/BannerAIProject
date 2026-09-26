@@ -8,6 +8,7 @@ public class ApplicationDbContext : DbContext
 {
     public DbSet<Banner> Banners { get; set; } = null!;
     public DbSet<Component> Components { get; set; } = null!;
+    public DbSet<BannerVersion> BannerVersions { get; set; } = null!;
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
@@ -58,6 +59,47 @@ public class ApplicationDbContext : DbContext
 
             // Unique constraint on BannerId + ZIndex
             entity.HasIndex(e => new { e.BannerId, e.ZIndex }).IsUnique();
+        });
+
+        // BannerVersion configuration
+        modelBuilder.Entity<BannerVersion>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.BannerId).IsRequired();
+            entity.Property(e => e.ShopId).IsRequired();
+            entity.Property(e => e.VersionNumber).IsRequired();
+            entity.Property(e => e.SnapshotJson).HasColumnType("NVARCHAR(MAX)").IsRequired();
+            entity.Property(e => e.ChangeDescription).HasMaxLength(500);
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.CreatedBy).IsRequired();
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+
+            // Unique constraint on BannerId + VersionNumber
+            entity.HasIndex(e => new { e.BannerId, e.VersionNumber })
+                .IsUnique()
+                .HasName("UQ_BannerVersions_Number");
+
+            // Query index for listing versions
+            entity.HasIndex(e => new { e.BannerId, e.ShopId, e.VersionNumber })
+                .HasName("IX_BannerVersions_Query")
+                .IsDescending(false, false, true);
+
+            // Foreign key to Banners
+            entity.HasOne<Banner>()
+                .WithMany()
+                .HasForeignKey(e => e.BannerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure value object navigation
+            entity.OwnsOne(e => e.Snapshot, snapshot =>
+            {
+                snapshot.Property(s => s.Name).HasMaxLength(100);
+                snapshot.Property(s => s.Description).HasMaxLength(500);
+                snapshot.OwnsMany(s => s.Components, component =>
+                {
+                    component.Property(c => c.PropertiesJson).HasColumnType("NVARCHAR(MAX)");
+                });
+            });
         });
     }
 }
