@@ -1,0 +1,6 @@
+D:\Sunil\Projects\ClaudeAIProject\BannerAIProject\tests\BannerService.Domain.Tests\obj\Debug\net8.0\BannerService.Domain.Tests.csproj.AssemblyReference.cache
+D:\Sunil\Projects\ClaudeAIProject\BannerAIProject\tests\BannerService.Domain.Tests\obj\Debug\net8.0\BannerService.Domain.Tests.GeneratedMSBuildEditorConfig.editorconfig
+D:\Sunil\Projects\ClaudeAIProject\BannerAIProject\tests\BannerService.Domain.Tests\obj\Debug\net8.0\BannerService.Domain.Tests.AssemblyInfoInputs.cache
+D:\Sunil\Projects\ClaudeAIProject\BannerAIProject\tests\BannerService.Domain.Tests\obj\Debug\net8.0\BannerService.Domain.Tests.AssemblyInfo.cs
+D:\Sunil\Projects\ClaudeAIProject\BannerAIProject\tests\BannerService.Domain.Tests\obj\Debug\net8.0\BannerService.Domain.Tests.csproj.CoreCompileInputs.cache
+D:\Sunil\Projects\ClaudeAIProject\BannerAIProject\tests\BannerService.Domain.Tests\obj\Debug\net8.0\BannerService.Domain.Tests.sourcelink.json

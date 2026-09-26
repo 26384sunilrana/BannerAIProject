@@ -1,6 +1,7 @@
 namespace BannerService.Infrastructure.Repositories;
 
 using Microsoft.EntityFrameworkCore;
+using global::BannerService.Domain.Entities;
 using BannerService.Domain.Interfaces;
 using BannerService.Domain.ValueObjects;
 using BannerService.Infrastructure.Data;
@@ -93,12 +94,4 @@ public class CarouselRepository : ICarouselRepository
             await _context.SaveChangesAsync();
         }
     }
-}
-
-public class CarouselComponent
-{
-    public Guid Id { get; set; }
-    public Guid CarouselId { get; set; }
-    public Guid ComponentId { get; set; }
-    public int Order { get; set; }
 }

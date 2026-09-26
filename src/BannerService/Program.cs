@@ -4,6 +4,7 @@ using BannerService.Infrastructure.Data;
 using BannerService.Domain.Interfaces;
 using BannerService.Domain.Services;
 using BannerService.Infrastructure.Repositories;
+using BannerService.Infrastructure.Storage;
 using BannerService.Application.Services;
 using BannerService.Presentation.Middleware;
 

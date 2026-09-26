@@ -1,5 +1,7 @@
 namespace BannerService.Domain.Entities;
 
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
 using ValueObjects;
 
 public class BannerVersion
@@ -9,7 +11,16 @@ public class BannerVersion
     public Guid ShopId { get; set; }
     public int VersionNumber { get; set; }
 
-    public BannerSnapshot Snapshot { get; set; } = null!;
+    public string SnapshotJson { get; set; } = string.Empty;
+
+    [NotMapped]
+    public BannerSnapshot Snapshot
+    {
+        get => string.IsNullOrEmpty(SnapshotJson)
+            ? new BannerSnapshot()
+            : JsonSerializer.Deserialize<BannerSnapshot>(SnapshotJson) ?? new BannerSnapshot();
+        set => SnapshotJson = JsonSerializer.Serialize(value);
+    }
     public string? ChangeDescription { get; set; }
 
     public DateTime CreatedAt { get; set; }

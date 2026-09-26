@@ -1,10 +1,10 @@
 namespace BannerService.Application.Services;
 
-using BannerService.Domain.Entities;
-using BannerService.Domain.Interfaces;
-using BannerService.Domain.Services;
-using BannerService.Domain.ValueObjects;
-using BannerService.Application.Dto;
+using global::BannerService.Domain.Entities;
+using global::BannerService.Domain.Interfaces;
+using global::BannerService.Domain.Services;
+using global::BannerService.Domain.ValueObjects;
+using global::BannerService.Application.Dto;
 
 public interface IEffectService
 {

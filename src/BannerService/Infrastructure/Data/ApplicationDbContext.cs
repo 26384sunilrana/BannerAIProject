@@ -95,16 +95,6 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.BannerId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Configure value object navigation
-            entity.OwnsOne(e => e.Snapshot, snapshot =>
-            {
-                snapshot.Property(s => s.Name).HasMaxLength(100);
-                snapshot.Property(s => s.Description).HasMaxLength(500);
-                snapshot.OwnsMany(s => s.Components, component =>
-                {
-                    component.Property(c => c.PropertiesJson).HasColumnType("NVARCHAR(MAX)");
-                });
-            });
         });
 
         // Effect configuration

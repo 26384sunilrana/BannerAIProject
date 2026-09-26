@@ -95,7 +95,7 @@ public class EffectValidator
             var component = banner.Components.FirstOrDefault(c => c.Id == componentId);
             if (component == null)
                 return ValidationResult.Failure($"Component {componentId} not found");
-            if (component.ComponentType != ComponentType.Image && component.ComponentType != ComponentType.Video)
+            if (component.Type != ComponentType.Image && component.Type != ComponentType.Video)
                 return ValidationResult.Failure("Carousel components must be Image or Video");
         }
 
