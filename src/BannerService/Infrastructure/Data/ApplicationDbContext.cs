@@ -12,6 +12,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Effect> Effects { get; set; } = null!;
     public DbSet<MediaFile> MediaFiles { get; set; } = null!;
     public DbSet<UploadChunk> UploadChunks { get; set; } = null!;
+    public DbSet<Carousel> Carousels { get; set; } = null!;
+    public DbSet<CarouselComponent> CarouselComponents { get; set; } = null!;
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
@@ -165,6 +167,50 @@ public class ApplicationDbContext : DbContext
             entity.HasOne<MediaFile>()
                 .WithMany()
                 .HasForeignKey(e => e.MediaFileId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Carousel configuration
+        modelBuilder.Entity<Carousel>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.BannerId).IsRequired();
+            entity.Property(e => e.IntervalMs).IsRequired();
+            entity.Property(e => e.TransitionDuration).IsRequired();
+            entity.Property(e => e.TransitionType).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+
+            entity.HasIndex(e => e.BannerId).HasName("IX_Carousels_BannerId");
+
+            entity.HasOne<Banner>()
+                .WithMany()
+                .HasForeignKey(e => e.BannerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // CarouselComponent configuration
+        modelBuilder.Entity<CarouselComponent>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CarouselId).IsRequired();
+            entity.Property(e => e.ComponentId).IsRequired();
+            entity.Property(e => e.Order).IsRequired();
+
+            entity.HasIndex(e => new { e.CarouselId, e.Order })
+                .HasName("IX_CarouselComponents_Query");
+
+            entity.HasIndex(e => new { e.CarouselId, e.ComponentId })
+                .IsUnique()
+                .HasName("UQ_CarouselComponents_Unique");
+
+            entity.HasOne<Carousel>()
+                .WithMany()
+                .HasForeignKey(e => e.CarouselId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<Component>()
+                .WithMany()
+                .HasForeignKey(e => e.ComponentId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }
