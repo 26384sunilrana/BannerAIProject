@@ -32,8 +32,10 @@ builder.Services.AddScoped<IComponentRepository, ComponentRepository>();
 builder.Services.AddScoped<IBannerVersionRepository, BannerVersionRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ComponentValidationService>();
+builder.Services.AddScoped<BannerService.Domain.Services.EffectValidator>();
 builder.Services.AddScoped<BannerService.Domain.Services.LayerManagementService>();
 builder.Services.AddScoped<IVersionControlService, VersionControlService>();
+builder.Services.AddScoped<IEffectService, EffectService>();
 builder.Services.AddScoped<IBannerService, BannerService.Application.Services.BannerService>();
 
 builder.Services.AddControllers();

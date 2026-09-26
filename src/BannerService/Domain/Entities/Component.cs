@@ -15,6 +15,8 @@ public class Component
     public string PropertiesJson { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public List<Effect> Effects { get; set; } = new();
+    public Guid? CarouselId { get; set; }
 
     public Component() { }
 
@@ -48,6 +50,18 @@ public class Component
         ZIndex = zIndex;
         PropertiesJson = propertiesJson;
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void AddEffect(Effect effect)
+    {
+        if (effect == null) throw new ArgumentNullException(nameof(effect));
+        Effects.Add(effect);
+    }
+
+    public void RemoveEffect(Guid effectId)
+    {
+        var effect = Effects.FirstOrDefault(e => e.Id == effectId);
+        if (effect != null) Effects.Remove(effect);
     }
 }
 

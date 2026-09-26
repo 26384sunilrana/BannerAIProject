@@ -9,6 +9,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Banner> Banners { get; set; } = null!;
     public DbSet<Component> Components { get; set; } = null!;
     public DbSet<BannerVersion> BannerVersions { get; set; } = null!;
+    public DbSet<Effect> Effects { get; set; } = null!;
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
@@ -100,6 +101,27 @@ public class ApplicationDbContext : DbContext
                     component.Property(c => c.PropertiesJson).HasColumnType("NVARCHAR(MAX)");
                 });
             });
+        });
+
+        // Effect configuration
+        modelBuilder.Entity<Effect>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EffectType).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.IsEnabled).HasDefaultValue(true);
+
+            // Index for component effects query
+            entity.HasIndex(e => e.ComponentId).HasName("IX_Effects_ComponentId");
+
+            // Foreign key to Component
+            entity.HasOne<Component>()
+                .WithMany(c => c.Effects)
+                .HasForeignKey(e => e.ComponentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure Parameters as owned collection
+            entity.OwnsOne(e => e.Parameters ?? new Dictionary<string, object>());
         });
     }
 }
