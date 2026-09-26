@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "0uY3zf6Qixg=",
+  "dgSpecHash": "8cT4nikzH08=",
   "success": true,
-  "projectFilePath": "D:\\Sunil\\private\\Project\\Banner Requirement\\AiProject\\BannerAIProject\\tests\\BannerService.Application.Tests\\BannerService.Application.Tests.csproj",
+  "projectFilePath": "D:\\Sunil\\Projects\\ClaudeAIProject\\BannerAIProject\\tests\\BannerService.Application.Tests\\BannerService.Application.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\26384\\.nuget\\packages\\azure.core\\1.25.0\\azure.core.1.25.0.nupkg.sha512",
     "C:\\Users\\26384\\.nuget\\packages\\azure.identity\\1.7.0\\azure.identity.1.7.0.nupkg.sha512",
@@ -170,9 +170,9 @@
       "code": "NU1901",
       "level": "Warning",
       "message": "Package 'Moq' 4.20.0 has a known low severity vulnerability, https://github.com/advisories/GHSA-6r78-m64m-qwcf",
-      "projectPath": "D:\\Sunil\\private\\Project\\Banner Requirement\\AiProject\\BannerAIProject\\tests\\BannerService.Application.Tests\\BannerService.Application.Tests.csproj",
+      "projectPath": "D:\\Sunil\\Projects\\ClaudeAIProject\\BannerAIProject\\tests\\BannerService.Application.Tests\\BannerService.Application.Tests.csproj",
       "warningLevel": 1,
-      "filePath": "D:\\Sunil\\private\\Project\\Banner Requirement\\AiProject\\BannerAIProject\\tests\\BannerService.Application.Tests\\BannerService.Application.Tests.csproj",
+      "filePath": "D:\\Sunil\\Projects\\ClaudeAIProject\\BannerAIProject\\tests\\BannerService.Application.Tests\\BannerService.Application.Tests.csproj",
       "libraryId": "Moq",
       "targetGraphs": [
         "net8.0"

@@ -37,8 +37,8 @@ public class BannersController : ControllerBase
     }
 
     [HttpPost]
-    [ProduceResponseType(typeof(BannerResponseDto), StatusCodes.Status201Created)]
-    [ProduceResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(BannerResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateBanner([FromBody] CreateBannerRequestDto request)
     {
         var shopId = GetShopId();
@@ -49,8 +49,8 @@ public class BannersController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProduceResponseType(typeof(BannerResponseDto), StatusCodes.Status200OK)]
-    [ProduceResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(BannerResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetBanner(Guid id)
     {
         var shopId = GetShopId();
@@ -59,7 +59,7 @@ public class BannersController : ControllerBase
     }
 
     [HttpGet]
-    [ProduceResponseType(typeof(List<BannerResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<BannerResponseDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ListBanners([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
         var shopId = GetShopId();
@@ -68,9 +68,9 @@ public class BannersController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [ProduceResponseType(typeof(BannerResponseDto), StatusCodes.Status200OK)]
-    [ProduceResponseType(StatusCodes.Status404NotFound)]
-    [ProduceResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(BannerResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> UpdateBanner(Guid id, [FromBody] CreateBannerRequestDto request)
     {
         var shopId = GetShopId();
@@ -79,9 +79,9 @@ public class BannersController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [ProduceResponseType(StatusCodes.Status204NoContent)]
-    [ProduceResponseType(StatusCodes.Status404NotFound)]
-    [ProduceResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> DeleteBanner(Guid id)
     {
         var shopId = GetShopId();
@@ -93,8 +93,8 @@ public class BannersController : ControllerBase
     }
 
     [HttpGet("{bannerId}/preview")]
-    [ProduceResponseType(typeof(PreviewResponseDto), StatusCodes.Status200OK)]
-    [ProduceResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(PreviewResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPreview(Guid bannerId)
     {
         var shopId = GetShopId();

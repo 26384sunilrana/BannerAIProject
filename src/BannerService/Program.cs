@@ -7,7 +7,7 @@ using BannerService.Infrastructure.Repositories;
 using BannerService.Application.Services;
 using BannerService.Presentation.Middleware;
 
-var builder = WebApplicationBuilder.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 // Serilog configuration
 Log.Logger = new LoggerConfiguration()
@@ -31,7 +31,7 @@ builder.Services.AddScoped<IBannerRepository, BannerRepository>();
 builder.Services.AddScoped<IComponentRepository, ComponentRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ComponentValidationService>();
-builder.Services.AddScoped<IBannerService, BannerService>();
+builder.Services.AddScoped<IBannerService, BannerService.Application.Services.BannerService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -79,8 +79,7 @@ app.MapControllers();
 
 // Health check endpoint
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
-    .WithName("HealthCheck")
-    .WithOpenApi();
+    .WithName("HealthCheck");
 
 try
 {

@@ -29,9 +29,9 @@ public class ComponentsController : ControllerBase
     }
 
     [HttpPost]
-    [ProduceResponseType(typeof(ComponentResponseDto), StatusCodes.Status201Created)]
-    [ProduceResponseType(StatusCodes.Status400BadRequest)]
-    [ProduceResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ComponentResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AddComponent(Guid bannerId, [FromBody] AddComponentRequestDto request)
     {
         var shopId = GetShopId();
@@ -40,9 +40,9 @@ public class ComponentsController : ControllerBase
     }
 
     [HttpPut("{componentId}")]
-    [ProduceResponseType(typeof(ComponentResponseDto), StatusCodes.Status200OK)]
-    [ProduceResponseType(StatusCodes.Status400BadRequest)]
-    [ProduceResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ComponentResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateComponent(Guid bannerId, Guid componentId, [FromBody] AddComponentRequestDto request)
     {
         var shopId = GetShopId();
@@ -51,8 +51,8 @@ public class ComponentsController : ControllerBase
     }
 
     [HttpDelete("{componentId}")]
-    [ProduceResponseType(StatusCodes.Status204NoContent)]
-    [ProduceResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RemoveComponent(Guid bannerId, Guid componentId)
     {
         var shopId = GetShopId();

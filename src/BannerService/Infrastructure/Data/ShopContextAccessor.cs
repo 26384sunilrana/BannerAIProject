@@ -3,6 +3,7 @@ namespace BannerService.Infrastructure.Data;
 public interface IShopContextAccessor
 {
     Guid ShopId { get; }
+    void SetShopId(Guid shopId);
 }
 
 public class ShopContextAccessor : IShopContextAccessor
