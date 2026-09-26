@@ -10,6 +10,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Component> Components { get; set; } = null!;
     public DbSet<BannerVersion> BannerVersions { get; set; } = null!;
     public DbSet<Effect> Effects { get; set; } = null!;
+    public DbSet<MediaFile> MediaFiles { get; set; } = null!;
+    public DbSet<UploadChunk> UploadChunks { get; set; } = null!;
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
@@ -122,6 +124,48 @@ public class ApplicationDbContext : DbContext
 
             // Configure Parameters as owned collection
             entity.OwnsOne(e => e.Parameters ?? new Dictionary<string, object>());
+        });
+
+        // MediaFile configuration
+        modelBuilder.Entity<MediaFile>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ShopId).IsRequired();
+            entity.Property(e => e.FileName).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.ContentType).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.StoragePath).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.Status).IsRequired();
+
+            entity.HasIndex(e => new { e.ShopId, e.Status, e.CreatedAt })
+                .HasName("IX_MediaFiles_Query")
+                .IsDescending(false, false, true);
+
+            entity.HasIndex(e => e.StoragePath)
+                .IsUnique()
+                .HasName("UQ_MediaFiles_StoragePath");
+        });
+
+        // UploadChunk configuration
+        modelBuilder.Entity<UploadChunk>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.MediaFileId).IsRequired();
+            entity.Property(e => e.ChecksumMD5).HasMaxLength(32).IsRequired();
+            entity.Property(e => e.StoragePath).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Status).IsRequired();
+
+            entity.HasIndex(e => new { e.MediaFileId, e.ChunkNumber })
+                .IsUnique()
+                .HasName("UQ_UploadChunks_Unique");
+
+            entity.HasIndex(e => new { e.MediaFileId, e.ChunkNumber })
+                .HasName("IX_UploadChunks_Query");
+
+            entity.HasOne<MediaFile>()
+                .WithMany()
+                .HasForeignKey(e => e.MediaFileId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
