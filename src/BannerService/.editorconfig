@@ -1,0 +1,20 @@
+root = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Roslyn analyzer rules
+dotnet_diagnostic.CS0162.severity = error
+dotnet_diagnostic.CS0219.severity = error
+dotnet_diagnostic.CA1000.severity = warning
+
+# StyleCop rules
+dotnet_diagnostic.SA1600.severity = warning
+dotnet_diagnostic.SA1309.severity = warning
+dotnet_diagnostic.SA1101.severity = warning
+dotnet_diagnostic.SA1028.severity = error
