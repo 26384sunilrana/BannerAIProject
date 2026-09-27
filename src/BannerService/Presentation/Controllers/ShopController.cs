@@ -95,6 +95,40 @@ namespace BannerService.Presentation.Controllers
             });
         }
 
+        [HttpGet("my-shops")]
+        [Authorize]
+        public async Task<IActionResult> GetMyShops(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] ShopStatus? status = null)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+                return BadRequest(new { message = "Page number and size must be greater than 0" });
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
+                return Unauthorized(new { message = "User not authenticated" });
+
+            var shops = await _shopService.GetByOwnerAsync(userGuid);
+
+            if (status.HasValue)
+                shops = shops.Where(s => s.Status == status.Value).ToList();
+
+            var paginatedShops = shops
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(MapToDto)
+                .ToList();
+
+            return Ok(new
+            {
+                pageNumber,
+                pageSize,
+                items = paginatedShops,
+                total = shops.Count
+            });
+        }
+
         [HttpPut("{shopId}")]
         [Authorize]
         public async Task<IActionResult> UpdateShop(Guid shopId, [FromBody] UpdateShopDto request)
