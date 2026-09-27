@@ -48,6 +48,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Country>(entity =>
         {
             entity.HasKey(e => e.ISOCode);
+            entity.Property(e => e.ISOCode).HasMaxLength(2);
             entity.Property(e => e.Name).HasMaxLength(128).IsRequired();
             entity.Property(e => e.RegionName).HasMaxLength(128);
             entity.Property(e => e.PhoneCode).HasMaxLength(10);
@@ -407,12 +408,12 @@ public class ApplicationDbContext : DbContext
             entity.HasOne<Carousel>()
                 .WithMany()
                 .HasForeignKey(e => e.CarouselId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne<Component>()
                 .WithMany()
                 .HasForeignKey(e => e.ComponentId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
