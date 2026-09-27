@@ -66,6 +66,10 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IShopOwnerDashboardRepository, ShopOwnerDashboardRepository>();
 builder.Services.AddScoped<IShopOwnerDashboardService, ShopOwnerDashboardService>();
 
+// Publish workflow services
+builder.Services.AddScoped<IPublishWorkflowRepository, PublishWorkflowRepository>();
+builder.Services.AddScoped<IPublishWorkflowService, PublishWorkflowService>();
+
 // Banner repositories
 builder.Services.AddScoped<IBannerRepository, BannerRepository>();
 builder.Services.AddScoped<IComponentRepository, ComponentRepository>();

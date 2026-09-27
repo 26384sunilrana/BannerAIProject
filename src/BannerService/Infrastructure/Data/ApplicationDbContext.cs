@@ -30,6 +30,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<ShopDashboardMetricSnapshot> ShopDashboardMetricSnapshots { get; set; } = null!;
     public DbSet<ShopDashboardAlert> ShopDashboardAlerts { get; set; } = null!;
 
+    // Publish workflow
+    public DbSet<PublishWorkflow> PublishWorkflows { get; set; } = null!;
+    public DbSet<ApprovalRequest> ApprovalRequests { get; set; } = null!;
+
     // Banner entities
     public DbSet<Banner> Banners { get; set; } = null!;
     public DbSet<Component> Components { get; set; } = null!;
