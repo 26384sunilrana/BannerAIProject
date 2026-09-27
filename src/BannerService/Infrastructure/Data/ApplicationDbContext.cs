@@ -34,6 +34,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<PublishWorkflow> PublishWorkflows { get; set; } = null!;
     public DbSet<ApprovalRequest> ApprovalRequests { get; set; } = null!;
 
+    // Advertisement management
+    public DbSet<Advertisement> Advertisements { get; set; } = null!;
+    public DbSet<AdMetricsHistory> AdMetricsHistory { get; set; } = null!;
+
     // Banner entities
     public DbSet<Banner> Banners { get; set; } = null!;
     public DbSet<Component> Components { get; set; } = null!;
