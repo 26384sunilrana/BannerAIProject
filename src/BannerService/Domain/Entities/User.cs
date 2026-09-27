@@ -24,6 +24,7 @@ namespace BannerService.Domain.Entities
         // Navigation properties
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+        public ICollection<UserAddress> Addresses { get; set; } = new List<UserAddress>();
 
         public string GetFullName() => $"{FirstName} {LastName}".Trim();
 

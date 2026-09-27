@@ -11,6 +11,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Role> Roles { get; set; } = null!;
     public DbSet<UserRole> UserRoles { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+    public DbSet<UserAddress> UserAddresses { get; set; } = null!;
 
     // Address master data
     public DbSet<Country> Countries { get; set; } = null!;
@@ -470,6 +471,58 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.ComponentId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // UserAddress configuration
+        modelBuilder.Entity<UserAddress>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.UserId).IsRequired();
+            entity.Property(e => e.AddressLine).HasMaxLength(256);
+            entity.Property(e => e.City).HasMaxLength(128);
+            entity.Property(e => e.PostalCode).HasMaxLength(20);
+            entity.Property(e => e.Label).HasMaxLength(50);
+            entity.Property(e => e.CountryCode).HasMaxLength(2);
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+
+            // FK to User - Cascade delete (addresses owned by user)
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.Addresses)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // FKs to master data - SetNull (matches Shop pattern)
+            entity.HasOne(e => e.CountryNav)
+                .WithMany()
+                .HasForeignKey(e => e.CountryCode)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.StateNav)
+                .WithMany()
+                .HasForeignKey(e => e.StateId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.DistrictNav)
+                .WithMany()
+                .HasForeignKey(e => e.DistrictId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Indexes for common queries
+            entity.HasIndex(e => e.UserId)
+                .HasName("IX_UserAddresses_UserId");
+
+            entity.HasIndex(e => new { e.UserId, e.IsPrimary })
+                .HasName("IX_UserAddresses_UserId_IsPrimary");
+
+            entity.HasIndex(e => e.CountryCode)
+                .HasName("IX_UserAddresses_CountryCode");
+
+            entity.HasIndex(e => e.StateId)
+                .HasName("IX_UserAddresses_StateId");
+
+            entity.HasIndex(e => e.DistrictId)
+                .HasName("IX_UserAddresses_DistrictId");
         });
     }
 }
