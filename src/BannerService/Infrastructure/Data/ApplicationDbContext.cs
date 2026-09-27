@@ -20,6 +20,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<Subscription> Subscriptions { get; set; } = null!;
     public DbSet<Invoice> Invoices { get; set; } = null!;
 
+    // Admin dashboard
+    public DbSet<AdminDashboard> AdminDashboards { get; set; } = null!;
+    public DbSet<DashboardMetricSnapshot> DashboardMetricSnapshots { get; set; } = null!;
+    public DbSet<AdminDashboardAlert> AdminDashboardAlerts { get; set; } = null!;
+
     // Banner entities
     public DbSet<Banner> Banners { get; set; } = null!;
     public DbSet<Component> Components { get; set; } = null!;

@@ -58,6 +58,10 @@ builder.Services.AddScoped<SubscriptionService>();
 builder.Services.AddScoped<RenewalService>();
 builder.Services.AddScoped<BillingService>();
 
+// Admin dashboard services
+builder.Services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+
 // Banner repositories
 builder.Services.AddScoped<IBannerRepository, BannerRepository>();
 builder.Services.AddScoped<IComponentRepository, ComponentRepository>();
