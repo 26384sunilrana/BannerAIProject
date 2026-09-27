@@ -25,26 +25,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Subscription> Subscriptions { get; set; } = null!;
     public DbSet<Invoice> Invoices { get; set; } = null!;
 
-    // Admin dashboard
-    public DbSet<AdminDashboard> AdminDashboards { get; set; } = null!;
-    public DbSet<DashboardMetricSnapshot> DashboardMetricSnapshots { get; set; } = null!;
-    public DbSet<AdminDashboardAlert> AdminDashboardAlerts { get; set; } = null!;
-
-    // Shop owner dashboard
-    public DbSet<ShopOwnerDashboard> ShopOwnerDashboards { get; set; } = null!;
-    public DbSet<ShopDashboardMetricSnapshot> ShopDashboardMetricSnapshots { get; set; } = null!;
-    public DbSet<ShopDashboardAlert> ShopDashboardAlerts { get; set; } = null!;
-
-    // Publish workflow
-    public DbSet<PublishWorkflow> PublishWorkflows { get; set; } = null!;
-    public DbSet<ApprovalRequest> ApprovalRequests { get; set; } = null!;
-
-    // Advertisement management
-    public DbSet<Advertisement> Advertisements { get; set; } = null!;
-    public DbSet<AdMetricsHistory> AdMetricsHistory { get; set; } = null!;
-
-    // Analytics and reporting
-    public DbSet<DashboardReport> DashboardReports { get; set; } = null!;
+    // Analytics
     public DbSet<AnalyticsEvent> AnalyticsEvents { get; set; } = null!;
 
     // Banner entities
@@ -131,11 +112,8 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.ParentShopId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // Owner configuration
-            entity.HasOne(e => e.Owner)
-                .WithMany()
-                .HasForeignKey(e => e.OwnerUserId)
-                .OnDelete(DeleteBehavior.SetNull);
+            // Owner configuration: OwnerUserId is stored but no navigation to User (type mismatch: Guid vs string)
+            entity.Ignore(e => e.Owner);
 
             // Master data relationships
             entity.HasOne(e => e.CountryNav)
@@ -183,6 +161,74 @@ public class ApplicationDbContext : DbContext
 
             // Navigation to components
             entity.HasMany<Component>().WithOne().HasForeignKey(c => c.BannerId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // User configuration
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Email).HasMaxLength(256).IsRequired();
+            entity.Property(e => e.PasswordHash).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.HasIndex(e => e.Email).IsUnique();
+        });
+
+        // Role configuration
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(128).IsRequired();
+            entity.HasIndex(e => e.Name).IsUnique();
+        });
+
+        // UserRole configuration (many-to-many join table)
+        modelBuilder.Entity<UserRole>(entity =>
+        {
+            entity.HasKey(e => new { e.UserId, e.RoleId });
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<Role>()
+                .WithMany()
+                .HasForeignKey(e => e.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // RefreshToken configuration
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.UserId).IsRequired();
+            entity.Property(e => e.Token).IsRequired();
+            entity.Property(e => e.ExpiresAt).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+        });
+
+        // SubscriptionPlan configuration
+        modelBuilder.Entity<SubscriptionPlan>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(128).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.MonthlyPrice).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.AnnualPrice).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.CreatedAt).IsRequired();
+
+            // Configure SubscriptionFeatures as owned type
+            entity.OwnsOne(e => e.Features, features =>
+            {
+                features.Property(f => f.MaxBanners);
+                features.Property(f => f.MaxShops);
+                features.Property(f => f.MaxUsers);
+                features.Property(f => f.MaxStorageGB);
+                features.Property(f => f.ApiAccess);
+                features.Property(f => f.CustomDomain);
+                features.Property(f => f.AdvancedAnalytics);
+                features.Property(f => f.DedicatedSupport);
+                features.Property(f => f.SlaPercentage).HasColumnType("decimal(18,2)");
+                features.Property(f => f.PriorityQueue);
+            });
         });
 
         // Component configuration
@@ -256,8 +302,8 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.ComponentId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Configure Parameters as owned collection
-            entity.OwnsOne(e => e.Parameters ?? new Dictionary<string, object>());
+            // Parameters will be managed manually outside EF Core
+            entity.Ignore(e => e.Parameters);
         });
 
         // MediaFile configuration
@@ -300,6 +346,29 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.MediaFileId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // AnalyticsEvent configuration
+        modelBuilder.Entity<AnalyticsEvent>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ShopId).IsRequired();
+            entity.Property(e => e.EventType).IsRequired();
+            entity.Property(e => e.EventName).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.ResourceType).HasMaxLength(100);
+            entity.Property(e => e.IpAddress).HasMaxLength(45);
+            entity.Property(e => e.UserAgent).HasMaxLength(500);
+            entity.Property(e => e.SessionId).HasMaxLength(100);
+            entity.Property(e => e.OccurredAt).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Ignore(e => e.Properties);
+
+            // Index for analytics queries
+            entity.HasIndex(e => new { e.ShopId, e.CreatedAt })
+                .HasName("IX_AnalyticsEvents_ShopId_CreatedAt")
+                .IsDescending(false, true);
+
+            entity.HasIndex(e => e.EventType).HasName("IX_AnalyticsEvents_EventType");
         });
 
         // Carousel configuration
