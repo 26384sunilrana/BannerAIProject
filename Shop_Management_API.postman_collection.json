@@ -1,0 +1,257 @@
+{
+  "info": {
+    "name": "BannerAI Shop Management API",
+    "description": "Collection for testing Shop Management endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Shop",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Seattle Store\",\n  \"description\": \"Main store in Seattle\",\n  \"parentShopId\": null,\n  \"address\": \"123 Main St\",\n  \"city\": \"Seattle\",\n  \"state\": \"WA\",\n  \"country\": \"USA\",\n  \"postalCode\": \"98101\",\n  \"latitude\": 47.6062,\n  \"longitude\": -122.3321,\n  \"phoneNumber\": \"+12065551234\",\n  \"website\": \"https://seattle.example.com\",\n  \"ownerUserId\": null\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/shops",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "shops"]
+        }
+      }
+    },
+    {
+      "name": "Get Shop by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shops/{{shopId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "shops", "{{shopId}}"]
+        }
+      }
+    },
+    {
+      "name": "List Shops",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shops?pageNumber=1&pageSize=10&city=Seattle&status=1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "shops"],
+          "query": [
+            {
+              "key": "pageNumber",
+              "value": "1"
+            },
+            {
+              "key": "pageSize",
+              "value": "10"
+            },
+            {
+              "key": "city",
+              "value": "Seattle"
+            },
+            {
+              "key": "status",
+              "value": "1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Update Shop",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Seattle Store Updated\",\n  \"description\": \"Updated description\",\n  \"address\": \"456 New St\",\n  \"city\": \"Seattle\",\n  \"state\": \"WA\",\n  \"country\": \"USA\",\n  \"postalCode\": \"98101\",\n  \"latitude\": 47.6062,\n  \"longitude\": -122.3321,\n  \"phoneNumber\": \"+12065559999\",\n  \"website\": \"https://seattle-updated.example.com\",\n  \"status\": 1\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/shops/{{shopId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "shops", "{{shopId}}"]
+        }
+      }
+    },
+    {
+      "name": "Delete Shop (Archive)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shops/{{shopId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "shops", "{{shopId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get Shop Hierarchy",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shops/{{shopId}}/hierarchy",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "shops", "{{shopId}}", "hierarchy"]
+        }
+      }
+    },
+    {
+      "name": "Assign Owner to Shop",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/shops/{{shopId}}/assign-owner",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "shops", "{{shopId}}", "assign-owner"]
+        }
+      }
+    },
+    {
+      "name": "Remove Owner from Shop",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shops/{{shopId}}/remove-owner",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "shops", "{{shopId}}", "remove-owner"]
+        }
+      }
+    },
+    {
+      "name": "Search Shops",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shops/search?searchTerm=Seattle&city=Seattle&status=1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "shops", "search"],
+          "query": [
+            {
+              "key": "searchTerm",
+              "value": "Seattle"
+            },
+            {
+              "key": "city",
+              "value": "Seattle"
+            },
+            {
+              "key": "status",
+              "value": "1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Shop Locations",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shops/{{shopId}}/locations",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "shops", "{{shopId}}", "locations"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shopId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
