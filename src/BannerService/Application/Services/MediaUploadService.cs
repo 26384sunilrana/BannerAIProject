@@ -1,10 +1,10 @@
-namespace BannerService.Application.Services;
-
-using BannerService.Domain.Entities;
-using BannerService.Domain.Interfaces;
-using BannerService.Domain.ValueObjects;
-using BannerService.Application.Dto;
-using System.Security.Cryptography;
+namespace BannerService.Application.Services
+{
+    using Domain.Entities;
+    using Domain.Interfaces;
+    using Domain.ValueObjects;
+    using DTOs;
+    using System.Security.Cryptography;
 
 public interface IMediaUploadService
 {
@@ -187,4 +187,5 @@ public class MediaUploadService : IMediaUploadService
         CreatedAt = mediaFile.CreatedAt,
         CompletedAt = mediaFile.CompletedAt
     };
+}
 }

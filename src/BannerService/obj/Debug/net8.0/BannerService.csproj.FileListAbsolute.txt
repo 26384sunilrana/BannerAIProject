@@ -156,3 +156,7 @@ D:\Sunil\Projects\ClaudeAIProject\BannerAIProject\src\BannerService\obj\Debug\ne
 D:\Sunil\Projects\ClaudeAIProject\BannerAIProject\src\BannerService\obj\Debug\net8.0\BannerService.pdb
 D:\Sunil\Projects\ClaudeAIProject\BannerAIProject\src\BannerService\obj\Debug\net8.0\BannerService.genruntimeconfig.cache
 D:\Sunil\Projects\ClaudeAIProject\BannerAIProject\src\BannerService\obj\Debug\net8.0\ref\BannerService.dll
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\src\BannerService\obj\Debug\net8.0\BannerService.sourcelink.json
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\src\BannerService\obj\Debug\net8.0\BannerService.dll
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\src\BannerService\obj\Debug\net8.0\refint\BannerService.dll
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\src\BannerService\obj\Debug\net8.0\BannerService.pdb

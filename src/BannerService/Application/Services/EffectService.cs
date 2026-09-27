@@ -1,10 +1,10 @@
-namespace BannerService.Application.Services;
-
-using BannerService.Domain.Entities;
-using BannerService.Domain.Interfaces;
-using BannerService.Domain.Services;
-using BannerService.Domain.ValueObjects;
-using BannerService.Application.Dto;
+namespace BannerService.Application.Services
+{
+    using Domain.Entities;
+    using Domain.Interfaces;
+    using Domain.Services;
+    using Domain.ValueObjects;
+    using DTOs;
 
 public interface IEffectService
 {
@@ -170,4 +170,5 @@ public class EffectService : IEffectService
         IsEnabled = effect.IsEnabled,
         CreatedAt = effect.CreatedAt
     };
+}
 }

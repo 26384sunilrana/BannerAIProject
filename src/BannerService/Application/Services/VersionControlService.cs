@@ -1,9 +1,9 @@
-namespace BannerService.Application.Services;
-
-using BannerService.Domain.Entities;
-using BannerService.Domain.Interfaces;
-using BannerService.Domain.ValueObjects;
-using BannerService.Application.Dto;
+namespace BannerService.Application.Services
+{
+    using Domain.Entities;
+    using Domain.Interfaces;
+    using Domain.ValueObjects;
+    using DTOs;
 
 public interface IVersionControlService
 {
@@ -139,4 +139,5 @@ public class VersionControlService : IVersionControlService
 
         return banner;
     }
+}
 }

@@ -8842,11 +8842,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Sunil\\Projects\\ClaudeAIProject\\BannerAIProject\\tests\\BannerService.Application.Tests\\BannerService.Application.Tests.csproj",
+      "projectUniqueName": "D:\\Sunil\\private\\Project\\Banner Requirement\\AiProject\\BannerAIProject\\tests\\BannerService.Application.Tests\\BannerService.Application.Tests.csproj",
       "projectName": "BannerService.Application.Tests",
-      "projectPath": "D:\\Sunil\\Projects\\ClaudeAIProject\\BannerAIProject\\tests\\BannerService.Application.Tests\\BannerService.Application.Tests.csproj",
+      "projectPath": "D:\\Sunil\\private\\Project\\Banner Requirement\\AiProject\\BannerAIProject\\tests\\BannerService.Application.Tests\\BannerService.Application.Tests.csproj",
       "packagesPath": "C:\\Users\\26384\\.nuget\\packages\\",
-      "outputPath": "D:\\Sunil\\Projects\\ClaudeAIProject\\BannerAIProject\\tests\\BannerService.Application.Tests\\obj\\",
+      "outputPath": "D:\\Sunil\\private\\Project\\Banner Requirement\\AiProject\\BannerAIProject\\tests\\BannerService.Application.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -8869,8 +8869,8 @@
           "framework": "net8.0",
           "targetAlias": "net8.0",
           "projectReferences": {
-            "D:\\Sunil\\Projects\\ClaudeAIProject\\BannerAIProject\\src\\BannerService\\BannerService.csproj": {
-              "projectPath": "D:\\Sunil\\Projects\\ClaudeAIProject\\BannerAIProject\\src\\BannerService\\BannerService.csproj"
+            "D:\\Sunil\\private\\Project\\Banner Requirement\\AiProject\\BannerAIProject\\src\\BannerService\\BannerService.csproj": {
+              "projectPath": "D:\\Sunil\\private\\Project\\Banner Requirement\\AiProject\\BannerAIProject\\src\\BannerService\\BannerService.csproj"
             }
           }
         }

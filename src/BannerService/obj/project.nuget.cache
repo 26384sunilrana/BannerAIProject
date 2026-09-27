@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "gL8uouOXOxs=",
+  "dgSpecHash": "fdXCRjaZFr0=",
   "success": true,
-  "projectFilePath": "D:\\Sunil\\Projects\\ClaudeAIProject\\BannerAIProject\\src\\BannerService\\BannerService.csproj",
+  "projectFilePath": "D:\\Sunil\\private\\Project\\Banner Requirement\\AiProject\\BannerAIProject\\src\\BannerService\\BannerService.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\26384\\.nuget\\packages\\azure.core\\1.25.0\\azure.core.1.25.0.nupkg.sha512",
     "C:\\Users\\26384\\.nuget\\packages\\azure.identity\\1.7.0\\azure.identity.1.7.0.nupkg.sha512",
