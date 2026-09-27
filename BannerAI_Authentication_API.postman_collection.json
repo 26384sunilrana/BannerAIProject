@@ -1,0 +1,228 @@
+{
+  "info": {
+    "name": "BannerAI Authentication API",
+    "description": "Collection for testing BannerAI Authentication & Authorization Service endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/authentication/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "authentication", "health"]
+        }
+      }
+    },
+    {
+      "name": "Register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePassword123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"shopId\": \"shop-123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/authentication/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "authentication", "register"]
+        }
+      }
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePassword123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/authentication/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "authentication", "login"]
+        }
+      }
+    },
+    {
+      "name": "Get Current User",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/authentication/me",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "authentication", "me"]
+        }
+      }
+    },
+    {
+      "name": "Refresh Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/authentication/refresh-token",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "authentication", "refresh-token"]
+        }
+      }
+    },
+    {
+      "name": "Verify Email",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"verificationToken\": \"{{verificationToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/authentication/verify-email",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "authentication", "verify-email"]
+        }
+      }
+    },
+    {
+      "name": "Request Password Reset",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"user@example.com\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/authentication/forgot-password",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "authentication", "forgot-password"]
+        }
+      }
+    },
+    {
+      "name": "Reset Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"NewPassword456!\",\n  \"confirmPassword\": \"NewPassword456!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/authentication/reset-password",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "authentication", "reset-password"]
+        }
+      }
+    },
+    {
+      "name": "Logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/authentication/logout",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "authentication", "logout"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "verificationToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "resetToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
