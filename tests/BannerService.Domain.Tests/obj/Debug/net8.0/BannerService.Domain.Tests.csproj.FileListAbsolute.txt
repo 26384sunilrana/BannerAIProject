@@ -4,3 +4,10 @@ D:\Sunil\Projects\ClaudeAIProject\BannerAIProject\tests\BannerService.Domain.Tes
 D:\Sunil\Projects\ClaudeAIProject\BannerAIProject\tests\BannerService.Domain.Tests\obj\Debug\net8.0\BannerService.Domain.Tests.AssemblyInfo.cs
 D:\Sunil\Projects\ClaudeAIProject\BannerAIProject\tests\BannerService.Domain.Tests\obj\Debug\net8.0\BannerService.Domain.Tests.csproj.CoreCompileInputs.cache
 D:\Sunil\Projects\ClaudeAIProject\BannerAIProject\tests\BannerService.Domain.Tests\obj\Debug\net8.0\BannerService.Domain.Tests.sourcelink.json
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\tests\BannerService.Domain.Tests\bin\Debug\net8.0\CoverletSourceRootsMapping_BannerService.Domain.Tests
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\tests\BannerService.Domain.Tests\obj\Debug\net8.0\BannerService.Domain.Tests.csproj.AssemblyReference.cache
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\tests\BannerService.Domain.Tests\obj\Debug\net8.0\BannerService.Domain.Tests.GeneratedMSBuildEditorConfig.editorconfig
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\tests\BannerService.Domain.Tests\obj\Debug\net8.0\BannerService.Domain.Tests.AssemblyInfoInputs.cache
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\tests\BannerService.Domain.Tests\obj\Debug\net8.0\BannerService.Domain.Tests.AssemblyInfo.cs
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\tests\BannerService.Domain.Tests\obj\Debug\net8.0\BannerService.Domain.Tests.csproj.CoreCompileInputs.cache
+D:\Sunil\private\Project\Banner Requirement\AiProject\BannerAIProject\tests\BannerService.Domain.Tests\obj\Debug\net8.0\BannerService.Domain.Tests.sourcelink.json
