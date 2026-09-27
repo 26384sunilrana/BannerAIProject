@@ -3,6 +3,7 @@ namespace BannerService.Domain.ValueObjects;
 public class Effect
 {
     public Guid Id { get; set; }
+    public Guid ComponentId { get; set; }
     public int EffectType { get; set; }  // 1=Opacity, 2=Rotation, 3=Scale, 4=Blur, 5=Animation
     public Dictionary<string, object> Parameters { get; set; } = new();
     public bool IsEnabled { get; set; } = true;

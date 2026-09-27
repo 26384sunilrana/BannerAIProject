@@ -1,9 +1,18 @@
+<<<<<<< HEAD
 namespace BannerService.Application.Services
 {
     using Domain.Entities;
     using Domain.Interfaces;
     using Domain.ValueObjects;
     using DTOs;
+=======
+namespace BannerService.Application.Services;
+
+using global::BannerService.Domain.Entities;
+using global::BannerService.Domain.Interfaces;
+using global::BannerService.Domain.ValueObjects;
+using global::BannerService.Application.Dto;
+>>>>>>> fdd9d7e4866c32af53c9f511abe3780d5ff25658
 
 public interface IVersionControlService
 {

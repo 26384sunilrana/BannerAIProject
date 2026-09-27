@@ -81,4 +81,18 @@ public class Banner
         IsPublished = false;
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public void UpdateName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Name cannot be empty", nameof(name));
+        Name = name;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateDescription(string description)
+    {
+        Description = description ?? string.Empty;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

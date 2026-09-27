@@ -82,7 +82,7 @@ public class VersionControlController : ControllerBase
     }
 
     [HttpPost("{versionNumber}/restore")]
-    [ProducesResponseType(typeof(BannerDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BannerResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -96,7 +96,7 @@ public class VersionControlController : ControllerBase
             var shopId = GetShopId();
             var userId = GetUserId();
             var banner = await _versionControlService.RestoreVersionAsync(bannerId, versionNumber, shopId, userId);
-            return Ok(BannerDto.FromBanner(banner));
+            return Ok(BannerResponseDto.FromBanner(banner));
         }
         catch (UnauthorizedAccessException ex)
         {

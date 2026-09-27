@@ -21,7 +21,7 @@ public class ComponentSnapshot
             throw new ArgumentNullException(nameof(component));
 
         ComponentId = component.Id;
-        ComponentType = (int)component.ComponentType;
+        ComponentType = (int)component.Type;
         PositionX = component.PositionX;
         PositionY = component.PositionY;
         SizeWidth = component.SizeWidth;

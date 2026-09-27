@@ -55,6 +55,7 @@ public class Component
     public void AddEffect(Effect effect)
     {
         if (effect == null) throw new ArgumentNullException(nameof(effect));
+        effect.ComponentId = Id;
         Effects.Add(effect);
     }
 
