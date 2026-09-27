@@ -62,6 +62,10 @@ builder.Services.AddScoped<BillingService>();
 builder.Services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 
+// Shop owner dashboard services
+builder.Services.AddScoped<IShopOwnerDashboardRepository, ShopOwnerDashboardRepository>();
+builder.Services.AddScoped<IShopOwnerDashboardService, ShopOwnerDashboardService>();
+
 // Banner repositories
 builder.Services.AddScoped<IBannerRepository, BannerRepository>();
 builder.Services.AddScoped<IComponentRepository, ComponentRepository>();

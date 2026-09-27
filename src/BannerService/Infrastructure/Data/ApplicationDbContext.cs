@@ -25,6 +25,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<DashboardMetricSnapshot> DashboardMetricSnapshots { get; set; } = null!;
     public DbSet<AdminDashboardAlert> AdminDashboardAlerts { get; set; } = null!;
 
+    // Shop owner dashboard
+    public DbSet<ShopOwnerDashboard> ShopOwnerDashboards { get; set; } = null!;
+    public DbSet<ShopDashboardMetricSnapshot> ShopDashboardMetricSnapshots { get; set; } = null!;
+    public DbSet<ShopDashboardAlert> ShopDashboardAlerts { get; set; } = null!;
+
     // Banner entities
     public DbSet<Banner> Banners { get; set; } = null!;
     public DbSet<Component> Components { get; set; } = null!;
