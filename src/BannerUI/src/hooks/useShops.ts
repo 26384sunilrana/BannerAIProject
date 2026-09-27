@@ -1,0 +1,160 @@
+import { useState, useCallback } from 'react';
+import { ShopDto, CreateShopPayload, UpdateShopPayload, ShopsListResponse } from '@/types/shop';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:5001/api';
+
+export const useShops = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Get user's shops (My Shops)
+  const getMyShops = useCallback(
+    async (pageNumber = 1, pageSize = 10, status?: string): Promise<ShopsListResponse> => {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams();
+        params.append('pageNumber', pageNumber.toString());
+        params.append('pageSize', pageSize.toString());
+        if (status) params.append('status', status);
+
+        const response = await fetch(`${API_BASE_URL}/shops/my-shops?${params}`, {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch your shops');
+        }
+
+        const data = await response.json();
+        return data;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to fetch shops';
+        setError(message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  // Get single shop by ID
+  const getShopById = useCallback(async (shopId: string): Promise<ShopDto> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/shops/${shopId}`, {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch shop');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch shop';
+      setError(message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Create new shop
+  const createShop = useCallback(async (payload: CreateShopPayload): Promise<ShopDto> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/shops`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create shop');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create shop';
+      setError(message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Update shop
+  const updateShop = useCallback(
+    async (shopId: string, payload: UpdateShopPayload): Promise<ShopDto> => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`${API_BASE_URL}/shops/${shopId}`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to update shop');
+        }
+
+        const data = await response.json();
+        return data;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to update shop';
+        setError(message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  // Deactivate shop
+  const deactivateShop = useCallback(async (shopId: string): Promise<void> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/shops/${shopId}/deactivate`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to deactivate shop');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to deactivate shop';
+      setError(message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    loading,
+    error,
+    getMyShops,
+    getShopById,
+    createShop,
+    updateShop,
+    deactivateShop,
+  };
+};
