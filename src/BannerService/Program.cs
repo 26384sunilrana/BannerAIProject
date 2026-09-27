@@ -44,18 +44,19 @@ builder.Services.AddScoped<IShopService, ShopService>();
 builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
 builder.Services.AddScoped<IJwtTokenService>(sp =>
 {
-    var jwtSettings = new JwtTokenService.JwtSettings
-    {
-        SecretKey = builder.Configuration["Jwt:SecretKey"] ?? "your-secret-key-change-in-production",
-        Issuer = builder.Configuration["Jwt:Issuer"] ?? "BannerAIProject",
-        Audience = builder.Configuration["Jwt:Audience"] ?? "BannerAIProjectUsers",
-        AccessTokenExpirationMinutes = int.Parse(builder.Configuration["Jwt:AccessTokenExpirationMinutes"] ?? "15"),
-        RefreshTokenExpirationDays = int.Parse(builder.Configuration["Jwt:RefreshTokenExpirationDays"] ?? "7")
-    };
-    return new JwtTokenService(jwtSettings);
+    return new JwtTokenService(builder.Configuration);
 });
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+
+// Subscription services
+builder.Services.AddScoped<ISubscriptionPlanRepository, SubscriptionPlanRepository>();
+builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+builder.Services.AddScoped<SubscriptionService>();
+builder.Services.AddScoped<RenewalService>();
+builder.Services.AddScoped<BillingService>();
 
 // Banner repositories
 builder.Services.AddScoped<IBannerRepository, BannerRepository>();

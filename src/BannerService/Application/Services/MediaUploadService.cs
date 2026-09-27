@@ -1,20 +1,10 @@
-<<<<<<< HEAD
 namespace BannerService.Application.Services
 {
     using Domain.Entities;
     using Domain.Interfaces;
     using Domain.ValueObjects;
-    using DTOs;
+    using Dto;
     using System.Security.Cryptography;
-=======
-namespace BannerService.Application.Services;
-
-using global::BannerService.Domain.Entities;
-using global::BannerService.Domain.Interfaces;
-using global::BannerService.Domain.ValueObjects;
-using global::BannerService.Application.Dto;
-using System.Security.Cryptography;
->>>>>>> fdd9d7e4866c32af53c9f511abe3780d5ff25658
 
 public interface IMediaUploadService
 {

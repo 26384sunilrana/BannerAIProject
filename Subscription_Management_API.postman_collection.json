@@ -1,0 +1,555 @@
+{
+  "info": {
+    "name": "Subscription Management API",
+    "description": "Complete API collection for managing subscriptions, billing, and renewals",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Subscription Plans",
+      "item": [
+        {
+          "name": "Get All Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/plans",
+              "host": ["{{base_url}}"],
+              "path": ["api", "subscriptions", "plans"]
+            }
+          }
+        },
+        {
+          "name": "Get Plan by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/plans/{{plan_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "subscriptions", "plans", "{{plan_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "Create Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shopId\": \"{{shop_id}}\",\n  \"planId\": \"{{plan_id}}\",\n  \"billingPeriod\": 0,\n  \"paymentMethodId\": \"pm_123456\",\n  \"trialDays\": 14\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "subscriptions"]
+            }
+          }
+        },
+        {
+          "name": "Get Shop Subscription",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/{{shop_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "subscriptions", "{{shop_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Upgrade Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newPlanId\": \"{{new_plan_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/{{subscription_id}}/upgrade",
+              "host": ["{{base_url}}"],
+              "path": ["api", "subscriptions", "{{subscription_id}}", "upgrade"]
+            }
+          }
+        },
+        {
+          "name": "Downgrade Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newPlanId\": \"{{new_plan_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/{{subscription_id}}/downgrade",
+              "host": ["{{base_url}}"],
+              "path": ["api", "subscriptions", "{{subscription_id}}", "downgrade"]
+            }
+          }
+        },
+        {
+          "name": "Change Billing Period",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newPeriod\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/{{subscription_id}}/change-billing",
+              "host": ["{{base_url}}"],
+              "path": ["api", "subscriptions", "{{subscription_id}}", "change-billing"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/{{subscription_id}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "subscriptions", "{{subscription_id}}", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "Renew Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/{{subscription_id}}/renew",
+              "host": ["{{base_url}}"],
+              "path": ["api", "subscriptions", "{{subscription_id}}", "renew"]
+            }
+          }
+        },
+        {
+          "name": "Get Pending Renewals",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/renewals/pending",
+              "host": ["{{base_url}}"],
+              "path": ["api", "subscriptions", "renewals", "pending"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invoices",
+      "item": [
+        {
+          "name": "Get Invoice by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoices/{{invoice_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoices", "{{invoice_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Invoice by Number",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoices/number/{{invoice_number}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoices", "number", "{{invoice_number}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Shop Invoices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoices/shop/{{shop_id}}?pageNumber=1&pageSize=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoices", "shop", "{{shop_id}}"],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Subscription Invoices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoices/subscription/{{subscription_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoices", "subscription", "{{subscription_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Invoices by Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoices/status/Issued",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoices", "status", "Issued"]
+            }
+          }
+        },
+        {
+          "name": "Get Overdue Invoices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoices/overdue",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoices", "overdue"]
+            }
+          }
+        },
+        {
+          "name": "Get Unpaid Invoices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoices/unpaid",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoices", "unpaid"]
+            }
+          }
+        },
+        {
+          "name": "Create Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionId\": \"{{subscription_id}}\",\n  \"shopId\": \"{{shop_id}}\",\n  \"amount\": 99.99,\n  \"description\": \"Monthly subscription renewal\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoices"]
+            }
+          }
+        },
+        {
+          "name": "Issue Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoices/{{invoice_id}}/issue",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoices", "{{invoice_id}}", "issue"]
+            }
+          }
+        },
+        {
+          "name": "Mark Invoice Paid",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentReference\": \"TXN-123456789\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/invoices/{{invoice_id}}/mark-paid",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoices", "{{invoice_id}}", "mark-paid"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Customer requested cancellation\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/invoices/{{invoice_id}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoices", "{{invoice_id}}", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "Refund Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 99.99,\n  \"reason\": \"Partial refund for service reduction\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/invoices/{{invoice_id}}/refund",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoices", "{{invoice_id}}", "refund"]
+            }
+          }
+        },
+        {
+          "name": "Retry Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoices/{{invoice_id}}/retry-payment",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoices", "{{invoice_id}}", "retry-payment"]
+            }
+          }
+        },
+        {
+          "name": "Mark Invoice Overdue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoices/{{invoice_id}}/mark-overdue",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoices", "{{invoice_id}}", "mark-overdue"]
+            }
+          }
+        },
+        {
+          "name": "Get Billing Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoices/metrics",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoices", "metrics"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shop_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "subscription_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "invoice_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "plan_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "new_plan_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "invoice_number",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

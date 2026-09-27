@@ -15,6 +15,11 @@ public class ApplicationDbContext : DbContext
     // Shop management
     public DbSet<Shop> Shops { get; set; } = null!;
 
+    // Subscription management
+    public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; } = null!;
+    public DbSet<Subscription> Subscriptions { get; set; } = null!;
+    public DbSet<Invoice> Invoices { get; set; } = null!;
+
     // Banner entities
     public DbSet<Banner> Banners { get; set; } = null!;
     public DbSet<Component> Components { get; set; } = null!;

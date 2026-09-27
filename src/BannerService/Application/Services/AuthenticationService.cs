@@ -22,20 +22,20 @@ namespace BannerService.Application.Services
         private readonly IRoleRepository _roleRepository;
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IPasswordHashService _passwordHashService;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IRefreshTokenRepository _refreshTokenRepository;
 
         public AuthenticationService(
             IUserRepository userRepository,
             IRoleRepository roleRepository,
             IJwtTokenService jwtTokenService,
             IPasswordHashService passwordHashService,
-            IUnitOfWork unitOfWork)
+            IRefreshTokenRepository refreshTokenRepository)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
             _jwtTokenService = jwtTokenService;
             _passwordHashService = passwordHashService;
-            _unitOfWork = unitOfWork;
+            _refreshTokenRepository = refreshTokenRepository;
         }
 
         public async Task<(bool success, string message, AuthTokenDto? tokens)> RegisterAsync(RegisterDto request)
@@ -77,8 +77,7 @@ namespace BannerService.Application.Services
                 UserAgent = request.UserAgent ?? string.Empty
             };
 
-            await _unitOfWork.RefreshTokenRepository.AddAsync(refreshTokenEntity);
-            await _unitOfWork.SaveChangesAsync();
+            await _refreshTokenRepository.AddAsync(refreshTokenEntity);
 
             var tokens = new AuthTokenDto
             {
@@ -111,8 +110,7 @@ namespace BannerService.Application.Services
             {
                 user.RecordLoginAttempt();
                 await _userRepository.UpdateAsync(user);
-                await _unitOfWork.SaveChangesAsync();
-                return (false, "Invalid email or password", null);
+                    return (false, "Invalid email or password", null);
             }
 
             user.ResetLoginAttempts();
@@ -131,8 +129,7 @@ namespace BannerService.Application.Services
                 UserAgent = request.UserAgent ?? string.Empty
             };
 
-            await _unitOfWork.RefreshTokenRepository.AddAsync(refreshTokenEntity);
-            await _unitOfWork.SaveChangesAsync();
+            await _refreshTokenRepository.AddAsync(refreshTokenEntity);
 
             var tokens = new AuthTokenDto
             {
@@ -150,7 +147,7 @@ namespace BannerService.Application.Services
             if (string.IsNullOrWhiteSpace(refreshToken) || string.IsNullOrWhiteSpace(userId))
                 return (false, "Refresh token and user ID are required", null);
 
-            var storedRefreshToken = await _unitOfWork.RefreshTokenRepository.GetByTokenAsync(refreshToken);
+            var storedRefreshToken = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
 
             if (storedRefreshToken == null || !storedRefreshToken.IsActive || storedRefreshToken.UserId != userId)
                 return (false, "Invalid refresh token", null);
@@ -165,7 +162,7 @@ namespace BannerService.Application.Services
 
             // Revoke old token
             storedRefreshToken.Revoke(newRefreshToken);
-            await _unitOfWork.RefreshTokenRepository.UpdateAsync(storedRefreshToken);
+            await _refreshTokenRepository.UpdateAsync(storedRefreshToken);
 
             // Create new token
             var newRefreshTokenEntity = new RefreshToken
@@ -178,8 +175,7 @@ namespace BannerService.Application.Services
                 UserAgent = storedRefreshToken.UserAgent
             };
 
-            await _unitOfWork.RefreshTokenRepository.AddAsync(newRefreshTokenEntity);
-            await _unitOfWork.SaveChangesAsync();
+            await _refreshTokenRepository.AddAsync(newRefreshTokenEntity);
 
             var tokens = new AuthTokenDto
             {
@@ -194,14 +190,13 @@ namespace BannerService.Application.Services
 
         public async Task<bool> RevokeTokenAsync(string userId, string refreshToken)
         {
-            var token = await _unitOfWork.RefreshTokenRepository.GetByTokenAsync(refreshToken);
+            var token = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
 
             if (token == null || token.UserId != userId)
                 return false;
 
             token.Revoke();
-            await _unitOfWork.RefreshTokenRepository.UpdateAsync(token);
-            await _unitOfWork.SaveChangesAsync();
+            await _refreshTokenRepository.UpdateAsync(token);
 
             return true;
         }
@@ -218,7 +213,6 @@ namespace BannerService.Application.Services
 
             user.VerifyEmail();
             await _userRepository.UpdateAsync(user);
-            await _unitOfWork.SaveChangesAsync();
 
             return (true, "Email verified successfully");
         }
@@ -233,7 +227,6 @@ namespace BannerService.Application.Services
             var resetToken = Guid.NewGuid().ToString("N");
             user.SetPasswordResetToken(resetToken);
             await _userRepository.UpdateAsync(user);
-            await _unitOfWork.SaveChangesAsync();
 
             // TODO: Send reset email with token
 
@@ -256,7 +249,6 @@ namespace BannerService.Application.Services
             user.PasswordHash = _passwordHashService.HashPassword(newPassword);
             user.ClearPasswordResetToken();
             await _userRepository.UpdateAsync(user);
-            await _unitOfWork.SaveChangesAsync();
 
             return (true, "Password reset successfully");
         }

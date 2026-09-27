@@ -4,6 +4,7 @@ namespace BannerService.Application.DTOs
 
     public class CreateSubscriptionDto
     {
+        public Guid ShopId { get; set; }
         public Guid PlanId { get; set; }
         public BillingPeriod BillingPeriod { get; set; }
         public string? PaymentMethodId { get; set; }
@@ -14,6 +15,7 @@ namespace BannerService.Application.DTOs
     {
         public Guid Id { get; set; }
         public Guid ShopId { get; set; }
+        public Guid PlanId { get; set; }
         public string PlanName { get; set; } = string.Empty;
         public SubscriptionStatus Status { get; set; }
         public BillingPeriod BillingPeriod { get; set; }
@@ -23,6 +25,9 @@ namespace BannerService.Application.DTOs
         public DateTime? TrialEndDate { get; set; }
         public DateTime? CancellationDate { get; set; }
         public int PaymentFailureCount { get; set; }
+        public DateTime? LastPaymentAttempt { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
         public SubscriptionFeaturesDto Features { get; set; } = new();
     }
 
@@ -55,6 +60,8 @@ namespace BannerService.Application.DTOs
     public class InvoiceDto
     {
         public Guid Id { get; set; }
+        public Guid SubscriptionId { get; set; }
+        public Guid ShopId { get; set; }
         public string InvoiceNumber { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public InvoiceStatus Status { get; set; }
@@ -64,6 +71,7 @@ namespace BannerService.Application.DTOs
         public string Description { get; set; } = string.Empty;
         public string? PaymentReference { get; set; }
         public string PlanName { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
     }
 
     public class ChangePlanDto
@@ -73,7 +81,7 @@ namespace BannerService.Application.DTOs
 
     public class ChangeBillingPeriodDto
     {
-        public BillingPeriod BillingPeriod { get; set; }
+        public BillingPeriod NewPeriod { get; set; }
     }
 
     public class RetryPaymentDto
