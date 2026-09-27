@@ -1,0 +1,17 @@
+namespace BannerService.Domain.Entities
+{
+    public class Country
+    {
+        public string ISOCode { get; set; } = string.Empty; // "IN", "US", "BR"
+        public string Name { get; set; } = string.Empty;
+        public string? RegionName { get; set; }
+        public string? PhoneCode { get; set; } // "+91" for India
+        public bool IsActive { get; set; } = true;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        // Navigation properties
+        public virtual ICollection<State> States { get; set; } = new List<State>();
+        public virtual ICollection<Shop> Shops { get; set; } = new List<Shop>();
+    }
+}

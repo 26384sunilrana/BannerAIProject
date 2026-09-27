@@ -56,8 +56,9 @@ namespace BannerService.Application.Services
             Guid? parentShopId,
             string? address,
             string? city,
-            string? state,
-            string? country,
+            string? countryCode,
+            int? stateId,
+            int? districtId,
             string? postalCode,
             double? latitude,
             double? longitude,
@@ -101,10 +102,11 @@ namespace BannerService.Application.Services
                 Name = name,
                 Description = description,
                 ParentShopId = parentShopId,
+                CountryCode = countryCode,
+                StateId = stateId,
+                DistrictId = districtId,
                 Address = address,
                 City = city,
-                State = state,
-                Country = country,
                 PostalCode = postalCode,
                 Latitude = latitude,
                 Longitude = longitude,
@@ -127,8 +129,9 @@ namespace BannerService.Application.Services
             string? description,
             string? address,
             string? city,
-            string? state,
-            string? country,
+            string? countryCode,
+            int? stateId,
+            int? districtId,
             string? postalCode,
             double? latitude,
             double? longitude,
@@ -166,7 +169,7 @@ namespace BannerService.Application.Services
             }
 
             shop.UpdateBasicInfo(name, description);
-            shop.UpdateLocation(address, city, state, country, postalCode, latitude, longitude);
+            shop.UpdateLocation(address, city, countryCode, stateId, districtId, postalCode, latitude, longitude);
             shop.UpdateContactInfo(phoneNumber, website);
             shop.SetStatus(status);
 
@@ -222,19 +225,24 @@ namespace BannerService.Application.Services
 
         public async Task<(bool success, string message)> ArchiveAsync(Guid shopId)
         {
+            var shop = await _shopRepository.GetByIdAsync(shopId);
+            if (shop == null)
+                return (false, "Shop not found");
+
             var (success, message) = await UpdateAsync(
                 shopId,
-                null!,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
+                shop.Name,
+                shop.Description,
+                shop.Address,
+                shop.City,
+                shop.CountryCode,
+                shop.StateId,
+                shop.DistrictId,
+                shop.PostalCode,
+                shop.Latitude,
+                shop.Longitude,
+                shop.PhoneNumber,
+                shop.Website,
                 ShopStatus.Archived);
 
             return (success, message);

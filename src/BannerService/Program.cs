@@ -36,6 +36,9 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
+// Address master data repositories
+builder.Services.AddScoped<IAddressRepository, AddressRepository>();
+
 // Shop management repositories & services
 builder.Services.AddScoped<IShopRepository, ShopRepository>();
 builder.Services.AddScoped<IShopService, ShopService>();

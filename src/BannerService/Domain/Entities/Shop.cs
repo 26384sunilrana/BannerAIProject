@@ -11,14 +11,22 @@ namespace BannerService.Domain.Entities
         public virtual Shop? ParentShop { get; set; }
         public virtual ICollection<Shop> ChildShops { get; set; } = new List<Shop>();
 
-        // Location
+        // Location - Master Data References
+        public string? CountryCode { get; set; } // FK to Country.ISOCode
+        public int? StateId { get; set; } // FK to State.Id
+        public int? DistrictId { get; set; } // FK to District.Id
+
+        // Location - Details
         public string? Address { get; set; }
         public string? City { get; set; }
-        public string? State { get; set; }
-        public string? Country { get; set; }
         public string? PostalCode { get; set; }
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
+
+        // Navigation Properties for Master Data
+        public virtual Country? CountryNav { get; set; }
+        public virtual State? StateNav { get; set; }
+        public virtual District? DistrictNav { get; set; }
 
         // Status & Contact
         public ShopStatus Status { get; set; } = ShopStatus.Active;
@@ -40,12 +48,13 @@ namespace BannerService.Domain.Entities
             UpdatedAt = DateTime.UtcNow;
         }
 
-        public void UpdateLocation(string? address, string? city, string? state, string? country, string? postalCode, double? latitude, double? longitude)
+        public void UpdateLocation(string? address, string? city, string? countryCode, int? stateId, int? districtId, string? postalCode, double? latitude, double? longitude)
         {
             Address = address;
             City = city;
-            State = state;
-            Country = country;
+            CountryCode = countryCode;
+            StateId = stateId;
+            DistrictId = districtId;
             PostalCode = postalCode;
             Latitude = latitude;
             Longitude = longitude;

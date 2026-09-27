@@ -22,6 +22,9 @@ namespace BannerService.Infrastructure.Data
                 // Seed System Shop
                 await SeedSystemShopAsync(context);
 
+                // Seed India Master Data
+                await IndiaDataSeeder.SeedIndiaDataAsync(context);
+
                 await context.SaveChangesAsync();
             }
             catch (Exception ex)

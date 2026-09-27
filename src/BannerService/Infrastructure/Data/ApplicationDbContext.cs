@@ -12,6 +12,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<UserRole> UserRoles { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
 
+    // Address master data
+    public DbSet<Country> Countries { get; set; } = null!;
+    public DbSet<State> States { get; set; } = null!;
+    public DbSet<District> Districts { get; set; } = null!;
+
     // Shop management
     public DbSet<Shop> Shops { get; set; } = null!;
 
@@ -58,6 +63,51 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        // Address Master Data Configuration
+        modelBuilder.Entity<Country>(entity =>
+        {
+            entity.HasKey(e => e.ISOCode);
+            entity.Property(e => e.Name).HasMaxLength(128).IsRequired();
+            entity.Property(e => e.RegionName).HasMaxLength(128);
+            entity.Property(e => e.PhoneCode).HasMaxLength(10);
+            entity.HasIndex(e => e.Name).HasName("IX_Countries_Name");
+        });
+
+        modelBuilder.Entity<State>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Code).HasMaxLength(10).IsRequired();
+            entity.Property(e => e.Name).HasMaxLength(128).IsRequired();
+            entity.Property(e => e.CountryCode).HasMaxLength(2).IsRequired();
+            entity.Property(e => e.RegionType).HasMaxLength(50);
+
+            entity.HasOne(e => e.Country)
+                .WithMany(c => c.States)
+                .HasForeignKey(e => e.CountryCode)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => e.CountryCode).HasName("IX_States_CountryCode");
+            entity.HasIndex(e => e.Name).HasName("IX_States_Name");
+            entity.HasIndex(e => new { e.CountryCode, e.Code }).HasName("IX_States_CountryCode_Code").IsUnique();
+        });
+
+        modelBuilder.Entity<District>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Code).HasMaxLength(10).IsRequired();
+            entity.Property(e => e.Name).HasMaxLength(128).IsRequired();
+            entity.Property(e => e.RegionType).HasMaxLength(50);
+
+            entity.HasOne(e => e.State)
+                .WithMany(s => s.Districts)
+                .HasForeignKey(e => e.StateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => e.StateId).HasName("IX_Districts_StateId");
+            entity.HasIndex(e => e.Name).HasName("IX_Districts_Name");
+            entity.HasIndex(e => new { e.StateId, e.Code }).HasName("IX_Districts_StateId_Code").IsUnique();
+        });
+
         // Shop configuration
         modelBuilder.Entity<Shop>(entity =>
         {
@@ -66,9 +116,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Description).HasMaxLength(2000);
             entity.Property(e => e.Address).HasMaxLength(256);
             entity.Property(e => e.City).HasMaxLength(128);
-            entity.Property(e => e.State).HasMaxLength(128);
-            entity.Property(e => e.Country).HasMaxLength(128);
             entity.Property(e => e.PostalCode).HasMaxLength(20);
+            entity.Property(e => e.CountryCode).HasMaxLength(2);
             entity.Property(e => e.PhoneNumber).HasMaxLength(20);
             entity.Property(e => e.Website).HasMaxLength(256);
             entity.Property(e => e.Status).IsRequired();
@@ -88,11 +137,30 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.OwnerUserId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            // Master data relationships
+            entity.HasOne(e => e.CountryNav)
+                .WithMany(c => c.Shops)
+                .HasForeignKey(e => e.CountryCode)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.StateNav)
+                .WithMany(s => s.Shops)
+                .HasForeignKey(e => e.StateId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.DistrictNav)
+                .WithMany(d => d.Shops)
+                .HasForeignKey(e => e.DistrictId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // Indexes for performance
             entity.HasIndex(e => e.ParentShopId).HasName("IX_Shops_ParentShopId");
             entity.HasIndex(e => e.City).HasName("IX_Shops_City");
             entity.HasIndex(e => e.Status).HasName("IX_Shops_Status");
             entity.HasIndex(e => e.OwnerUserId).HasName("IX_Shops_OwnerUserId");
+            entity.HasIndex(e => e.CountryCode).HasName("IX_Shops_CountryCode");
+            entity.HasIndex(e => e.StateId).HasName("IX_Shops_StateId");
+            entity.HasIndex(e => e.DistrictId).HasName("IX_Shops_DistrictId");
         });
 
         // Banner configuration
