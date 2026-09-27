@@ -6,6 +6,16 @@ using Domain.ValueObjects;
 
 public class ApplicationDbContext : DbContext
 {
+    // Authentication entities
+    public DbSet<User> Users { get; set; } = null!;
+    public DbSet<Role> Roles { get; set; } = null!;
+    public DbSet<UserRole> UserRoles { get; set; } = null!;
+    public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+
+    // Shop management
+    public DbSet<Shop> Shops { get; set; } = null!;
+
+    // Banner entities
     public DbSet<Banner> Banners { get; set; } = null!;
     public DbSet<Component> Components { get; set; } = null!;
     public DbSet<BannerVersion> BannerVersions { get; set; } = null!;
@@ -20,6 +30,43 @@ public class ApplicationDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // Shop configuration
+        modelBuilder.Entity<Shop>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(256).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.Address).HasMaxLength(256);
+            entity.Property(e => e.City).HasMaxLength(128);
+            entity.Property(e => e.State).HasMaxLength(128);
+            entity.Property(e => e.Country).HasMaxLength(128);
+            entity.Property(e => e.PostalCode).HasMaxLength(20);
+            entity.Property(e => e.PhoneNumber).HasMaxLength(20);
+            entity.Property(e => e.Website).HasMaxLength(256);
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+            entity.Property(e => e.CreatedByUserId).IsRequired();
+
+            // Hierarchy configuration
+            entity.HasOne(e => e.ParentShop)
+                .WithMany(e => e.ChildShops)
+                .HasForeignKey(e => e.ParentShopId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Owner configuration
+            entity.HasOne(e => e.Owner)
+                .WithMany()
+                .HasForeignKey(e => e.OwnerUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Indexes for performance
+            entity.HasIndex(e => e.ParentShopId).HasName("IX_Shops_ParentShopId");
+            entity.HasIndex(e => e.City).HasName("IX_Shops_City");
+            entity.HasIndex(e => e.Status).HasName("IX_Shops_Status");
+            entity.HasIndex(e => e.OwnerUserId).HasName("IX_Shops_OwnerUserId");
+        });
 
         // Banner configuration
         modelBuilder.Entity<Banner>(entity =>

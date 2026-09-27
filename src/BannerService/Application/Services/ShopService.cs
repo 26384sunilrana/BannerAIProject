@@ -1,0 +1,243 @@
+namespace BannerService.Application.Services
+{
+    using Domain.Entities;
+    using Domain.Interfaces;
+    using Validators;
+
+    public class ShopService : IShopService
+    {
+        private readonly IShopRepository _shopRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly ILogger<ShopService> _logger;
+
+        public ShopService(
+            IShopRepository shopRepository,
+            IUserRepository userRepository,
+            ILogger<ShopService> logger)
+        {
+            _shopRepository = shopRepository;
+            _userRepository = userRepository;
+            _logger = logger;
+        }
+
+        public async Task<Shop?> GetByIdAsync(Guid shopId)
+        {
+            return await _shopRepository.GetByIdAsync(shopId);
+        }
+
+        public async Task<List<Shop>> GetAllAsync()
+        {
+            return await _shopRepository.GetAllAsync();
+        }
+
+        public async Task<List<Shop>> GetByOwnerAsync(Guid ownerId)
+        {
+            return await _shopRepository.GetByOwnerAsync(ownerId);
+        }
+
+        public async Task<Shop?> GetHierarchyAsync(Guid shopId)
+        {
+            return await _shopRepository.GetHierarchyAsync(shopId);
+        }
+
+        public async Task<List<Shop>> SearchAsync(string searchTerm, string? city = null, ShopStatus? status = null)
+        {
+            return await _shopRepository.SearchAsync(searchTerm, city, status);
+        }
+
+        public async Task<List<Shop>> GetPaginatedAsync(int pageNumber, int pageSize, string? city = null, ShopStatus? status = null)
+        {
+            return await _shopRepository.GetPaginatedAsync(pageNumber, pageSize, city, status);
+        }
+
+        public async Task<(bool success, string message, Shop? shop)> CreateAsync(
+            string name,
+            string? description,
+            Guid? parentShopId,
+            string? address,
+            string? city,
+            string? state,
+            string? country,
+            string? postalCode,
+            double? latitude,
+            double? longitude,
+            string? phoneNumber,
+            string? website,
+            Guid? ownerId,
+            Guid createdByUserId)
+        {
+            // Validate shop data
+            var (isValid, errorMessage) = ShopValidator.ValidateCreateShop(
+                name, description, phoneNumber, website, latitude, longitude);
+
+            if (!isValid)
+                return (false, errorMessage!, null);
+
+            // Check if shop already exists with same name
+            if (await _shopRepository.ExistsByNameAsync(name))
+                return (false, "A shop with this name already exists", null);
+
+            // Validate parent shop exists if specified
+            if (parentShopId.HasValue)
+            {
+                var parentShop = await _shopRepository.GetByIdAsync(parentShopId.Value);
+                if (parentShop == null)
+                    return (false, "Parent shop does not exist", null);
+
+                if (parentShop.IsArchived)
+                    return (false, "Cannot add child shop to archived parent", null);
+            }
+
+            // Validate owner exists if specified
+            if (ownerId.HasValue)
+            {
+                var owner = await _userRepository.GetByIdAsync(ownerId.Value.ToString());
+                if (owner == null)
+                    return (false, "Specified owner user does not exist", null);
+            }
+
+            var shop = new Shop
+            {
+                Name = name,
+                Description = description,
+                ParentShopId = parentShopId,
+                Address = address,
+                City = city,
+                State = state,
+                Country = country,
+                PostalCode = postalCode,
+                Latitude = latitude,
+                Longitude = longitude,
+                PhoneNumber = phoneNumber,
+                Website = website,
+                OwnerUserId = ownerId,
+                CreatedByUserId = createdByUserId,
+                Status = ShopStatus.Active
+            };
+
+            var createdShop = await _shopRepository.CreateAsync(shop);
+            _logger.LogInformation("Shop created: {ShopId} - {ShopName}", createdShop.Id, createdShop.Name);
+
+            return (true, "Shop created successfully", createdShop);
+        }
+
+        public async Task<(bool success, string message)> UpdateAsync(
+            Guid shopId,
+            string name,
+            string? description,
+            string? address,
+            string? city,
+            string? state,
+            string? country,
+            string? postalCode,
+            double? latitude,
+            double? longitude,
+            string? phoneNumber,
+            string? website,
+            ShopStatus status)
+        {
+            var shop = await _shopRepository.GetByIdAsync(shopId);
+            if (shop == null)
+                return (false, "Shop not found");
+
+            // Validate new data
+            var (isValid, errorMessage) = ShopValidator.ValidateCreateShop(
+                name, description, phoneNumber, website, latitude, longitude);
+
+            if (!isValid)
+                return (false, errorMessage!);
+
+            // Check name uniqueness (excluding current shop)
+            var existingShop = await _shopRepository.GetByNameAsync(name);
+            if (existingShop != null && existingShop.Id != shopId)
+                return (false, "A shop with this name already exists");
+
+            // Validate status transition
+            var (validTransition, transitionError) = ShopValidator.ValidateStatusTransition(shop.Status, status);
+            if (!validTransition)
+                return (false, transitionError!);
+
+            // If archiving, check for active child shops
+            if (status == ShopStatus.Archived && shop.IsActive)
+            {
+                var hasActiveChildren = shop.ChildShops.Any(c => c.Status == ShopStatus.Active);
+                if (hasActiveChildren)
+                    return (false, "Cannot archive shop with active child shops");
+            }
+
+            shop.UpdateBasicInfo(name, description);
+            shop.UpdateLocation(address, city, state, country, postalCode, latitude, longitude);
+            shop.UpdateContactInfo(phoneNumber, website);
+            shop.SetStatus(status);
+
+            await _shopRepository.UpdateAsync(shop);
+            _logger.LogInformation("Shop updated: {ShopId} - {ShopName}", shopId, name);
+
+            return (true, "Shop updated successfully");
+        }
+
+        public async Task<(bool success, string message)> AssignOwnerAsync(Guid shopId, Guid userId)
+        {
+            var shop = await _shopRepository.GetByIdAsync(shopId);
+            if (shop == null)
+                return (false, "Shop not found");
+
+            var user = await _userRepository.GetByIdAsync(userId.ToString());
+            if (user == null)
+                return (false, "User not found");
+
+            shop.AssignOwner(userId);
+            await _shopRepository.UpdateAsync(shop);
+            _logger.LogInformation("Owner assigned to shop {ShopId}: {UserId}", shopId, userId);
+
+            return (true, "Owner assigned successfully");
+        }
+
+        public async Task<(bool success, string message)> RemoveOwnerAsync(Guid shopId)
+        {
+            var shop = await _shopRepository.GetByIdAsync(shopId);
+            if (shop == null)
+                return (false, "Shop not found");
+
+            shop.RemoveOwner();
+            await _shopRepository.UpdateAsync(shop);
+            _logger.LogInformation("Owner removed from shop {ShopId}", shopId);
+
+            return (true, "Owner removed successfully");
+        }
+
+        public async Task<(bool success, string message)> DeleteAsync(Guid shopId)
+        {
+            var shop = await _shopRepository.GetByIdAsync(shopId);
+            if (shop == null)
+                return (false, "Shop not found");
+
+            var deleted = await _shopRepository.DeleteAsync(shopId);
+            if (!deleted)
+                return (false, "Failed to delete shop");
+
+            _logger.LogInformation("Shop archived: {ShopId}", shopId);
+            return (true, "Shop archived successfully");
+        }
+
+        public async Task<(bool success, string message)> ArchiveAsync(Guid shopId)
+        {
+            var (success, message) = await UpdateAsync(
+                shopId,
+                null!,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                ShopStatus.Archived);
+
+            return (success, message);
+        }
+    }
+}
