@@ -38,6 +38,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<Advertisement> Advertisements { get; set; } = null!;
     public DbSet<AdMetricsHistory> AdMetricsHistory { get; set; } = null!;
 
+    // Analytics and reporting
+    public DbSet<DashboardReport> DashboardReports { get; set; } = null!;
+    public DbSet<AnalyticsEvent> AnalyticsEvents { get; set; } = null!;
+
     // Banner entities
     public DbSet<Banner> Banners { get; set; } = null!;
     public DbSet<Component> Components { get; set; } = null!;

@@ -74,6 +74,10 @@ builder.Services.AddScoped<IPublishWorkflowService, PublishWorkflowService>();
 builder.Services.AddScoped<IAdvertisementRepository, AdvertisementRepository>();
 builder.Services.AddScoped<IAdvertisementService, AdvertisementService>();
 
+// Analytics services
+builder.Services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+
 // Banner repositories
 builder.Services.AddScoped<IBannerRepository, BannerRepository>();
 builder.Services.AddScoped<IComponentRepository, ComponentRepository>();
