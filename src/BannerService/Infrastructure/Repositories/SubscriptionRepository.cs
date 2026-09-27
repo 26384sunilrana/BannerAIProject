@@ -49,6 +49,16 @@ namespace BannerService.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<List<Subscription>> GetByPlanIdAsync(Guid planId)
+        {
+            return await _context.Subscriptions
+                .Include(s => s.Shop)
+                .Include(s => s.Plan)
+                .Where(s => s.PlanId == planId)
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync();
+        }
+
         public async Task<List<Subscription>> GetExpiringTodayAsync()
         {
             var today = DateTime.UtcNow.Date;

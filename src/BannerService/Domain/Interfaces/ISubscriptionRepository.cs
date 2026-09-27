@@ -8,6 +8,7 @@ namespace BannerService.Domain.Interfaces
         Task<Subscription?> GetByShopIdAsync(Guid shopId);
         Task<List<Subscription>> GetActiveByShopIdAsync(Guid shopId);
         Task<List<Subscription>> GetByStatusAsync(SubscriptionStatus status);
+        Task<List<Subscription>> GetByPlanIdAsync(Guid planId);
         Task<List<Subscription>> GetExpiringTodayAsync();
         Task<List<Subscription>> GetRenewingSoonAsync(int daysThreshold = 7);
         Task<List<Subscription>> GetWithPaymentFailuresAsync();
