@@ -140,7 +140,7 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Apply database migrations
+// Apply database migrations and seed data
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -148,10 +148,14 @@ using (var scope = app.Services.CreateScope())
     {
         dbContext.Database.Migrate();
         Log.Information("Database migrations applied successfully");
+
+        // Seed master data
+        await BannerService.Infrastructure.Data.DatabaseSeeder.SeedAsync(dbContext);
+        Log.Information("Database seeded with master data successfully");
     }
     catch (Exception ex)
     {
-        Log.Error(ex, "Error applying database migrations");
+        Log.Error(ex, "Error applying database migrations or seeding");
     }
 }
 
