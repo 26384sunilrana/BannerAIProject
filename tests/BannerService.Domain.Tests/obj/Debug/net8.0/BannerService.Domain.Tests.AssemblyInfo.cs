@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BannerService.Domain.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e099de0cc07dd738d5b3d9c2e388807edfff5ac3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2baa3be8fc075e705320e36d7abd47c0c36da8cf")]
 [assembly: System.Reflection.AssemblyProductAttribute("BannerService.Domain.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BannerService.Domain.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
