@@ -111,7 +111,7 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.ParentShop)
                 .WithMany(e => e.ChildShops)
                 .HasForeignKey(e => e.ParentShopId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Owner configuration: OwnerUserId is stored but no navigation to User (type mismatch: Guid vs string)
             entity.Ignore(e => e.Owner);
@@ -230,6 +230,62 @@ public class ApplicationDbContext : DbContext
                 features.Property(f => f.SlaPercentage).HasColumnType("decimal(18,2)");
                 features.Property(f => f.PriorityQueue);
             });
+        });
+
+        // Subscription configuration
+        modelBuilder.Entity<Subscription>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PlanId).IsRequired();
+            entity.Property(e => e.ShopId).IsRequired();
+            entity.Property(e => e.StartDate).IsRequired();
+            entity.Property(e => e.RenewalDate).IsRequired();
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.CurrentPrice).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.BillingPeriod).IsRequired();
+
+            // FKs - Restrict (required FKs prevent parent deletion)
+            entity.HasOne(e => e.Plan)
+                .WithMany()
+                .HasForeignKey(e => e.PlanId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Shop)
+                .WithMany()
+                .HasForeignKey(e => e.ShopId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Indexes
+            entity.HasIndex(e => new { e.ShopId, e.Status }).HasName("IX_Subscriptions_Shop_Status");
+            entity.HasIndex(e => new { e.ShopId, e.StartDate }).HasName("IX_Subscriptions_Shop_StartDate");
+        });
+
+        // Invoice configuration
+        modelBuilder.Entity<Invoice>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.SubscriptionId).IsRequired();
+            entity.Property(e => e.ShopId).IsRequired();
+            entity.Property(e => e.Amount).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(e => e.DueDate).IsRequired();
+            entity.Property(e => e.IssuedDate).IsRequired();
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.InvoiceNumber).HasMaxLength(50).IsRequired();
+
+            // FKs - Restrict (required FKs prevent parent deletion)
+            entity.HasOne(e => e.Subscription)
+                .WithMany()
+                .HasForeignKey(e => e.SubscriptionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Shop)
+                .WithMany()
+                .HasForeignKey(e => e.ShopId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Indexes
+            entity.HasIndex(e => new { e.ShopId, e.DueDate }).HasName("IX_Invoices_Shop_DueDate");
+            entity.HasIndex(e => new { e.ShopId, e.Status }).HasName("IX_Invoices_Shop_Status");
         });
 
         // Component configuration

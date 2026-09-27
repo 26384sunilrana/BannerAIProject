@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BannerService.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260927123422_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260927124618_CompleteSchema")]
+    partial class CompleteSchema
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -372,7 +372,8 @@ namespace BannerService.Infrastructure.Data.Migrations
 
                     b.Property<string>("InvoiceNumber")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime>("IssuedDate")
                         .HasColumnType("datetime2");
@@ -397,9 +398,13 @@ namespace BannerService.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ShopId");
-
                     b.HasIndex("SubscriptionId");
+
+                    b.HasIndex("ShopId", "DueDate")
+                        .HasDatabaseName("IX_Invoices_Shop_DueDate");
+
+                    b.HasIndex("ShopId", "Status")
+                        .HasDatabaseName("IX_Invoices_Shop_Status");
 
                     b.ToTable("Invoices");
                 });
@@ -743,7 +748,11 @@ namespace BannerService.Infrastructure.Data.Migrations
 
                     b.HasIndex("PlanId");
 
-                    b.HasIndex("ShopId");
+                    b.HasIndex("ShopId", "StartDate")
+                        .HasDatabaseName("IX_Subscriptions_Shop_StartDate");
+
+                    b.HasIndex("ShopId", "Status")
+                        .HasDatabaseName("IX_Subscriptions_Shop_Status");
 
                     b.ToTable("Subscriptions");
                 });
@@ -1042,13 +1051,13 @@ namespace BannerService.Infrastructure.Data.Migrations
                     b.HasOne("BannerService.Domain.Entities.Shop", "Shop")
                         .WithMany()
                         .HasForeignKey("ShopId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("BannerService.Domain.Entities.Subscription", "Subscription")
                         .WithMany()
                         .HasForeignKey("SubscriptionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Shop");
@@ -1082,7 +1091,7 @@ namespace BannerService.Infrastructure.Data.Migrations
                     b.HasOne("BannerService.Domain.Entities.Shop", "ParentShop")
                         .WithMany("ChildShops")
                         .HasForeignKey("ParentShopId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("BannerService.Domain.Entities.State", "StateNav")
                         .WithMany("Shops")
@@ -1114,13 +1123,13 @@ namespace BannerService.Infrastructure.Data.Migrations
                     b.HasOne("BannerService.Domain.Entities.SubscriptionPlan", "Plan")
                         .WithMany()
                         .HasForeignKey("PlanId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("BannerService.Domain.Entities.Shop", "Shop")
                         .WithMany()
                         .HasForeignKey("ShopId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Plan");

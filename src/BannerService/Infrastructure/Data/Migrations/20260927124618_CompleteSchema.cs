@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BannerService.Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class CompleteSchema : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -477,7 +477,7 @@ namespace BannerService.Infrastructure.Data.Migrations
                         column: x => x.ParentShopId,
                         principalTable: "Shops",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Shops_States_StateId",
                         column: x => x.StateId,
@@ -516,13 +516,13 @@ namespace BannerService.Infrastructure.Data.Migrations
                         column: x => x.ShopId,
                         principalTable: "Shops",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Subscriptions_SubscriptionPlans_PlanId",
                         column: x => x.PlanId,
                         principalTable: "SubscriptionPlans",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -534,7 +534,7 @@ namespace BannerService.Infrastructure.Data.Migrations
                     ShopId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
-                    InvoiceNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    InvoiceNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     IssuedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DueDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     PaidDate = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -551,13 +551,13 @@ namespace BannerService.Infrastructure.Data.Migrations
                         column: x => x.ShopId,
                         principalTable: "Shops",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Invoices_Subscriptions_SubscriptionId",
                         column: x => x.SubscriptionId,
                         principalTable: "Subscriptions",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
@@ -658,9 +658,14 @@ namespace BannerService.Infrastructure.Data.Migrations
                 column: "ComponentId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Invoices_ShopId",
+                name: "IX_Invoices_Shop_DueDate",
                 table: "Invoices",
-                column: "ShopId");
+                columns: new[] { "ShopId", "DueDate" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Invoices_Shop_Status",
+                table: "Invoices",
+                columns: new[] { "ShopId", "Status" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Invoices_SubscriptionId",
@@ -747,9 +752,14 @@ namespace BannerService.Infrastructure.Data.Migrations
                 column: "PlanId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Subscriptions_ShopId",
+                name: "IX_Subscriptions_Shop_StartDate",
                 table: "Subscriptions",
-                column: "ShopId");
+                columns: new[] { "ShopId", "StartDate" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Subscriptions_Shop_Status",
+                table: "Subscriptions",
+                columns: new[] { "ShopId", "Status" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_UploadChunks_Query",
