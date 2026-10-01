@@ -17,7 +17,7 @@ namespace BannerService.Application.Validators
             if (planId == Guid.Empty)
                 return (false, "Plan ID is required");
 
-            if (billingPeriod != BillingPeriod.Monthly && billingPeriod != BillingPeriod.Annual)
+            if (!Enum.IsDefined(typeof(BillingPeriod), billingPeriod))
                 return (false, "Invalid billing period");
 
             if (trialDays.HasValue && (trialDays < MinTrialDays || trialDays > MaxTrialDays))

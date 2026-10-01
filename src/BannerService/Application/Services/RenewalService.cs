@@ -19,17 +19,17 @@ namespace BannerService.Application.Services
             _planRepository = planRepository;
         }
 
-        public async Task<List<Subscription>> GetPendingRenewalsAsync()
+        public virtual async Task<List<Subscription>> GetPendingRenewalsAsync()
         {
             return await _subscriptionRepository.GetRenewingSoonAsync(7);
         }
 
-        public async Task<List<Subscription>> GetExpiringTodayAsync()
+        public virtual async Task<List<Subscription>> GetExpiringTodayAsync()
         {
             return await _subscriptionRepository.GetExpiringTodayAsync();
         }
 
-        public async Task<(bool success, string message)> ProcessRenewalAsync(Guid subscriptionId)
+        public virtual async Task<(bool success, string message)> ProcessRenewalAsync(Guid subscriptionId)
         {
             try
             {
@@ -46,8 +46,11 @@ namespace BannerService.Application.Services
                     return (false, "Subscription plan not found");
 
                 // Update subscription status and renewal date
+                if (!subscription.AutoRenew)
+                    return (false, "Auto renewal is disabled; waiting for the shop owner to renew");
+
                 subscription.Status = SubscriptionStatus.RenewalPending;
-                subscription.RenewalDate = subscription.RenewalDate.AddMonths(1);
+                subscription.RenewalDate = subscription.BillingPeriod.AddPeriod(subscription.RenewalDate);
 
                 await _subscriptionRepository.UpdateAsync(subscription);
 
@@ -75,7 +78,7 @@ namespace BannerService.Application.Services
             }
         }
 
-        public async Task<(bool success, string message)> HandlePaymentFailureAsync(
+        public virtual async Task<(bool success, string message)> HandlePaymentFailureAsync(
             Guid subscriptionId,
             string reason)
         {
@@ -108,7 +111,7 @@ namespace BannerService.Application.Services
             }
         }
 
-        public async Task<(bool success, string message)> ProcessGracePeriodAsync(Guid subscriptionId)
+        public virtual async Task<(bool success, string message)> ProcessGracePeriodAsync(Guid subscriptionId)
         {
             try
             {
@@ -138,7 +141,7 @@ namespace BannerService.Application.Services
             }
         }
 
-        public async Task<(bool success, string message)> RetryPaymentAsync(
+        public virtual async Task<(bool success, string message)> RetryPaymentAsync(
             Guid invoiceId)
         {
             try
@@ -175,17 +178,17 @@ namespace BannerService.Application.Services
             }
         }
 
-        public async Task<List<Invoice>> GetOverdueInvoicesAsync()
+        public virtual async Task<List<Invoice>> GetOverdueInvoicesAsync()
         {
             return await _invoiceRepository.GetOverdueAsync();
         }
 
-        public async Task<List<Invoice>> GetUnpaidInvoicesAsync()
+        public virtual async Task<List<Invoice>> GetUnpaidInvoicesAsync()
         {
             return await _invoiceRepository.GetUnpaidAsync();
         }
 
-        public async Task<(bool success, string message)> MarkInvoiceOverdueAsync(Guid invoiceId)
+        public virtual async Task<(bool success, string message)> MarkInvoiceOverdueAsync(Guid invoiceId)
         {
             try
             {

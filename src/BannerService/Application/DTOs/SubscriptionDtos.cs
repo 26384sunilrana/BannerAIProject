@@ -26,6 +26,9 @@ namespace BannerService.Application.DTOs
         public DateTime? CancellationDate { get; set; }
         public int PaymentFailureCount { get; set; }
         public DateTime? LastPaymentAttempt { get; set; }
+        public bool AutoRenew { get; set; }
+        public Guid? PendingPlanId { get; set; }
+        public DateTime? PendingPlanEffectiveAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public SubscriptionFeaturesDto Features { get; set; } = new();
@@ -77,6 +80,11 @@ namespace BannerService.Application.DTOs
     public class ChangePlanDto
     {
         public Guid NewPlanId { get; set; }
+    }
+
+    public class SetAutoRenewDto
+    {
+        public bool AutoRenew { get; set; }
     }
 
     public class ChangeBillingPeriodDto

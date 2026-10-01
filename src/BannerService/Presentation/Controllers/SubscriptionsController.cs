@@ -175,6 +175,25 @@ namespace BannerService.Presentation.Controllers
             }
         }
 
+        [HttpPut("{subscriptionId}/auto-renew")]
+        public async Task<IActionResult> SetAutoRenew(Guid subscriptionId, [FromBody] SetAutoRenewDto request)
+        {
+            try
+            {
+                var result = await _subscriptionService.SetAutoRenewAsync(subscriptionId, request.AutoRenew);
+
+                if (!result.success)
+                    return NotFound(new { success = false, message = result.message });
+
+                return Ok(new { success = true, message = result.message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating auto renew for subscription {subscriptionId}", subscriptionId);
+                return StatusCode(500, new { success = false, message = "Error updating auto renewal" });
+            }
+        }
+
         [HttpPost("{subscriptionId}/change-billing")]
         public async Task<IActionResult> ChangeBillingPeriod(Guid subscriptionId, [FromBody] ChangeBillingPeriodDto request)
         {
@@ -272,6 +291,9 @@ namespace BannerService.Presentation.Controllers
                 CurrentPrice = subscription.CurrentPrice,
                 PaymentFailureCount = subscription.PaymentFailureCount,
                 LastPaymentAttempt = subscription.LastPaymentAttempt,
+                AutoRenew = subscription.AutoRenew,
+                PendingPlanId = subscription.PendingPlanId,
+                PendingPlanEffectiveAt = subscription.PendingPlanEffectiveAt,
                 CreatedAt = subscription.CreatedAt,
                 UpdatedAt = subscription.UpdatedAt
             };

@@ -26,6 +26,12 @@ namespace BannerService.Domain.Entities
         public Guid? PreviousPlanId { get; set; }
         public DateTime? PlanChangedAt { get; set; }
 
+        // Auto renewal and scheduled plan change (effective from the next day)
+        public bool AutoRenew { get; set; } = true;
+        public Guid? PendingPlanId { get; set; }
+        public decimal? PendingPrice { get; set; }
+        public DateTime? PendingPlanEffectiveAt { get; set; }
+
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
@@ -34,9 +40,33 @@ namespace BannerService.Domain.Entities
         public bool IsActive => Status == SubscriptionStatus.Active;
         public bool IsExpired => RenewalDate < DateTime.UtcNow && !IsActive;
         public bool IsInGracePeriod => Status == SubscriptionStatus.GracePeriod;
-        public int DaysUntilRenewal => (RenewalDate - DateTime.UtcNow).Days;
+        public int DaysUntilRenewal => (int)Math.Ceiling((RenewalDate - DateTime.UtcNow).TotalDays);
         public bool IsRenewingSoon => DaysUntilRenewal <= 7 && DaysUntilRenewal > 0;
         public bool NeedsRenewalToday => RenewalDate.Date == DateTime.UtcNow.Date;
+
+        public void SchedulePlanChange(Guid newPlanId, decimal newPrice, DateTime now)
+        {
+            PendingPlanId = newPlanId;
+            PendingPrice = newPrice;
+            PendingPlanEffectiveAt = now.Date.AddDays(1);
+            UpdatedAt = now;
+        }
+
+        public bool ApplyPendingPlanChange(DateTime now)
+        {
+            if (PendingPlanId == null || PendingPlanEffectiveAt == null || PendingPlanEffectiveAt > now)
+                return false;
+
+            PreviousPlanId = PlanId;
+            PlanId = PendingPlanId.Value;
+            CurrentPrice = PendingPrice ?? CurrentPrice;
+            PlanChangedAt = now;
+            PendingPlanId = null;
+            PendingPrice = null;
+            PendingPlanEffectiveAt = null;
+            UpdatedAt = now;
+            return true;
+        }
 
         public void SetStatus(SubscriptionStatus status)
         {

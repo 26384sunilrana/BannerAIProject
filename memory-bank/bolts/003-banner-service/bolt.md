@@ -3,7 +3,9 @@ id: 003-banner-service
 unit: 001-banner-service
 intent: 001-banner-editor-core
 type: ddd-construction-bolt
-status: planned
+status: complete
+completed: 2026-10-01T00:00:00Z
+reconciled_note: "Implemented in src/BannerService (builds clean). Tests green as of 2026-10-01: Domain 387, Application 53, Integration 1. 46 stale test files are excluded from the build (see Compile Remove in test csproj files)."
 stories: [007-manage-component-z-index, 008-preview-banner-configuration]
 created: 2026-09-26T00:00:00Z
 

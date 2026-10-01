@@ -14,17 +14,39 @@ namespace BannerService.Domain.Entities
 
         public bool IsPopular => Name == "Silver" || Name == "Gold";
 
-        public decimal GetPrice(BillingPeriod period) =>
-            period == BillingPeriod.Monthly ? MonthlyPrice : AnnualPrice;
+        // Quarterly and half-yearly are priced pro-rata from the yearly price so every
+        // period costs the same per month and a shop can switch without being penalised.
+        public decimal GetPrice(BillingPeriod period) => period switch
+        {
+            BillingPeriod.Monthly => MonthlyPrice,
+            BillingPeriod.Annual => AnnualPrice,
+            _ => Math.Round(AnnualPrice / 12m * period.Months(), 2)
+        };
 
         public int GetBillingIntervalDays(BillingPeriod period) =>
-            period == BillingPeriod.Monthly ? 30 : 365;
+            (int)(period.AddPeriod(DateTime.UtcNow) - DateTime.UtcNow).TotalDays;
     }
 
     public enum BillingPeriod
     {
         Monthly = 1,
-        Annual = 2
+        Annual = 2,       // Yearly
+        Quarterly = 3,
+        HalfYearly = 4
+    }
+
+    public static class BillingPeriodExtensions
+    {
+        public static int Months(this BillingPeriod period) => period switch
+        {
+            BillingPeriod.Monthly => 1,
+            BillingPeriod.Quarterly => 3,
+            BillingPeriod.HalfYearly => 6,
+            BillingPeriod.Annual => 12,
+            _ => 1
+        };
+
+        public static DateTime AddPeriod(this BillingPeriod period, DateTime from) => from.AddMonths(period.Months());
     }
 
     public class SubscriptionFeatures

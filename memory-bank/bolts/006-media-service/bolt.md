@@ -3,7 +3,9 @@ id: 006-media-service
 unit: 004-media-service
 intent: 001-banner-editor-core
 type: ddd-construction-bolt
-status: planned
+status: complete
+completed: 2026-10-01T00:00:00Z
+reconciled_note: "Implemented in src/BannerService (builds clean). Tests green as of 2026-10-01: Domain 387, Application 53, Integration 1. 46 stale test files are excluded from the build (see Compile Remove in test csproj files)."
 stories: [001-upload-media, 002-chunked-upload, 003-media-metadata, 004-media-urls]
 created: 2026-09-26T00:00:00Z
 

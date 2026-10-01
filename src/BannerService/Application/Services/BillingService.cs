@@ -19,42 +19,42 @@ namespace BannerService.Application.Services
             _planRepository = planRepository;
         }
 
-        public async Task<Invoice?> GetInvoiceByIdAsync(Guid invoiceId)
+        public virtual async Task<Invoice?> GetInvoiceByIdAsync(Guid invoiceId)
         {
             return await _invoiceRepository.GetByIdAsync(invoiceId);
         }
 
-        public async Task<Invoice?> GetInvoiceByNumberAsync(string invoiceNumber)
+        public virtual async Task<Invoice?> GetInvoiceByNumberAsync(string invoiceNumber)
         {
             return await _invoiceRepository.GetByInvoiceNumberAsync(invoiceNumber);
         }
 
-        public async Task<List<Invoice>> GetShopInvoicesAsync(Guid shopId)
+        public virtual async Task<List<Invoice>> GetShopInvoicesAsync(Guid shopId)
         {
             return await _invoiceRepository.GetByShopIdAsync(shopId);
         }
 
-        public async Task<List<Invoice>> GetSubscriptionInvoicesAsync(Guid subscriptionId)
+        public virtual async Task<List<Invoice>> GetSubscriptionInvoicesAsync(Guid subscriptionId)
         {
             return await _invoiceRepository.GetBySubscriptionIdAsync(subscriptionId);
         }
 
-        public async Task<List<Invoice>> GetInvoicesByStatusAsync(InvoiceStatus status)
+        public virtual async Task<List<Invoice>> GetInvoicesByStatusAsync(InvoiceStatus status)
         {
             return await _invoiceRepository.GetByStatusAsync(status);
         }
 
-        public async Task<List<Invoice>> GetOverdueInvoicesAsync()
+        public virtual async Task<List<Invoice>> GetOverdueInvoicesAsync()
         {
             return await _invoiceRepository.GetOverdueAsync();
         }
 
-        public async Task<List<Invoice>> GetUnpaidInvoicesAsync()
+        public virtual async Task<List<Invoice>> GetUnpaidInvoicesAsync()
         {
             return await _invoiceRepository.GetUnpaidAsync();
         }
 
-        public async Task<List<Invoice>> GetPaginatedInvoicesAsync(
+        public virtual async Task<List<Invoice>> GetPaginatedInvoicesAsync(
             Guid shopId,
             int pageNumber,
             int pageSize)
@@ -62,17 +62,17 @@ namespace BannerService.Application.Services
             return await _invoiceRepository.GetPaginatedAsync(shopId, pageNumber, pageSize);
         }
 
-        public async Task<int> GetInvoiceCountAsync()
+        public virtual async Task<int> GetInvoiceCountAsync()
         {
             return await _invoiceRepository.GetCountAsync();
         }
 
-        public async Task<int> GetInvoiceCountByStatusAsync(InvoiceStatus status)
+        public virtual async Task<int> GetInvoiceCountByStatusAsync(InvoiceStatus status)
         {
             return await _invoiceRepository.GetCountByStatusAsync(status);
         }
 
-        public async Task<(bool success, string message)> MarkInvoiceAsPaidAsync(
+        public virtual async Task<(bool success, string message)> MarkInvoiceAsPaidAsync(
             Guid invoiceId,
             string? paymentReference = null)
         {
@@ -118,7 +118,7 @@ namespace BannerService.Application.Services
             }
         }
 
-        public async Task<(bool success, string message)> MarkInvoiceAsCancelledAsync(
+        public virtual async Task<(bool success, string message)> MarkInvoiceAsCancelledAsync(
             Guid invoiceId,
             string? reason = null)
         {
@@ -146,7 +146,7 @@ namespace BannerService.Application.Services
             }
         }
 
-        public async Task<(bool success, string message)> RefundInvoiceAsync(
+        public virtual async Task<(bool success, string message)> RefundInvoiceAsync(
             Guid invoiceId,
             decimal amount,
             string? reason = null)
@@ -179,7 +179,7 @@ namespace BannerService.Application.Services
             }
         }
 
-        public async Task<(bool success, string message)> CreateInvoiceAsync(
+        public virtual async Task<(bool success, string message)> CreateInvoiceAsync(
             Guid subscriptionId,
             Guid shopId,
             decimal amount,
@@ -214,7 +214,7 @@ namespace BannerService.Application.Services
             }
         }
 
-        public async Task<(bool success, string message)> IssueInvoiceAsync(Guid invoiceId)
+        public virtual async Task<(bool success, string message)> IssueInvoiceAsync(Guid invoiceId)
         {
             try
             {
@@ -237,7 +237,7 @@ namespace BannerService.Application.Services
             }
         }
 
-        public async Task<decimal> CalculateMonthlyRecurringRevenueAsync()
+        public virtual async Task<decimal> CalculateMonthlyRecurringRevenueAsync()
         {
             try
             {
@@ -246,14 +246,7 @@ namespace BannerService.Application.Services
                 decimal mrr = 0m;
                 foreach (var sub in activeSubscriptions)
                 {
-                    if (sub.BillingPeriod == BillingPeriod.Monthly)
-                    {
-                        mrr += sub.CurrentPrice;
-                    }
-                    else if (sub.BillingPeriod == BillingPeriod.Annual)
-                    {
-                        mrr += sub.CurrentPrice / 12;
-                    }
+                    mrr += sub.CurrentPrice / sub.BillingPeriod.Months();
                 }
 
                 return Math.Round(mrr, 2);
@@ -264,7 +257,7 @@ namespace BannerService.Application.Services
             }
         }
 
-        public async Task<decimal> CalculateAnnualRecurringRevenueAsync()
+        public virtual async Task<decimal> CalculateAnnualRecurringRevenueAsync()
         {
             try
             {
@@ -273,14 +266,7 @@ namespace BannerService.Application.Services
                 decimal arr = 0m;
                 foreach (var sub in activeSubscriptions)
                 {
-                    if (sub.BillingPeriod == BillingPeriod.Monthly)
-                    {
-                        arr += sub.CurrentPrice * 12;
-                    }
-                    else if (sub.BillingPeriod == BillingPeriod.Annual)
-                    {
-                        arr += sub.CurrentPrice;
-                    }
+                    arr += sub.CurrentPrice / sub.BillingPeriod.Months() * 12;
                 }
 
                 return Math.Round(arr, 2);
@@ -291,7 +277,7 @@ namespace BannerService.Application.Services
             }
         }
 
-        public async Task<(decimal monthlyTotal, decimal annualTotal)> GetRevenueAsync()
+        public virtual async Task<(decimal monthlyTotal, decimal annualTotal)> GetRevenueAsync()
         {
             try
             {
@@ -328,7 +314,7 @@ namespace BannerService.Application.Services
             }
         }
 
-        public async Task<BillingMetrics> GetBillingMetricsAsync()
+        public virtual async Task<BillingMetrics> GetBillingMetricsAsync()
         {
             try
             {

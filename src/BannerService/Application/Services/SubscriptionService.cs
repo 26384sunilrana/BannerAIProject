@@ -131,13 +131,8 @@ namespace BannerService.Application.Services
                 // Calculate proration
                 var proratedAmount = await CalculateProratedAmountAsync(subscriptionId, newPlanId);
 
-                // Store previous plan info
-                subscription.PreviousPlanId = currentPlan?.Id;
-                subscription.PlanChangedAt = DateTime.UtcNow;
-
-                // Update to new plan
-                subscription.PlanId = newPlanId;
-                subscription.CurrentPrice = GetPrice(newPlan, subscription.BillingPeriod);
+                // Plan changes take effect from the next day
+                subscription.SchedulePlanChange(newPlanId, GetPrice(newPlan, subscription.BillingPeriod), DateTime.UtcNow);
 
                 await _subscriptionRepository.UpdateAsync(subscription);
 
@@ -147,7 +142,7 @@ namespace BannerService.Application.Services
                     await CreateAdjustmentInvoiceAsync(subscription, proratedAmount, "Upgrade proration");
                 }
 
-                return (true, "Plan upgraded successfully");
+                return (true, "Plan upgrade scheduled; effective from the next day");
             }
             catch (Exception ex)
             {
@@ -170,18 +165,13 @@ namespace BannerService.Application.Services
                 if (newPlan == null)
                     return (false, "New plan not found");
 
-                // Store previous plan info
-                subscription.PreviousPlanId = currentPlan?.Id;
-                subscription.PlanChangedAt = DateTime.UtcNow;
-
-                // Update to new plan
-                subscription.PlanId = newPlanId;
-                subscription.CurrentPrice = GetPrice(newPlan, subscription.BillingPeriod);
+                // Plan changes take effect from the next day
+                subscription.SchedulePlanChange(newPlanId, GetPrice(newPlan, subscription.BillingPeriod), DateTime.UtcNow);
 
                 await _subscriptionRepository.UpdateAsync(subscription);
 
                 // Downgrade typically doesn't charge immediately
-                return (true, "Plan downgraded successfully");
+                return (true, "Plan downgrade scheduled; effective from the next day");
             }
             catch (Exception ex)
             {
@@ -229,6 +219,37 @@ namespace BannerService.Application.Services
             {
                 return (false, $"Error changing billing period: {ex.Message}");
             }
+        }
+
+        public async Task<(bool success, string message)> SetAutoRenewAsync(Guid subscriptionId, bool autoRenew)
+        {
+            var subscription = await _subscriptionRepository.GetByIdAsync(subscriptionId);
+            if (subscription == null)
+                return (false, "Subscription not found");
+
+            subscription.AutoRenew = autoRenew;
+            subscription.UpdatedAt = DateTime.UtcNow;
+            await _subscriptionRepository.UpdateAsync(subscription);
+
+            return (true, autoRenew ? "Auto renewal enabled" : "Auto renewal disabled; you will receive renewal reminders");
+        }
+
+        /// <summary>Applies plan changes scheduled for today or earlier. Intended for a daily job.</summary>
+        public async Task<int> ApplyDuePlanChangesAsync()
+        {
+            var now = DateTime.UtcNow;
+            var applied = 0;
+            foreach (var status in new[] { SubscriptionStatus.Active, SubscriptionStatus.Trial })
+            {
+                foreach (var subscription in await _subscriptionRepository.GetByStatusAsync(status))
+                {
+                    if (!subscription.ApplyPendingPlanChange(now))
+                        continue;
+                    await _subscriptionRepository.UpdateAsync(subscription);
+                    applied++;
+                }
+            }
+            return applied;
         }
 
         public async Task<(bool success, string message)> CancelSubscriptionAsync(
@@ -408,32 +429,17 @@ namespace BannerService.Application.Services
         #region Helper Methods
         private DateTime CalculateRenewalDate(DateTime fromDate, BillingPeriod period)
         {
-            return period switch
-            {
-                BillingPeriod.Monthly => fromDate.AddMonths(1),
-                BillingPeriod.Annual => fromDate.AddYears(1),
-                _ => fromDate.AddMonths(1)
-            };
+            return period.AddPeriod(fromDate);
         }
 
         private decimal GetPrice(SubscriptionPlan plan, BillingPeriod period)
         {
-            return period switch
-            {
-                BillingPeriod.Monthly => plan.MonthlyPrice,
-                BillingPeriod.Annual => plan.AnnualPrice,
-                _ => plan.MonthlyPrice
-            };
+            return plan.GetPrice(period);
         }
 
         private int GetDaysInBillingPeriod(BillingPeriod period)
         {
-            return period switch
-            {
-                BillingPeriod.Monthly => 30,
-                BillingPeriod.Annual => 365,
-                _ => 30
-            };
+            return (int)(period.AddPeriod(DateTime.UtcNow) - DateTime.UtcNow).TotalDays;
         }
 
         private async Task CreateInvoiceForSubscriptionAsync(Subscription subscription, SubscriptionPlan plan)
