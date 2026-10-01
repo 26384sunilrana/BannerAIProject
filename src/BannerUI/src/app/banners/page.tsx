@@ -11,6 +11,7 @@ import { getErrorMessage } from '@/api/client'
 import { Roles } from '@/lib/session'
 import { BannerSummary, PublishWorkflow } from '@/types/workflow'
 import { StatusBadge } from '../approvals/StatusBadge'
+import { SchedulePicker } from './SchedulePicker'
 
 export default function BannersPage() {
   return (
@@ -136,6 +137,7 @@ function Banners() {
             const workflow = workflows[banner.id]
             const status = workflow?.status
             const canSubmit = !workflow || ['Draft', 'Rejected', 'Unpublished'].includes(status as string)
+            const scheduled = !!banner.publishStartAt && !!banner.publishEndAt
 
             return (
               <li key={banner.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
@@ -151,10 +153,27 @@ function Banners() {
                     Open editor
                   </Link>
                   {canSubmit && (
-                    <Button size="sm" variant="secondary" isLoading={busyId === banner.id} onClick={() => submitForApproval(banner)}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      isLoading={busyId === banner.id}
+                      disabled={!scheduled}
+                      title={scheduled ? undefined : 'Set when the banner is shown first'}
+                      onClick={() => submitForApproval(banner)}
+                    >
                       Submit for approval
                     </Button>
                   )}
+                </div>
+                <div className="w-full border-t border-gray-100 pt-2">
+                  <SchedulePicker
+                    banner={banner}
+                    needsReapprovalOnChange={['PendingApproval', 'Approved', 'Published'].includes(status as string)}
+                    onSaved={async (message) => {
+                      toast.success(message)
+                      await load()
+                    }}
+                  />
                 </div>
               </li>
             )

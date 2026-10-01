@@ -57,6 +57,10 @@ namespace BannerService.Presentation.Controllers
                 var workflow = await _workflowService.SubmitForApprovalAsync(workflowId, userId, userName);
                 return Ok(new { success = true, data = MapToDto(workflow) });
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new { success = false, message = ex.Message });

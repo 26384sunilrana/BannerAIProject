@@ -20,8 +20,10 @@ public class BannerScheduleService
             if (otherWindow == null || !window.Overlaps(otherWindow))
                 continue;
 
+            // No times in the message: the server does not know the viewer's time zone, and the owner can see
+            // the other banner's hours in their own list
             throw new InvalidOperationException(
-                $"Schedule overlaps banner '{other.Name}' ({otherWindow.Start:u} to {otherWindow.End:u})");
+                $"Schedule overlaps banner '{other.Name}'. Choose hours that do not overlap another banner.");
         }
     }
 

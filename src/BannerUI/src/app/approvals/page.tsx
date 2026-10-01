@@ -12,6 +12,7 @@ import { getErrorMessage } from '@/api/client'
 import { Roles } from '@/lib/session'
 import { BannerSummary, PublishWorkflow, WorkflowStatus } from '@/types/workflow'
 import { MyApprovalRole } from '@/types/team'
+import { formatWindow } from '@/lib/dates'
 import { ReasonDialog } from './ReasonDialog'
 import { StatusBadge } from './StatusBadge'
 
@@ -154,6 +155,9 @@ function Approvals() {
                     <h2 className="font-semibold text-gray-900">{nameOf(workflow)}</h2>
                     <p className="text-sm text-gray-600">
                       Submitted {new Date(workflow.submittedAt).toLocaleString()}
+                    </p>
+                    <p className="text-sm text-gray-700" data-testid="approval-schedule">
+                      Shown: {formatWindow(banners[workflow.bannerId]?.publishStartAt, banners[workflow.bannerId]?.publishEndAt)}
                     </p>
                   </div>
                   <StatusBadge status={workflow.status} />

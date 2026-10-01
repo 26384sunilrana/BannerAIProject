@@ -38,6 +38,19 @@ export const workflowService = {
   },
 }
 
+export interface ScheduleResult {
+  bannerId: string
+  startAt: string
+  endAt: string
+  /** True when the banner was live or approved: the change has to be approved again. */
+  requiresReapproval: boolean
+}
+
+export interface ActiveBanner {
+  banner: BannerSummary | null
+  useDefaultBanner: boolean
+}
+
 export const bannerListService = {
   list(): Promise<BannerSummary[]> {
     return apiClient.get<BannerSummary[]>('/banners')
@@ -45,5 +58,15 @@ export const bannerListService = {
 
   create(request: { name: string; description: string; width: number; height: number }): Promise<BannerSummary> {
     return apiClient.post<BannerSummary>('/banners', request)
+  },
+
+  /** Sets when the banner is shown. Overlapping another banner of the shop is refused (409). */
+  setSchedule(bannerId: string, startAtIso: string, endAtIso: string): Promise<ScheduleResult> {
+    return apiClient.put<ScheduleResult>(`/banners/${bannerId}/schedule`, { startAt: startAtIso, endAt: endAtIso })
+  },
+
+  /** The banner live right now, or useDefaultBanner when the shop falls back to the one on its own machine. */
+  getActive(): Promise<ActiveBanner> {
+    return apiClient.get<ActiveBanner>('/banners/active')
   },
 }

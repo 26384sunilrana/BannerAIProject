@@ -40,6 +40,9 @@ export interface BannerSummary {
   height: number
   isPublished: boolean
   componentCount: number
+  /** When the banner is shown (UTC); null until a schedule is set. */
+  publishStartAt?: string | null
+  publishEndAt?: string | null
   createdAt: string
   updatedAt: string
 }

@@ -280,4 +280,32 @@ public class PipelineSmokeTests : IClassFixture<SmokeFactory>
         Assert.Equal(HttpStatusCode.NotFound, (await other.GetAsync($"/api/media/{mediaId}/url")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await other.GetAsync($"/api/media/{mediaId}")).StatusCode);
     }
+
+    [Fact]
+    public async Task Dates_AreSentAsUtcWithAZone_AndTheScheduleRoundTrips()
+    {
+        var (client, _, _) = await RegisterOwnerAsync("dates@example.com");
+        var created = await (await client.PostAsJsonAsync("/api/banners", new { name = "Dated", description = "", width = 100, height = 50 }))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        var id = created.GetProperty("id").GetGuid();
+
+        var start = new DateTime(2030, 1, 5, 9, 0, 0, DateTimeKind.Utc);
+        var put = await client.PutAsJsonAsync($"/api/banners/{id}/schedule", new { startAt = start, endAt = start.AddHours(3) });
+        Assert.Equal(HttpStatusCode.OK, put.StatusCode);
+
+        var json = await client.GetStringAsync($"/api/banners/{id}");
+        var banner = JsonDocument.Parse(json).RootElement;
+
+        Assert.EndsWith("Z", banner.GetProperty("publishStartAt").GetString());
+        Assert.EndsWith("Z", banner.GetProperty("createdAt").GetString());
+        Assert.Equal(start, banner.GetProperty("publishStartAt").GetDateTime().ToUniversalTime());
+
+        // a window that overlaps is a conflict that names the other banner
+        var other = await (await client.PostAsJsonAsync("/api/banners", new { name = "Other", description = "", width = 100, height = 50 }))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        var clash = await client.PutAsJsonAsync($"/api/banners/{other.GetProperty("id").GetGuid()}/schedule",
+            new { startAt = start.AddHours(1), endAt = start.AddHours(4) });
+        Assert.Equal(HttpStatusCode.Conflict, clash.StatusCode);
+        Assert.Contains("Dated", await clash.Content.ReadAsStringAsync());
+    }
 }

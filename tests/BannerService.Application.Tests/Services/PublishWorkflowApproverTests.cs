@@ -73,7 +73,7 @@ public class PublishWorkflowApproverTests
     [Fact]
     public async Task Submit_RecordsTheBannerAsAVersion()
     {
-        var banner = new Banner(_shop.Id, _ownerId, "Sale", "d", 100, 100);
+        var banner = ScheduledBanner();
         _workflow.Status = PublishStatus.Draft;
         _banners.Setup(r => r.GetByIdAsync(_workflow.BannerId, _shop.Id)).ReturnsAsync(banner);
 
@@ -81,5 +81,26 @@ public class PublishWorkflowApproverTests
 
         Assert.Equal(PublishStatus.PendingApproval, result.Status);
         _versionControl.Verify(v => v.CreateSnapshotAsync(banner, "Submitted for approval", _ownerId), Times.Once);
+    }
+
+    [Fact]
+    public async Task Submit_WithoutASchedule_IsRefused_BecauseTheBannerWouldNeverBeShown()
+    {
+        var banner = new Banner(_shop.Id, _ownerId, "Sale", "d", 100, 100);
+        _workflow.Status = PublishStatus.Draft;
+        _banners.Setup(r => r.GetByIdAsync(_workflow.BannerId, _shop.Id)).ReturnsAsync(banner);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _service.SubmitForApprovalAsync(_workflow.Id, _ownerId, "Owner"));
+
+        Assert.Contains("when the banner should be shown", ex.Message);
+        Assert.Equal(PublishStatus.Draft, _workflow.Status);
+        _versionControl.Verify(v => v.CreateSnapshotAsync(It.IsAny<Banner>(), It.IsAny<string?>(), It.IsAny<Guid>()), Times.Never);
+    }
+
+    private Banner ScheduledBanner()
+    {
+        var banner = new Banner(_shop.Id, _ownerId, "Sale", "d", 100, 100);
+        banner.SetSchedule(new BannerService.Domain.ValueObjects.PublishWindow(DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2)));
+        return banner;
     }
 }

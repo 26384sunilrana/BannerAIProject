@@ -211,6 +211,8 @@ public class BannerService : IBannerService
             Height = banner.Height,
             IsPublished = banner.IsPublished,
             ComponentCount = banner.Components.Count,
+            PublishStartAt = banner.PublishStartAt,
+            PublishEndAt = banner.PublishEndAt,
             CreatedAt = banner.CreatedAt,
             UpdatedAt = banner.UpdatedAt
         };

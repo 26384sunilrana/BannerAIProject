@@ -55,9 +55,15 @@ namespace BannerService.Application.Services
             if (workflow == null)
                 throw new KeyNotFoundException($"Workflow {workflowId} not found");
 
-            // Record the banner as submitted so an older version can be brought back later
             var banner = await _bannerRepository.GetByIdAsync(workflow.BannerId, workflow.ShopId)
                 ?? throw new KeyNotFoundException($"Banner {workflow.BannerId} not found");
+
+            // Approvers decide on a banner together with when it will be shown, and a banner without a
+            // schedule would never be shown at all
+            if (banner.GetPublishWindow() == null)
+                throw new InvalidOperationException("Set when the banner should be shown before submitting it for approval");
+
+            // Record the banner as submitted so an older version can be brought back later
             await _versionControl.CreateSnapshotAsync(banner, "Submitted for approval", userId);
 
             workflow.SubmitForApproval(userId, userName);
