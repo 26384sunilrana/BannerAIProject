@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: bannerai
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - keys-pvc.yaml
+  - api.yaml
+  - web.yaml
+  - ingress.yaml
+  - migrate-job.yaml
+# Set the real registry and tag per release:
+#   kustomize edit set image bannerai/banner-api=<registry>/banner-api:<tag> bannerai/banner-web=<registry>/banner-web:<tag>
+images:
+  - name: bannerai/banner-api
+    newTag: latest
+  - name: bannerai/banner-web
+    newTag: latest

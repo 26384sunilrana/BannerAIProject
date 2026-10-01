@@ -1,0 +1,31 @@
+# Applies EF Core migrations and seeds master data once per release, then exits.
+# Re-create it for each release:  kubectl -n bannerai delete job banner-migrate --ignore-not-found && kubectl apply -k deploy/k8s
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: banner-migrate
+  namespace: bannerai
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      securityContext:
+        fsGroup: 1654
+      containers:
+        - name: migrate
+          image: bannerai/banner-api:latest
+          args: ["--migrate"]
+          envFrom:
+            - configMapRef:
+                name: banner-api-config
+            - secretRef:
+                name: banner-api-secrets
+          volumeMounts:
+            - name: keys
+              mountPath: /keys
+      volumes:
+        - name: keys
+          persistentVolumeClaim:
+            claimName: banner-keys

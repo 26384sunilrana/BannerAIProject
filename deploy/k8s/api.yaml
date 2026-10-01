@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banner-api
+  namespace: bannerai
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: banner-api
+  template:
+    metadata:
+      labels:
+        app: banner-api
+    spec:
+      securityContext:
+        fsGroup: 1654
+      containers:
+        - name: api
+          image: bannerai/banner-api:latest
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: banner-api-config
+            - secretRef:
+                name: banner-api-secrets
+          readinessProbe:
+            httpGet: { path: /health, port: 5000 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: 5000 }
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 200m, memory: 256Mi }
+            limits: { cpu: "1", memory: 768Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: keys
+              mountPath: /keys
+      volumes:
+        - name: keys
+          persistentVolumeClaim:
+            claimName: banner-keys
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: banner-api
+  namespace: bannerai
+spec:
+  selector:
+    app: banner-api
+  ports:
+    - port: 80
+      targetPort: 5000
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: banner-api
+  namespace: bannerai
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: banner-api
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: banner-api
+  namespace: bannerai
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: banner-api

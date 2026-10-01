@@ -20,9 +20,19 @@ public class SmokeFactory : WebApplicationFactory<Program>
 {
     private readonly string _databaseName = "Smoke_" + Guid.NewGuid();
 
+    /// <summary>Set SMOKE_SQL to a SQL Server connection string to run the same tests against a real database (migrations and seeding included).</summary>
+    private static readonly string? SqlConnection = Environment.GetEnvironmentVariable("SMOKE_SQL");
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+
+        if (!string.IsNullOrEmpty(SqlConnection))
+        {
+            builder.UseSetting("ConnectionStrings:DefaultConnection", SqlConnection);
+            return;
+        }
+
         builder.ConfigureServices(services =>
         {
             foreach (var descriptor in services.Where(d =>
@@ -41,10 +51,11 @@ public class SmokeFactory : WebApplicationFactory<Program>
     {
         using var scope = Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        if (await context.Roles.AnyAsync())
+        if (await context.Users.AnyAsync(u => u.Email == "admin@example.com"))
             return;
 
-        context.Roles.AddRange(Role.DefaultRoles.Select(r => new Role { Id = r.Id, Name = r.Name, Description = r.Description }));
+        if (!await context.Roles.AnyAsync())
+            context.Roles.AddRange(Role.DefaultRoles.Select(r => new Role { Id = r.Id, Name = r.Name, Description = r.Description }));
 
         var admin = new User
         {

@@ -1,0 +1,13 @@
+# Data Protection keys must be shared by every API pod, otherwise one pod cannot decrypt what another wrote.
+# ReadWriteMany needs a shared file class; on AKS use the built-in Azure Files class.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: banner-keys
+  namespace: bannerai
+spec:
+  accessModes: ["ReadWriteMany"]
+  storageClassName: azurefile-csi
+  resources:
+    requests:
+      storage: 1Gi

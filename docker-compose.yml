@@ -1,0 +1,54 @@
+# Local stack: SQL Server + API + web app.
+#   cp .env.example .env   (set the passwords and the JWT secret)
+#   docker compose up --build
+# API http://localhost:5000 (Swagger at /swagger), web app http://localhost:3000
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SQL_SA_PASSWORD:?set SQL_SA_PASSWORD in .env}
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  api:
+    build:
+      context: ./src/BannerService
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=BannerServiceDb;User ID=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=true"
+      Jwt__SecretKey: ${JWT_SECRET_KEY:?set JWT_SECRET_KEY in .env (32+ characters)}
+      Cors__AllowedOrigins__0: http://localhost:3000
+      Security__RequireHttpsRedirect: "false"
+    ports:
+      - "5000:5000"
+    volumes:
+      - keys:/keys
+      - apilogs:/app/logs
+
+  web:
+    build:
+      context: ./src/BannerUI
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:5000/api
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:5000/api
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+
+volumes:
+  sqldata:
+  keys:
+  apilogs:

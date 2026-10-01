@@ -65,6 +65,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Country>(entity =>
         {
             entity.HasKey(e => e.ISOCode);
+            entity.Property(e => e.ISOCode).HasMaxLength(2);
             entity.Property(e => e.Name).HasMaxLength(128).IsRequired();
             entity.Property(e => e.RegionName).HasMaxLength(128);
             entity.Property(e => e.PhoneCode).HasMaxLength(10);
@@ -125,11 +126,11 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.OwnerIsApprover).HasDefaultValue(true);
             Json(entity.Property(e => e.ApproverUserIds));
 
-            // Hierarchy configuration
+            // Hierarchy configuration (NoAction: SQL Server rejects self-referencing SET NULL/CASCADE; shops are archived, not deleted)
             entity.HasOne(e => e.ParentShop)
                 .WithMany(e => e.ChildShops)
                 .HasForeignKey(e => e.ParentShopId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.NoAction);
 
             // Owner configuration: OwnerUserId is stored but no navigation to User (type mismatch: Guid vs string)
             entity.Ignore(e => e.Owner);
@@ -179,7 +180,9 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => new { e.ShopId, e.CreatedAt }).HasName("IX_Banners_ShopId_CreatedAt").IsDescending(false, true);
 
             // Navigation to components
-            entity.HasMany<Component>().WithOne().HasForeignKey(c => c.BannerId).OnDelete(DeleteBehavior.Cascade);
+            // Map the Components navigation itself; a separate nav-less relationship would add a second FK column
+            entity.HasMany(b => b.Components).WithOne().HasForeignKey(c => c.BannerId).OnDelete(DeleteBehavior.Cascade);
+            entity.Navigation(b => b.Components).UsePropertyAccessMode(PropertyAccessMode.Field);
         });
 
         // User configuration
@@ -430,10 +433,11 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.CarouselId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // NoAction: a second cascade path (Banner -> Components and Banner -> Carousels -> CarouselComponents) is rejected by SQL Server
             entity.HasOne<Component>()
                 .WithMany()
                 .HasForeignKey(e => e.ComponentId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
         ConfigurePublishAdvertisingAndDashboards(modelBuilder);
@@ -444,6 +448,21 @@ public class ApplicationDbContext : DbContext
     private static void ConfigureFieldEncryption(ModelBuilder modelBuilder)
     {
         var encrypted = new EncryptedStringConverter();
+
+        // Billing history is never removed by deleting a shop, subscription or plan (and SQL Server rejects the cascade paths)
+        modelBuilder.Entity<Invoice>(e =>
+        {
+            e.HasOne(i => i.Subscription).WithMany().HasForeignKey(i => i.SubscriptionId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(i => i.Shop).WithMany().HasForeignKey(i => i.ShopId).OnDelete(DeleteBehavior.NoAction);
+        });
+        modelBuilder.Entity<Subscription>(e =>
+        {
+            e.HasOne(x => x.Shop).WithMany().HasForeignKey(x => x.ShopId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(x => x.Plan).WithMany().HasForeignKey(x => x.PlanId).OnDelete(DeleteBehavior.NoAction);
+        });
+        modelBuilder.Entity<Invoice>().Property(e => e.Amount).HasPrecision(18, 2);
+        modelBuilder.Entity<Subscription>().Property(e => e.CurrentPrice).HasPrecision(18, 2);
+        modelBuilder.Entity<Subscription>().Property(e => e.PendingPrice).HasPrecision(18, 2);
 
         modelBuilder.Entity<User>().Property(e => e.PhoneNumber).HasConversion(encrypted);
         modelBuilder.Entity<Shop>().Property(e => e.PhoneNumber).HasConversion(encrypted);

@@ -35,7 +35,7 @@
 | 4.19-4.21 | Ad charges by locality/area/size, shop-level override, notify shops | **Gap** | No charge rule entity; no notification |
 | 5v-vi | No-code publish; same-day hour windows must not overlap | Done (bolt 017) | overlap validation |
 | 5viii | User / shop / banner management, reporting, HIPAA/PHI | Partial | admin user API and audit log done (bolt 024); UI pending |
-| Tech | Next.js, ASP.NET Core, JWT, MSSQL, Docker, K8s | **Partial** | All present except K8s manifests; Dockerfile exists |
+| Tech | Next.js, ASP.NET Core, JWT, MSSQL, Docker, K8s | Mostly done (bolt 025) | manifests and compose written; images, web build and cluster not verified |
 
 ## Bolt plan (priority order)
 

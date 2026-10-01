@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: banner-api-config
+  namespace: bannerai
+data:
+  ASPNETCORE_ENVIRONMENT: Production
+  # TLS ends at the ingress
+  Security__RequireHttpsRedirect: "false"
+  Security__KeyDirectory: /keys
+  # Migrations run in the banner-migrate Job, not in every pod
+  Database__MigrateOnStartup: "false"
+  # The web app and API share one host through the ingress, so no cross-origin access is needed.
+  # List origins here (Cors__AllowedOrigins__0, ...) only if they are served from different hosts.
+  Swagger__Enabled: "false"

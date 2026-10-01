@@ -117,10 +117,13 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policyBuilder =>
     {
-        policyBuilder
-            .AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader();
+        // Cors:AllowedOrigins lists the web app origins. When it is empty, development and test allow any
+        // origin; production allows none (same-origin through the ingress).
+        var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+        if (origins.Length > 0)
+            policyBuilder.WithOrigins(origins).AllowAnyMethod().AllowAnyHeader();
+        else if (!builder.Environment.IsProduction())
+            policyBuilder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
     });
 });
 
@@ -166,9 +169,13 @@ if (builder.Configuration.GetValue("Security:EncryptionEnabled", true))
     BannerService.Infrastructure.Security.FieldEncryption.Configure(
         app.Services.GetRequiredService<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>());
 
-// Apply database migrations and seed data
-using (var scope = app.Services.CreateScope())
+// Apply database migrations and seed data.
+//   dotnet BannerService.dll --migrate     applies them and exits (run as a Kubernetes Job / deployment step)
+//   Database:MigrateOnStartup=false        skips them at start-up (when a Job owns migrations)
+var migrateOnly = args.Contains("--migrate");
+if (migrateOnly || app.Configuration.GetValue("Database:MigrateOnStartup", true))
 {
+    using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     try
     {
@@ -182,14 +189,29 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         Log.Error(ex, "Error applying database migrations or seeding");
+
+        // Outside development a half-migrated API must not start serving: crash so the orchestrator restarts and alerts
+        if (migrateOnly || app.Environment.IsProduction())
+            throw;
     }
 }
 
-// Middleware pipeline
-app.UseSwagger();
-app.UseSwaggerUI();
+if (migrateOnly)
+{
+    Log.CloseAndFlush();
+    return;
+}
 
-app.UseHttpsRedirection();
+// Middleware pipeline
+if (!app.Environment.IsProduction() || app.Configuration.GetValue("Swagger:Enabled", false))
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+// Behind an ingress that terminates TLS, set Security:RequireHttpsRedirect=false
+if (app.Configuration.GetValue("Security:RequireHttpsRedirect", true))
+    app.UseHttpsRedirection();
 app.UseCors();
 
 // Custom middleware
