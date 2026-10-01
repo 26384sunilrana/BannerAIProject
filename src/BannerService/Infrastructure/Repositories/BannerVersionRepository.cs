@@ -38,6 +38,21 @@ public class BannerVersionRepository : IBannerVersionRepository
                 v.IsActive);
     }
 
+    public async Task<int> DeactivateOldVersionsAsync(Guid bannerId, Guid shopId, int keep)
+    {
+        var old = await _context.BannerVersions
+            .Where(v => v.BannerId == bannerId && v.ShopId == shopId && v.IsActive)
+            .OrderByDescending(v => v.VersionNumber)
+            .Skip(keep)
+            .ToListAsync();
+
+        foreach (var version in old)
+            version.IsActive = false;
+
+        await _context.SaveChangesAsync();
+        return old.Count;
+    }
+
     public async Task<int> GetNextVersionNumberAsync(Guid bannerId, Guid shopId)
     {
         var maxVersion = await _context.BannerVersions

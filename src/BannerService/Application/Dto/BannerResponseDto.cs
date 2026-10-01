@@ -11,6 +11,8 @@ public class BannerResponseDto
     public int Width { get; set; }
     public int Height { get; set; }
     public bool IsPublished { get; set; }
+    /// <summary>True after a restore: the banner must be approved again before it goes live.</summary>
+    public bool RequiresApproval { get; set; }
     public int ComponentCount { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

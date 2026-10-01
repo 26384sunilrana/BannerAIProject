@@ -10,7 +10,7 @@ public interface IVersionControlService
     Task<BannerVersion> CreateSnapshotAsync(Banner banner, string? changeDescription, Guid userId);
     Task<List<BannerVersionDto>> ListVersionsAsync(Guid bannerId, Guid shopId);
     Task<BannerVersionDetailDto?> GetVersionDetailAsync(Guid bannerId, int versionNumber, Guid shopId);
-    Task<Banner> RestoreVersionAsync(Guid bannerId, int versionNumber, Guid shopId, Guid userId);
+    Task<Banner> RestoreVersionAsync(Guid bannerId, int versionNumber, Guid shopId, Guid userId, string? userName = null);
 }
 
 public class VersionControlService : IVersionControlService
@@ -18,15 +18,21 @@ public class VersionControlService : IVersionControlService
     private readonly IBannerVersionRepository _versionRepository;
     private readonly IBannerRepository _bannerRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IPublishWorkflowRepository _workflowRepository;
+
+    /// <summary>A banner keeps its newest 10 versions.</summary>
+    public const int MaxVersions = 10;
 
     public VersionControlService(
         IBannerVersionRepository versionRepository,
         IBannerRepository bannerRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IPublishWorkflowRepository workflowRepository)
     {
         _versionRepository = versionRepository;
         _bannerRepository = bannerRepository;
         _unitOfWork = unitOfWork;
+        _workflowRepository = workflowRepository;
     }
 
     public async Task<BannerVersion> CreateSnapshotAsync(Banner banner, string? changeDescription, Guid userId)
@@ -40,7 +46,9 @@ public class VersionControlService : IVersionControlService
         var snapshot = new BannerSnapshot(banner);
         var version = new BannerVersion(banner.Id, banner.ShopId, versionNumber, snapshot, userId, changeDescription);
 
-        return await _versionRepository.SaveAsync(version);
+        var saved = await _versionRepository.SaveAsync(version);
+        await _versionRepository.DeactivateOldVersionsAsync(banner.Id, banner.ShopId, MaxVersions);
+        return saved;
     }
 
     public async Task<List<BannerVersionDto>> ListVersionsAsync(Guid bannerId, Guid shopId)
@@ -92,7 +100,24 @@ public class VersionControlService : IVersionControlService
         };
     }
 
-    public async Task<Banner> RestoreVersionAsync(Guid bannerId, int versionNumber, Guid shopId, Guid userId)
+    private async Task SubmitRestoreForApprovalAsync(Banner banner, int versionNumber, Guid userId, string userName)
+    {
+        var reason = $"Restored to version {versionNumber}";
+        var workflow = await _workflowRepository.GetByBannerIdAsync(banner.Id);
+
+        if (workflow == null)
+        {
+            workflow = new PublishWorkflow { BannerId = banner.Id, ShopId = banner.ShopId, SubmittedByUserId = userId };
+            workflow.SubmitForApproval(userId, userName);
+            await _workflowRepository.CreateAsync(workflow);
+            return;
+        }
+
+        workflow.ResubmitForApproval(userId, userName, reason);
+        await _workflowRepository.UpdateAsync(workflow);
+    }
+
+    public async Task<Banner> RestoreVersionAsync(Guid bannerId, int versionNumber, Guid shopId, Guid userId, string? userName = null)
     {
         if (versionNumber <= 0)
             throw new ArgumentException("Version number must be greater than 0");
@@ -104,6 +129,17 @@ public class VersionControlService : IVersionControlService
         var banner = await _bannerRepository.GetByIdAsync(bannerId, shopId);
         if (banner == null)
             throw new KeyNotFoundException($"Banner {bannerId} not found");
+
+        // Keep the current state as a version before overwriting it, so the latest is never lost
+        var latest = (await _versionRepository.GetVersionsAsync(bannerId, shopId)).FirstOrDefault();
+        if (latest != null && !latest.Snapshot.ContentEquals(new BannerSnapshot(banner)))
+        {
+            await _versionRepository.SaveAsync(new BannerVersion(
+                bannerId, shopId,
+                await _versionRepository.GetNextVersionNumberAsync(bannerId, shopId),
+                new BannerSnapshot(banner), userId,
+                $"Before restoring version {versionNumber}"));
+        }
 
         // Remove all current components
         foreach (var component in banner.Components.ToList())
@@ -133,9 +169,15 @@ public class VersionControlService : IVersionControlService
             snapshot, userId,
             $"Restored to version {versionNumber}");
 
+        // A restored version is treated like a new banner: it is taken off air and must be approved again
+        banner.Unpublish();
+
         await _bannerRepository.UpdateAsync(banner);
         await _versionRepository.SaveAsync(restorationVersion);
+        await _versionRepository.DeactivateOldVersionsAsync(bannerId, shopId, MaxVersions);
         await _unitOfWork.CommitAsync();
+
+        await SubmitRestoreForApprovalAsync(banner, versionNumber, userId, userName ?? "user");
 
         return banner;
     }

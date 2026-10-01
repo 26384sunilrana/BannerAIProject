@@ -10,6 +10,8 @@ public class PublishWorkflowApproverTests
 {
     private readonly Mock<IPublishWorkflowRepository> _workflows = new();
     private readonly Mock<IShopRepository> _shops = new();
+    private readonly Mock<IBannerRepository> _banners = new();
+    private readonly Mock<IVersionControlService> _versionControl = new();
     private readonly PublishWorkflowService _service;
 
     private readonly Guid _ownerId = Guid.NewGuid();
@@ -26,7 +28,7 @@ public class PublishWorkflowApproverTests
         _workflows.Setup(r => r.GetByIdAsync(_workflow.Id)).ReturnsAsync(_workflow);
         _workflows.Setup(r => r.UpdateAsync(It.IsAny<PublishWorkflow>())).ReturnsAsync((PublishWorkflow w) => w);
 
-        _service = new PublishWorkflowService(_workflows.Object, _shops.Object);
+        _service = new PublishWorkflowService(_workflows.Object, _shops.Object, _banners.Object, _versionControl.Object);
     }
 
     [Fact]
@@ -66,5 +68,18 @@ public class PublishWorkflowApproverTests
     public async Task Reject_ByNonApprover_IsForbidden()
     {
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.RejectAsync(_workflow.Id, _executiveId, "Exec", "no"));
+    }
+
+    [Fact]
+    public async Task Submit_RecordsTheBannerAsAVersion()
+    {
+        var banner = new Banner(_shop.Id, _ownerId, "Sale", "d", 100, 100);
+        _workflow.Status = PublishStatus.Draft;
+        _banners.Setup(r => r.GetByIdAsync(_workflow.BannerId, _shop.Id)).ReturnsAsync(banner);
+
+        var result = await _service.SubmitForApprovalAsync(_workflow.Id, _ownerId, "Owner");
+
+        Assert.Equal(PublishStatus.PendingApproval, result.Status);
+        _versionControl.Verify(v => v.CreateSnapshotAsync(banner, "Submitted for approval", _ownerId), Times.Once);
     }
 }

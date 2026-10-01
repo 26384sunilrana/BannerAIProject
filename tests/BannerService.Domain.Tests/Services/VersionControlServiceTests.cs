@@ -12,6 +12,7 @@ public class VersionControlServiceTests
     private readonly Mock<IBannerVersionRepository> _mockVersionRepository = new();
     private readonly Mock<IBannerRepository> _mockBannerRepository = new();
     private readonly Mock<IUnitOfWork> _mockUnitOfWork = new();
+    private readonly Mock<IPublishWorkflowRepository> _mockWorkflowRepository = new();
     private readonly VersionControlService _service;
 
     private readonly Guid _shopId = Guid.NewGuid();
@@ -22,7 +23,8 @@ public class VersionControlServiceTests
         _service = new VersionControlService(
             _mockVersionRepository.Object,
             _mockBannerRepository.Object,
-            _mockUnitOfWork.Object);
+            _mockUnitOfWork.Object,
+            _mockWorkflowRepository.Object);
     }
 
     [Fact]

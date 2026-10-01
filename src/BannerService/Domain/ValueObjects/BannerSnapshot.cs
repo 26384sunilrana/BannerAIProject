@@ -13,6 +13,26 @@ public class BannerSnapshot
 
     public BannerSnapshot() { }
 
+    public bool ContentEquals(BannerSnapshot? other)
+    {
+        if (other == null || Name != other.Name || Description != other.Description ||
+            Width != other.Width || Height != other.Height || Components.Count != other.Components.Count)
+            return false;
+
+        var mine = Components.OrderBy(c => c.ZIndex).ToList();
+        var theirs = other.Components.OrderBy(c => c.ZIndex).ToList();
+        for (var i = 0; i < mine.Count; i++)
+        {
+            var a = mine[i];
+            var b = theirs[i];
+            if (a.ComponentType != b.ComponentType || a.PositionX != b.PositionX || a.PositionY != b.PositionY ||
+                a.SizeWidth != b.SizeWidth || a.SizeHeight != b.SizeHeight || a.ZIndex != b.ZIndex ||
+                a.PropertiesJson != b.PropertiesJson)
+                return false;
+        }
+        return true;
+    }
+
     public BannerSnapshot(Banner banner)
     {
         if (banner == null)

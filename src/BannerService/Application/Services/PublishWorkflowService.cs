@@ -8,11 +8,19 @@ namespace BannerService.Application.Services
     {
         private readonly IPublishWorkflowRepository _repository;
         private readonly IShopRepository _shopRepository;
+        private readonly IBannerRepository _bannerRepository;
+        private readonly IVersionControlService _versionControl;
 
-        public PublishWorkflowService(IPublishWorkflowRepository repository, IShopRepository shopRepository)
+        public PublishWorkflowService(
+            IPublishWorkflowRepository repository,
+            IShopRepository shopRepository,
+            IBannerRepository bannerRepository,
+            IVersionControlService versionControl)
         {
             _repository = repository;
             _shopRepository = shopRepository;
+            _bannerRepository = bannerRepository;
+            _versionControl = versionControl;
         }
 
         private async Task EnsureCanApproveAsync(Guid shopId, Guid reviewerId)
@@ -42,6 +50,11 @@ namespace BannerService.Application.Services
             var workflow = await _repository.GetByIdAsync(workflowId);
             if (workflow == null)
                 throw new KeyNotFoundException($"Workflow {workflowId} not found");
+
+            // Record the banner as submitted so an older version can be brought back later
+            var banner = await _bannerRepository.GetByIdAsync(workflow.BannerId, workflow.ShopId)
+                ?? throw new KeyNotFoundException($"Banner {workflow.BannerId} not found");
+            await _versionControl.CreateSnapshotAsync(banner, "Submitted for approval", userId);
 
             workflow.SubmitForApproval(userId, userName);
             return await _repository.UpdateAsync(workflow);

@@ -95,8 +95,10 @@ public class VersionControlController : ControllerBase
 
             var shopId = GetShopId();
             var userId = GetUserId();
-            var banner = await _versionControlService.RestoreVersionAsync(bannerId, versionNumber, shopId, userId);
-            return Ok(BannerResponseDto.FromBanner(banner));
+            var banner = await _versionControlService.RestoreVersionAsync(bannerId, versionNumber, shopId, userId, User.GetUserName());
+            var dto = BannerResponseDto.FromBanner(banner);
+            dto.RequiresApproval = true;
+            return Ok(dto);
         }
         catch (UnauthorizedAccessException ex)
         {
