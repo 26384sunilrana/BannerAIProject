@@ -40,6 +40,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Carousel> Carousels { get; set; } = null!;
     public DbSet<CarouselComponent> CarouselComponents { get; set; } = null!;
 
+    public DbSet<AuditLog> AuditLogs { get; set; } = null!;
+
     // Publish workflow, advertising and dashboards
     public DbSet<PublishWorkflow> PublishWorkflows { get; set; } = null!;
     public DbSet<ApprovalRequest> ApprovalRequests { get; set; } = null!;
@@ -437,6 +439,19 @@ public class ApplicationDbContext : DbContext
     // Complex values (value objects, lists, dictionaries) are stored as JSON columns.
     private static void ConfigurePublishAdvertisingAndDashboards(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<AuditLog>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Method).HasMaxLength(10).IsRequired();
+            e.Property(x => x.Path).HasMaxLength(512).IsRequired();
+            e.Property(x => x.UserId).HasMaxLength(64);
+            e.Property(x => x.UserEmail).HasMaxLength(256);
+            e.Property(x => x.IpAddress).HasMaxLength(64);
+            e.HasIndex(x => x.OccurredAt);
+            e.HasIndex(x => new { x.UserId, x.OccurredAt });
+            e.HasIndex(x => new { x.ShopId, x.OccurredAt });
+        });
+
         modelBuilder.Entity<PublishWorkflow>(e =>
         {
             e.HasKey(x => x.Id);

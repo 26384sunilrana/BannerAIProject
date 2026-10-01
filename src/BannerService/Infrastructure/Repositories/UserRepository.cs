@@ -102,6 +102,35 @@ namespace BannerService.Infrastructure.Repositories
             return await _context.Users.CountAsync(u => u.ShopId == shopId && u.IsActive);
         }
 
+        public async Task<(List<User> items, int total)> GetPagedAsync(
+            string? search, string? shopId, bool includeInactive, int page, int pageSize)
+        {
+            var query = _context.Users.AsQueryable();
+
+            if (!includeInactive)
+                query = query.Where(u => u.IsActive);
+            if (!string.IsNullOrWhiteSpace(shopId))
+                query = query.Where(u => u.ShopId == shopId);
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(u => u.Email.ToLower().Contains(term) ||
+                                         u.FirstName.ToLower().Contains(term) ||
+                                         u.LastName.ToLower().Contains(term));
+            }
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderBy(u => u.Email)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .ToListAsync();
+
+            return (items, total);
+        }
+
         public async Task<List<User>> SearchAsync(string searchTerm, string shopId)
         {
             var term = searchTerm.ToLower();

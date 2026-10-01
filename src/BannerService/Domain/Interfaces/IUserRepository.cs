@@ -15,6 +15,7 @@ namespace BannerService.Domain.Interfaces
         Task<bool> DeleteAsync(string userId);
         Task<bool> ExistsAsync(string email);
         Task<int> GetCountByShopAsync(string shopId);
+        Task<(List<User> items, int total)> GetPagedAsync(string? search, string? shopId, bool includeInactive, int page, int pageSize);
         Task<List<User>> SearchAsync(string searchTerm, string shopId);
     }
 }

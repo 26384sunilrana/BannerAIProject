@@ -97,6 +97,8 @@ builder.Services.AddScoped<BannerService.Domain.Services.LayerManagementService>
 builder.Services.AddScoped<BannerService.Domain.Services.BannerScheduleService>();
 builder.Services.AddScoped<BannerService.Application.Services.BannerScheduleAppService>();
 builder.Services.AddScoped<BannerService.Application.Services.ShopTeamService>();
+builder.Services.AddScoped<BannerService.Application.Services.UserAdminService>();
+builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<IVersionControlService, VersionControlService>();
 builder.Services.AddScoped<IEffectService, EffectService>();
 builder.Services.AddScoped<IMediaUploadService, MediaUploadService>();
@@ -174,6 +176,7 @@ app.UseCors();
 
 // Custom middleware
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+app.UseMiddleware<AuditLoggingMiddleware>();
 
 // Authentication must run before ShopContextMiddleware, which reads the validated token's claims
 app.UseAuthentication();
