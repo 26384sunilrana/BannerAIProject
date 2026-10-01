@@ -71,17 +71,13 @@ namespace BannerService.Application.Tests.Authentication
         }
 
         [Fact]
-        public void VerifyPassword_WithEmptyPassword_ReturnsFalse()
+        public void VerifyPassword_WithEmptyPassword_ThrowsArgumentException()
         {
             // Arrange
-            var password = "SecurePassword123!";
-            var hash = _service.HashPassword(password);
+            var hash = _service.HashPassword("SecurePassword123!");
 
-            // Act
-            var isValid = _service.VerifyPassword(string.Empty, hash);
-
-            // Assert
-            Assert.False(isValid);
+            // Act & Assert
+            Assert.Throws<ArgumentException>(() => _service.VerifyPassword(string.Empty, hash));
         }
 
         [Fact]

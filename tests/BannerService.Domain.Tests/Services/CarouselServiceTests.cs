@@ -77,10 +77,14 @@ public class CarouselServiceTests
     [Fact]
     public async Task CreateCarouselAsync_WithInvalidIntervalMs_ShouldThrow()
     {
+        // Arrange
+        var banner = new Banner(_shopId, _userId, "Test", "Desc", 1200, 600);
+        _mockBannerRepository.Setup(r => r.GetByIdAsync(banner.Id, _shopId)).ReturnsAsync(banner);
+
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
             () => _service.CreateCarouselAsync(
-                Guid.NewGuid(), _shopId, 999, 1000, 1, new List<Guid> { Guid.NewGuid(), Guid.NewGuid() }));
+                banner.Id, _shopId, 999, 1000, 1, new List<Guid> { Guid.NewGuid(), Guid.NewGuid() }));
     }
 
     [Fact]
@@ -146,7 +150,7 @@ public class CarouselServiceTests
         banner.AddComponent(image1);
         banner.AddComponent(image2);
 
-        var oldCarousel = new Carousel(banner.Id, 5000, 1000, 1, new List<Guid> { image1.Id });
+        var oldCarousel = new Carousel(banner.Id, 5000, 1000, 1, new List<Guid> { image1.Id, image2.Id });
         var newComponentIds = new List<Guid> { image1.Id, image2.Id };
 
         _mockCarouselRepository.Setup(r => r.GetByIdAsync(oldCarousel.Id, _shopId))

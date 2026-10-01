@@ -66,6 +66,7 @@ public class RefreshTokenRepositoryTests : IAsyncLifetime
             CreatedAt = DateTime.UtcNow.AddDays(-8)
         };
 
+        _context.Users.Add(new User { Id = _testUserId, Email = "token.user@example.com", FirstName = "Token", LastName = "User" });
         _context.RefreshTokens.AddRange(token1, token2, expiredToken);
 
         await _context.SaveChangesAsync();

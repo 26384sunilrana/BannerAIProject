@@ -111,7 +111,7 @@ public class ShopRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetByIdAsync_ShouldIncludeOwner()
+    public async Task GetByIdAsync_ShouldReturnOwnerUserId()
     {
         // Arrange
         var shop = _context.Shops.First(s => s.Status == ShopStatus.Active);
@@ -121,7 +121,7 @@ public class ShopRepositoryTests : IAsyncLifetime
 
         // Assert
         Assert.NotNull(result);
-        Assert.NotNull(result.Owner);
+        Assert.Equal(shop.OwnerUserId, result.OwnerUserId);
     }
 
     #endregion

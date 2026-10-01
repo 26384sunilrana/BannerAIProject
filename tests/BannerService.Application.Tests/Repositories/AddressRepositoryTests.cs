@@ -15,7 +15,7 @@ public class AddressRepositoryTests : IAsyncLifetime
     private ApplicationDbContext _dbContext;
     private AddressRepository _repository;
 
-    public async ValueTask InitializeAsync()
+    public async Task InitializeAsync()
     {
         // Create InMemory database
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -31,7 +31,7 @@ public class AddressRepositoryTests : IAsyncLifetime
         await SeedTestData();
     }
 
-    public async ValueTask DisposeAsync()
+    public async Task DisposeAsync()
     {
         await _dbContext.DisposeAsync();
     }

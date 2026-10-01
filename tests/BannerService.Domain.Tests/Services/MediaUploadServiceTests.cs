@@ -193,7 +193,7 @@ public class MediaUploadServiceTests
     }
 
     [Fact]
-    public async Task GetMediaUrlAsync_WithExcessiveExpiration_ShouldBeCapped()
+    public async Task GetMediaUrlAsync_WithExcessiveExpiration_ShouldThrow()
     {
         // Arrange
         var mediaFile = new MediaFile(_shopId, "video.mp4", "video/mp4", 104857600, 2, _userId);
@@ -202,12 +202,8 @@ public class MediaUploadServiceTests
         _mockMediaFileRepository.Setup(r => r.GetByIdAsync(mediaFile.Id, _shopId))
             .ReturnsAsync(mediaFile);
 
-        // Act - Request 60 days but should be capped at 30
-        var result = await _service.GetMediaUrlAsync(mediaFile.Id, _shopId, 43200 + 10000);
-
-        // Assert
-        Assert.NotNull(result.ExpiresAt);
-        var minutesDiff = (result.ExpiresAt.Value - DateTime.UtcNow).TotalMinutes;
-        Assert.True(minutesDiff <= 43201 && minutesDiff >= 43199);  // Within 1 minute of 30 days
+        // Act & Assert - more than 30 days is rejected
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => _service.GetMediaUrlAsync(mediaFile.Id, _shopId, 43200 + 10000));
     }
 }

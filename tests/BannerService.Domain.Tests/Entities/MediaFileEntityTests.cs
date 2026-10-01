@@ -126,7 +126,7 @@ public class MediaFileEntityTests
     #region File Type Tests
 
     [Fact]
-    public void FileType_ShouldStoreMultimedia Types()
+    public void FileType_ShouldStoreMultimediaTypes()
     {
         // Arrange & Act
         var imageFile = new MediaFile

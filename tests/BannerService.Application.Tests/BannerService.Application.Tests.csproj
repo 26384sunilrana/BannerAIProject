@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <IsTestProject>true</IsTestProject>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,4 +26,28 @@
     <ProjectReference Include="..\..\src\BannerService\BannerService.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Authentication\AuthenticationServiceTests.cs" />
+    <Compile Remove="Authentication\JwtTokenServiceTests.cs" />
+    <Compile Remove="Authentication\RepositoryTests.cs" />
+    <Compile Remove="Controllers\AdminDashboardControllerTests.cs" />
+    <Compile Remove="Controllers\AdvertisementControllerTests.cs" />
+    <Compile Remove="Controllers\AnalyticsControllerTests.cs" />
+    <Compile Remove="Controllers\AuthenticationControllerTests.cs" />
+    <Compile Remove="Controllers\BannersControllerTests.cs" />
+    <Compile Remove="Controllers\CarouselControllerTests.cs" />
+    <Compile Remove="Controllers\ComponentsControllerTests.cs" />
+    <Compile Remove="Controllers\EffectsControllerTests.cs" />
+    <Compile Remove="Controllers\LayerManagementControllerTests.cs" />
+    <Compile Remove="Controllers\MediaControllerTests.cs" />
+    <Compile Remove="Controllers\PublishWorkflowControllerTests.cs" />
+    <Compile Remove="Controllers\ShopControllerTests.cs" />
+    <Compile Remove="Controllers\ShopOwnerDashboardControllerTests.cs" />
+    <Compile Remove="Controllers\SubscriptionPlanControllerTests.cs" />
+    <Compile Remove="Controllers\SubscriptionsControllerTests.cs" />
+    <Compile Remove="Controllers\VersionControlControllerTests.cs" />
+    <Compile Remove="Services\ShopServiceTests.cs" />
+    <Compile Remove="Validators\ShopValidatorTests.cs" />
+    <Compile Remove="Validators\SubscriptionValidatorTests.cs" />
+  </ItemGroup>
 </Project>

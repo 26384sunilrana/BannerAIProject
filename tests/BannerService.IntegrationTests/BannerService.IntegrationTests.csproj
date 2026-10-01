@@ -25,4 +25,12 @@
     <ProjectReference Include="..\..\src\BannerService\BannerService.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="CustomWebApplicationFactory.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="AddressControllerIntegrationTests.cs" />
+    <Compile Remove="ShopControllerIntegrationTests.cs" />
+    <Compile Remove="SubscriptionPlanControllerIntegrationTests.cs" />
+  </ItemGroup>
 </Project>

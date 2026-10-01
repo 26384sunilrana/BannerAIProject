@@ -249,7 +249,7 @@ public class ComponentRepositoryTests : IAsyncLifetime
         var component = _context.Components.First(c => c.BannerId == _bannerId);
 
         // Act
-        var result = await _repository.ExistsByZIndexAsync(_otherBannerId, component.ZIndex);
+        var result = await _repository.ExistsByZIndexAsync(Guid.NewGuid(), component.ZIndex);
 
         // Assert
         Assert.False(result);

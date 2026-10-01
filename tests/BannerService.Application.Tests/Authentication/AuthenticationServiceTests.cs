@@ -1,4 +1,4 @@
-using BannerService.Application.DTOs.Authentication;
+using BannerService.Application.DTOs;
 using BannerService.Application.Services;
 using BannerService.Domain.Entities;
 using BannerService.Domain.Interfaces;

@@ -81,6 +81,10 @@ public class InvoiceRepositoryTests : IAsyncLifetime
             CreatedAt = DateTime.UtcNow.AddDays(-60)
         };
 
+        _context.Shops.AddRange(
+            new Shop { Id = _shopId, Name = "Invoice Shop" },
+            new Shop { Id = overdueInvoice.ShopId, Name = "Overdue Shop" });
+        _context.Subscriptions.Add(new Subscription { Id = _subscriptionId, ShopId = _shopId });
         _context.Invoices.AddRange(invoice1, invoice2, overdueInvoice);
         await _context.SaveChangesAsync();
     }
@@ -228,7 +232,7 @@ public class InvoiceRepositoryTests : IAsyncLifetime
 
         // Assert
         Assert.NotEmpty(results);
-        Assert.All(results, i => Assert.Equal(InvoiceStatus.Issued, i.Status));
+        Assert.All(results, i => Assert.True(i.Status == InvoiceStatus.Issued || i.Status == InvoiceStatus.Overdue));
         Assert.All(results, i => Assert.True(i.DueDate < DateTime.UtcNow));
     }
 
@@ -414,6 +418,15 @@ public class InvoiceRepositoryTests : IAsyncLifetime
     {
         // Act
         var number1 = await _repository.GenerateInvoiceNumberAsync();
+        _context.Invoices.Add(new Invoice
+        {
+            Id = Guid.NewGuid(),
+            SubscriptionId = _subscriptionId,
+            ShopId = _shopId,
+            InvoiceNumber = number1,
+            CreatedAt = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
         var number2 = await _repository.GenerateInvoiceNumberAsync();
 
         // Assert

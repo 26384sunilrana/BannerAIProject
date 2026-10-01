@@ -24,8 +24,8 @@ public class InvoicesControllerTests
 
     public InvoicesControllerTests()
     {
-        _mockBillingService = new Mock<BillingService>(null, null, null, null);
-        _mockRenewalService = new Mock<RenewalService>(null, null, null, null);
+        _mockBillingService = new Mock<BillingService>(null, null, null);
+        _mockRenewalService = new Mock<RenewalService>(null, null, null);
         _mockLogger = new Mock<ILogger<InvoicesController>>();
         _testInvoiceId = Guid.NewGuid();
         _testShopId = Guid.NewGuid();
