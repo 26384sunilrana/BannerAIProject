@@ -67,6 +67,8 @@
   border-radius: 2px;
   cursor: pointer;
   opacity: 0.8;
+  /* the selection box ignores the pointer, and that is inherited, so the handles opt back in */
+  pointer-events: auto;
   transition: opacity 0.2s ease;
 }
 

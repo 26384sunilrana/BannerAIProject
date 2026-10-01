@@ -1,40 +1,62 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { EditorProvider } from '@/context/EditorContext'
 import { useEditor } from '@/hooks/useEditor'
 import { useSave } from '@/hooks/useSave'
 import { useToast } from '@/hooks/useToast'
 import { bannerService } from '@/api/bannerService'
+import { layerService } from '@/api/layerService'
+import { nextFreeZIndex } from '@/api/bannerMapper'
+import { getErrorMessage } from '@/api/client'
+import { RequireAuth } from '@/components/auth/RequireAuth'
+import { Roles } from '@/lib/session'
 import { Header, Toolbar, Canvas, PropertyPanel, Toast } from '@/components'
+import { ComponentType } from '@/types/banner'
+
+/** Properties that belong to a component's content rather than to the component itself. */
+const CONTENT_PROPERTIES = new Set([
+  'content', 'fontSize', 'fontFamily', 'fontWeight', 'color', 'textAlign', 'lineHeight',
+  'mediaFileId', 'mediaUrl', 'alt', 'objectFit',
+  'poster', 'autoPlay', 'loop', 'muted',
+  'shapeType', 'fillColor', 'strokeColor', 'strokeWidth',
+])
 
 function EditorContent() {
   const { bannerId } = useParams()
-  const { state, setBanner, setError, selectComponent, addComponent, updateComponent, deleteComponent } = useEditor()
-  const save = useSave(typeof bannerId === 'string' ? bannerId : '', state.components, state.banner)
+  const id = typeof bannerId === 'string' ? bannerId : ''
+  const { state, setBanner, setError, setPreviewMode, selectComponent, addComponent, updateComponent, deleteComponent } = useEditor()
+  const save = useSave(id, state.components, state.banner)
   const toast = useToast()
 
+  // The toast helpers change on every render; keep the latest in a ref so loading runs once per banner.
+  const toastRef = useRef(toast)
+  toastRef.current = toast
+
+  const load = useCallback(async () => {
+    const banner = await bannerService.getBanner(id)
+    setBanner(banner)
+    return banner
+  }, [id, setBanner])
+
   useEffect(() => {
-    async function loadBanner() {
-      try {
-        if (typeof bannerId === 'string') {
-          const banner = await bannerService.getBanner(bannerId)
-          setBanner(banner)
-          toast.success('Banner loaded')
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to load banner'
-        setError(message)
-        toast.error(message)
-      }
-    }
+    if (!id) return
+    load().catch((error) => {
+      const message = getErrorMessage(error, 'Failed to load banner')
+      setError(message)
+      toastRef.current.error(message)
+    })
+  }, [id, load, setError])
 
-    loadBanner()
-  }, [bannerId, setBanner, setError, toast])
-
-  const handleAddComponent = async (type: any) => {
+  const handleAddComponent = async (type: ComponentType) => {
     if (!state.banner) return
+
+    const zIndex = nextFreeZIndex(state.components.map((c) => c.zIndex))
+    if (zIndex === null) {
+      toast.error('This banner has no free layer left.')
+      return
+    }
 
     try {
       const newComponent = await bannerService.addComponent(state.banner.id, {
@@ -43,22 +65,20 @@ function EditorContent() {
         y: 50,
         width: 200,
         height: 100,
-        zIndex: state.components.length,
+        zIndex,
         data: getDefaultDataForType(type),
       })
 
       addComponent(newComponent)
       selectComponent(newComponent.id)
-      save.markDirty()
       toast.success(`${type} component added`)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to add component'
-      toast.error(message)
+      toast.error(getErrorMessage(error, 'Failed to add component'))
     }
   }
 
   const handleComponentMove = async (componentId: string, x: number, y: number) => {
-    updateComponent(componentId, { x, y })
+    updateComponent(componentId, { x: Math.max(0, x), y: Math.max(0, y) })
     save.markDirty()
   }
 
@@ -67,9 +87,30 @@ function EditorContent() {
     save.markDirty()
   }
 
-  const handlePropertyChange = (property: string, value: any) => {
-    if (!state.selectedComponentId) return
-    updateComponent(state.selectedComponentId, { [property]: value })
+  const handlePropertyChange = async (property: string, value: any) => {
+    const selected = state.components.find((c) => c.id === state.selectedComponentId)
+    if (!selected) return
+
+    // Layers are changed by the server, which swaps with any component already on that layer
+    if (property === 'zIndex') {
+      const newZIndex = Math.round(Number(value))
+      if (!Number.isFinite(newZIndex) || newZIndex < 0 || newZIndex > 100 || newZIndex === selected.zIndex) return
+      try {
+        await save.save() // pending edits are saved first so reloading the banner cannot lose them
+        await layerService.reorderComponent(id, selected.id, newZIndex)
+        await load()
+        selectComponent(selected.id)
+      } catch (error) {
+        toast.error(error instanceof Error && !(error as any).response ? error.message : getErrorMessage(error, 'Could not change the layer'))
+      }
+      return
+    }
+
+    if (CONTENT_PROPERTIES.has(property)) {
+      updateComponent(selected.id, { data: { ...(selected.data as object), [property]: value } as typeof selected.data })
+    } else {
+      updateComponent(selected.id, { [property]: value })
+    }
     save.markDirty()
   }
 
@@ -80,25 +121,22 @@ function EditorContent() {
       await bannerService.deleteComponent(state.banner.id, state.selectedComponentId)
       deleteComponent(state.selectedComponentId)
       selectComponent(null)
-      save.markDirty()
       toast.success('Component deleted')
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to delete component'
-      toast.error(message)
+      toast.error(getErrorMessage(error, 'Failed to delete component'))
     }
   }
 
   const handleSave = async () => {
     try {
       await save.save()
-      toast.success('Banner saved successfully')
+      toast.success('Banner saved')
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to save banner'
-      toast.error(message)
+      toast.error(error instanceof Error ? error.message : 'Failed to save banner')
     }
   }
 
-  if (state.isLoading) {
+  if (state.isLoading && !state.error) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
@@ -113,7 +151,7 @@ function EditorContent() {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <p className="text-red-600 mb-4">Error: {state.error}</p>
+          <p role="alert" className="text-red-600 mb-4">Error: {state.error}</p>
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -130,11 +168,13 @@ function EditorContent() {
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       <Header
-        bannerId={typeof bannerId === 'string' ? bannerId : 'unknown'}
+        bannerId={id || 'unknown'}
+        bannerName={state.banner?.title}
+        backHref="/banners"
         onSave={handleSave}
         onUndo={() => {}}
         onRedo={() => {}}
-        onTogglePreview={() => {}}
+        onTogglePreview={() => setPreviewMode(!state.isPreviewMode)}
         isSaving={save.isSaving}
         isDirty={save.isDirty}
         canUndo={false}
@@ -199,9 +239,7 @@ function getDefaultDataForType(type: string) {
         poster: '',
         autoPlay: false,
         loop: false,
-        muted: false,
-        duration: 0,
-        resolution: '1080p',
+        muted: true,
       }
     case 'graphics':
       return {
@@ -217,8 +255,10 @@ function getDefaultDataForType(type: string) {
 
 export default function EditorPage() {
   return (
-    <EditorProvider>
-      <EditorContent />
-    </EditorProvider>
+    <RequireAuth roles={[Roles.ShopOwner, Roles.SalesExecutive]}>
+      <EditorProvider>
+        <EditorContent />
+      </EditorProvider>
+    </RequireAuth>
   )
 }

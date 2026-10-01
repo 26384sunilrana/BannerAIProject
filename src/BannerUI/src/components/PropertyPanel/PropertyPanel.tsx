@@ -206,6 +206,65 @@ export function PropertyPanel({
           </div>
         )}
 
+        {selectedComponent.type === 'image' && (
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-gray-700">Image</h4>
+
+            <Input
+              label="Image address (URL)"
+              type="url"
+              placeholder="https://..."
+              value={(selectedComponent.data as any).mediaUrl ?? ''}
+              onChange={(e) => handlePropertyChange('mediaUrl', e.target.value)}
+            />
+
+            <Input
+              label="Description (alt text)"
+              value={(selectedComponent.data as any).alt ?? ''}
+              onChange={(e) => handlePropertyChange('alt', e.target.value)}
+            />
+
+            <Select
+              label="Fit"
+              value={(selectedComponent.data as any).objectFit ?? 'cover'}
+              onChange={(e) => handlePropertyChange('objectFit', e.target.value)}
+              options={[
+                { value: 'cover', label: 'Cover' },
+                { value: 'contain', label: 'Contain' },
+                { value: 'fill', label: 'Stretch' },
+              ]}
+            />
+          </div>
+        )}
+
+        {selectedComponent.type === 'video' && (
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-gray-700">Video</h4>
+
+            <Input
+              label="Video address (URL)"
+              type="url"
+              placeholder="https://..."
+              value={(selectedComponent.data as any).mediaUrl ?? ''}
+              onChange={(e) => handlePropertyChange('mediaUrl', e.target.value)}
+            />
+
+            {(['muted', 'loop', 'autoPlay'] as const).map((flag) => (
+              <label key={flag} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean((selectedComponent.data as any)[flag])}
+                  onChange={(e) => handlePropertyChange(flag, e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm text-gray-700">
+                  {flag === 'autoPlay' ? 'Play automatically' : flag === 'loop' ? 'Repeat' : 'Muted'}
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+
         {selectedComponent.type === 'graphics' && (
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-700">Shape</h4>

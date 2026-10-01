@@ -63,12 +63,58 @@ public class BannerRepository : IBannerRepository
             .ToListAsync();
     }
 
+    public async Task SaveLayerChangesAsync(Banner banner)
+    {
+        if (banner.ShopId != _shopContext.ShopId)
+            throw new UnauthorizedAccessException("Cannot update banner from different shop");
+
+        _context.ChangeTracker.DetectChanges();
+        var moved = _context.ChangeTracker.Entries<Component>()
+            .Where(e => e.State == EntityState.Modified && e.Property(c => c.ZIndex).IsModified)
+            .Select(e => (component: e.Entity, target: e.Entity.ZIndex))
+            .ToList();
+
+        if (moved.Count < 2 || !_context.Database.IsRelational())
+        {
+            await _context.SaveChangesAsync();
+            return;
+        }
+
+        // Two components trading layers would each collide with the other's old layer. Park every moving component
+        // on its own negative layer first, then move them to their targets, all in one transaction.
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        for (var i = 0; i < moved.Count; i++)
+            moved[i].component.ZIndex = -(i + 1);
+        await _context.SaveChangesAsync();
+
+        foreach (var (component, target) in moved)
+            component.ZIndex = target;
+        await _context.SaveChangesAsync();
+
+        await transaction.CommitAsync();
+    }
+
     public async Task<Banner> UpdateAsync(Banner banner)
     {
         if (banner.ShopId != _shopContext.ShopId)
             throw new UnauthorizedAccessException("Cannot update banner from different shop");
 
-        _context.Banners.Update(banner);
+        if (_context.Entry(banner).State == EntityState.Detached)
+            _context.Banners.Update(banner);
+
+        // Component ids are assigned when the component is created, so EF cannot tell a new component from an
+        // existing one and would UPDATE a row that does not exist. Components missing from the database are inserted.
+        var persisted = (await _context.Components
+                .AsNoTracking()
+                .Where(c => c.BannerId == banner.Id)
+                .Select(c => c.Id)
+                .ToListAsync())
+            .ToHashSet();
+
+        foreach (var component in banner.Components.Where(c => !persisted.Contains(c.Id)))
+            _context.Entry(component).State = EntityState.Added;
+
         await _context.SaveChangesAsync();
         return banner;
     }

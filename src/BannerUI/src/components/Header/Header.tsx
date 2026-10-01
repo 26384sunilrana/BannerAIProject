@@ -5,6 +5,9 @@ import { Button } from '@/components/Common'
 
 export interface HeaderProps {
   bannerId: string
+  bannerName?: string
+  /** Where the back link goes; omitted when there is nowhere to go back to. */
+  backHref?: string
   onSave: () => Promise<void>
   onUndo: () => void
   onRedo: () => void
@@ -18,6 +21,8 @@ export interface HeaderProps {
 
 export function Header({
   bannerId,
+  bannerName,
+  backHref,
   onSave,
   onUndo,
   onRedo,
@@ -42,8 +47,13 @@ export function Header({
   return (
     <header className="flex items-center justify-between gap-4 px-6 py-4 bg-white border-b border-gray-200 shadow-sm">
       <div className="flex items-center gap-4 flex-1">
-        <h1 className="text-2xl font-bold text-gray-900">Banner Editor</h1>
-        <span className="text-sm text-gray-500 px-2 py-1 bg-gray-100 rounded">
+        {backHref && (
+          <a href={backHref} className="text-sm text-blue-600 hover:text-blue-800">
+            ← Banners
+          </a>
+        )}
+        <h1 className="text-2xl font-bold text-gray-900">{bannerName || 'Banner Editor'}</h1>
+        <span className="text-sm text-gray-500 px-2 py-1 bg-gray-100 rounded" title="Banner id">
           {bannerId}
         </span>
       </div>

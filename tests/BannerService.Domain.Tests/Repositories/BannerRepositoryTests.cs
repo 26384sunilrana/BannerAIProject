@@ -8,6 +8,7 @@ using Xunit;
 using Moq;
 using Microsoft.EntityFrameworkCore;
 using BannerService.Domain.Entities;
+using BannerService.Domain.ValueObjects;
 using BannerService.Domain.Interfaces;
 using BannerService.Infrastructure.Data;
 using BannerService.Infrastructure.Repositories;
@@ -315,4 +316,36 @@ public class BannerRepositoryTests : IAsyncLifetime
     }
 
     #endregion
+
+    [Fact]
+    public async Task UpdateAsync_AfterAddingComponentToLoadedBanner_InsertsTheComponent()
+    {
+        var seeded = _context.Banners.First(b => b.ShopId == _testShopId);
+        var loaded = await _repository.GetByIdAsync(seeded.Id, _testShopId);
+        var component = new Component(loaded!.Id, ComponentType.Text, new Position(1, 2), new Size(100, 50), 3, "{}");
+
+        loaded.AddComponent(component);
+        await _repository.UpdateAsync(loaded);
+
+        await using var verify = new ApplicationDbContext(_options);
+        var stored = await verify.Components.SingleAsync(c => c.BannerId == seeded.Id);
+        Assert.Equal(component.Id, stored.Id);
+        Assert.Equal(3, stored.ZIndex);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_AfterRemovingComponent_DeletesIt()
+    {
+        var seeded = _context.Banners.First(b => b.ShopId == _testShopId);
+        var loaded = await _repository.GetByIdAsync(seeded.Id, _testShopId);
+        var component = new Component(loaded!.Id, ComponentType.Text, new Position(1, 2), new Size(100, 50), 3, "{}");
+        loaded.AddComponent(component);
+        await _repository.UpdateAsync(loaded);
+
+        loaded.RemoveComponent(component.Id);
+        await _repository.UpdateAsync(loaded);
+
+        await using var verify = new ApplicationDbContext(_options);
+        Assert.Empty(await verify.Components.Where(c => c.BannerId == seeded.Id).ToListAsync());
+    }
 }

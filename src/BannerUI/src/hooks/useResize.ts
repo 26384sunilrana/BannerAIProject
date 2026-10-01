@@ -14,6 +14,9 @@ export interface ResizeState {
   startY: number
   startWidth: number
   startHeight: number
+  /** Where the component was when the resize began; edges are measured from here, not from where it is now. */
+  startComponentX: number
+  startComponentY: number
   minWidth: number
   minHeight: number
 }
@@ -33,6 +36,8 @@ export function useResize(
     startY: 0,
     startWidth: 0,
     startHeight: 0,
+    startComponentX: 0,
+    startComponentY: 0,
     minWidth: MIN_SIZE,
     minHeight: MIN_SIZE,
   })
@@ -50,6 +55,8 @@ export function useResize(
         startY,
         startWidth: component.width,
         startHeight: component.height,
+        startComponentX: component.x,
+        startComponentY: component.y,
         minWidth: MIN_SIZE,
         minHeight: MIN_SIZE,
       })
@@ -71,8 +78,8 @@ export function useResize(
 
       let newWidth = resizeState.startWidth
       let newHeight = resizeState.startHeight
-      let newX = component.x
-      let newY = component.y
+      let newX = resizeState.startComponentX
+      let newY = resizeState.startComponentY
 
       const handle = resizeState.handle
 
@@ -82,7 +89,7 @@ export function useResize(
       } else if (handle.includes('w')) {
         newWidth = Math.max(resizeState.minWidth, resizeState.startWidth - deltaX)
         if (newWidth !== resizeState.startWidth) {
-          newX = component.x + (resizeState.startWidth - newWidth)
+          newX = resizeState.startComponentX + (resizeState.startWidth - newWidth)
         }
       }
 
@@ -92,7 +99,7 @@ export function useResize(
       } else if (handle.includes('n')) {
         newHeight = Math.max(resizeState.minHeight, resizeState.startHeight - deltaY)
         if (newHeight !== resizeState.startHeight) {
-          newY = component.y + (resizeState.startHeight - newHeight)
+          newY = resizeState.startComponentY + (resizeState.startHeight - newHeight)
         }
       }
 
@@ -126,6 +133,8 @@ export function useResize(
       startY: 0,
       startWidth: 0,
       startHeight: 0,
+      startComponentX: 0,
+      startComponentY: 0,
       minWidth: MIN_SIZE,
       minHeight: MIN_SIZE,
     })

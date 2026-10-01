@@ -53,7 +53,7 @@ public class LayerManagementController : ControllerBase
             banner,
             componentId,
             request.NewZIndex);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.BannerRepository.SaveLayerChangesAsync(banner);
 
         return Ok(new LayerOrderDto
         {
@@ -75,7 +75,7 @@ public class LayerManagementController : ControllerBase
             return NotFound();
 
         var layerOrder = _layerManagementService.MoveForward(banner, componentId);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.BannerRepository.SaveLayerChangesAsync(banner);
 
         return Ok(new LayerOrderDto
         {
@@ -97,7 +97,7 @@ public class LayerManagementController : ControllerBase
             return NotFound();
 
         var layerOrder = _layerManagementService.MoveBackward(banner, componentId);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.BannerRepository.SaveLayerChangesAsync(banner);
 
         return Ok(new LayerOrderDto
         {
@@ -118,7 +118,7 @@ public class LayerManagementController : ControllerBase
             return NotFound();
 
         var layerOrder = _layerManagementService.SendToFront(banner, componentId);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.BannerRepository.SaveLayerChangesAsync(banner);
 
         return Ok(new LayerOrderDto
         {
@@ -139,7 +139,7 @@ public class LayerManagementController : ControllerBase
             return NotFound();
 
         var layerOrder = _layerManagementService.SendToBack(banner, componentId);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.BannerRepository.SaveLayerChangesAsync(banner);
 
         return Ok(new LayerOrderDto
         {

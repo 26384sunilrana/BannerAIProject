@@ -3,6 +3,8 @@ import { setupFetchMockCleanup } from '../helpers/mockFetch'
 import * as apiClient from '@/api/client'
 
 describe('mediaService', () => {
+  afterEach(() => jest.restoreAllMocks())
+
   setupFetchMockCleanup()
 
   const mockMediaFile: MediaFile = {
@@ -48,6 +50,7 @@ describe('mediaService', () => {
     expect(uploadSpy).toHaveBeenCalledWith(
       '/media/media1/chunks/0',
       expect.any(Object),
+      undefined,
       undefined
     )
   })
@@ -62,8 +65,19 @@ describe('mediaService', () => {
     expect(uploadSpy).toHaveBeenCalledWith(
       '/media/media1/chunks/0',
       expect.any(Object),
-      onProgress
+      onProgress,
+      undefined
     )
+  })
+
+  it('sends the chunk checksum header the server verifies', async () => {
+    const uploadSpy = jest.spyOn(apiClient.apiClient, 'upload').mockResolvedValue({ uploaded: true })
+
+    await mediaService.uploadChunk('media1', 0, new Blob(['x']) as File, undefined, 'abc123')
+
+    expect(uploadSpy).toHaveBeenCalledWith('/media/media1/chunks/0', expect.any(Object), undefined, {
+      headers: { 'X-Checksum-MD5': 'abc123' },
+    })
   })
 
   it('completes upload', async () => {
@@ -170,9 +184,9 @@ describe('mediaService', () => {
     await mediaService.uploadChunk('media1', 2, chunk as File)
 
     expect(uploadSpy).toHaveBeenCalledTimes(3)
-    expect(uploadSpy).toHaveBeenNthCalledWith(1, '/media/media1/chunks/0', expect.any(Object), undefined)
-    expect(uploadSpy).toHaveBeenNthCalledWith(2, '/media/media1/chunks/1', expect.any(Object), undefined)
-    expect(uploadSpy).toHaveBeenNthCalledWith(3, '/media/media1/chunks/2', expect.any(Object), undefined)
+    expect(uploadSpy).toHaveBeenNthCalledWith(1, '/media/media1/chunks/0', expect.any(Object), undefined, undefined)
+    expect(uploadSpy).toHaveBeenNthCalledWith(2, '/media/media1/chunks/1', expect.any(Object), undefined, undefined)
+    expect(uploadSpy).toHaveBeenNthCalledWith(3, '/media/media1/chunks/2', expect.any(Object), undefined, undefined)
   })
 
   it('media file has required properties', async () => {

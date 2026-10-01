@@ -32,7 +32,7 @@ export const Canvas = React.forwardRef<HTMLDivElement, CanvasProps>(
       selectedComponentId,
       onComponentSelect,
       onComponentMove,
-      onComponentResize: _onComponentResize,
+      onComponentResize,
     },
     ref
   ) => {
@@ -53,16 +53,34 @@ export const Canvas = React.forwardRef<HTMLDivElement, CanvasProps>(
     )
 
     const handleMouseMove = useCallback(
-      (_e: React.MouseEvent) => {
-        if (drag.isDragging && drag.draggedComponentId) {
-          const finalPos = drag.getFinalPosition()
-          if (finalPos) {
-            onComponentMove(drag.draggedComponentId, finalPos.x, finalPos.y)
+      (e: React.MouseEvent) => {
+        // Pointer positions are divided by the zoom so one screen pixel moved is the right number of canvas pixels
+        const x = e.clientX / canvas.scale
+        const y = e.clientY / canvas.scale
+
+        if (drag.isDragging) {
+          drag.updateDragPosition(x, y)
+        }
+
+        if (resize.isResizing && resize.resizedComponentId) {
+          const next = resize.calculateResize(x, y)
+          if (next) {
+            onComponentMove(resize.resizedComponentId, next.x, next.y)
+            onComponentResize(resize.resizedComponentId, next.width, next.height)
           }
         }
       },
-      [drag, onComponentMove]
+      [drag, resize, canvas.scale, onComponentMove, onComponentResize]
     )
+
+    // Move the dragged component whenever the pointer position changes
+    const { dragState, isDragging, draggedComponentId, getFinalPosition } = drag
+    React.useEffect(() => {
+      if (!isDragging || !draggedComponentId) return
+      const position = getFinalPosition()
+      if (position) onComponentMove(draggedComponentId, position.x, position.y)
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dragState.currentDragPos])
 
     const handleMouseUp = useCallback(() => {
       drag.endDrag()
@@ -94,6 +112,7 @@ export const Canvas = React.forwardRef<HTMLDivElement, CanvasProps>(
               .map((component) => (
                 <div
                   key={component.id}
+                  data-component-id={component.id}
                   style={{
                     position: 'absolute',
                     left: `${component.x}px`,
@@ -124,12 +143,24 @@ export const Canvas = React.forwardRef<HTMLDivElement, CanvasProps>(
                       style={{ width: '100%', height: '100%', objectFit: (component.data as any).objectFit }}
                     />
                   )}
-                  {component.type === 'graphics' && (
+                  {component.type === 'video' && (component.data as any).mediaUrl && (
+                  <video
+                    src={(component.data as any).mediaUrl}
+                    muted={(component.data as any).muted !== false}
+                    loop={Boolean((component.data as any).loop)}
+                    autoPlay={Boolean((component.data as any).autoPlay)}
+                    playsInline
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
+                  />
+                )}
+                {component.type === 'graphics' && (
                     <div
                       style={{
                         width: '100%',
                         height: '100%',
                         backgroundColor: (component.data as any).fillColor,
+                        borderStyle: 'solid',
+                        borderRadius: (component.data as any).shapeType === 'circle' ? '50%' : undefined,
                         borderColor: (component.data as any).strokeColor,
                         borderWidth: (component.data as any).strokeWidth,
                       }}
@@ -186,6 +217,7 @@ export const Canvas = React.forwardRef<HTMLDivElement, CanvasProps>(
             {components.map((component) => (
               <div
                 key={component.id}
+                  data-component-id={component.id}
                 className={`
                   ${styles.component}
                   ${selectedComponentId === component.id ? styles.selected : ''}
@@ -208,7 +240,7 @@ export const Canvas = React.forwardRef<HTMLDivElement, CanvasProps>(
                   e.stopPropagation()
                   selection.selectComponent(component.id)
                   onComponentSelect(component.id)
-                  drag.startDrag(component.id, e.clientX, e.clientY)
+                  drag.startDrag(component.id, e.clientX / canvas.scale, e.clientY / canvas.scale)
                 }}
               >
                 {component.type === 'text' && (
@@ -241,12 +273,24 @@ export const Canvas = React.forwardRef<HTMLDivElement, CanvasProps>(
                     }}
                   />
                 )}
+                {component.type === 'video' && (component.data as any).mediaUrl && (
+                  <video
+                    src={(component.data as any).mediaUrl}
+                    muted={(component.data as any).muted !== false}
+                    loop={Boolean((component.data as any).loop)}
+                    autoPlay={Boolean((component.data as any).autoPlay)}
+                    playsInline
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
+                  />
+                )}
                 {component.type === 'graphics' && (
                   <div
                     style={{
                       width: '100%',
                       height: '100%',
                       backgroundColor: (component.data as any).fillColor,
+                        borderStyle: 'solid',
+                        borderRadius: (component.data as any).shapeType === 'circle' ? '50%' : undefined,
                       borderColor: (component.data as any).strokeColor,
                       borderWidth: `${(component.data as any).strokeWidth}px`,
                     }}
@@ -261,7 +305,7 @@ export const Canvas = React.forwardRef<HTMLDivElement, CanvasProps>(
                         className={`${styles.handle} ${styles[`handle-${handle}`]}`}
                         onMouseDown={(e) => {
                           e.stopPropagation()
-                          resize.startResize(component.id, handle as any, e.clientX, e.clientY)
+                          resize.startResize(component.id, handle as any, e.clientX / canvas.scale, e.clientY / canvas.scale)
                         }}
                       />
                     ))}
