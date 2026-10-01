@@ -51,6 +51,6 @@
 | 023-ad-layout-charges | Ad space %, mega swap, popup, charge rules, location notify | 4.14-4.21 |
 | 024-security-compliance | Encryption at rest, audit log, user-management API/UI | 4.13, 5viii |
 | 025-deployment | K8s manifests, local compose | Tech |
-| 026-ui-completion | Build and test BannerUI, wire new APIs | all UI |
+| 026-ui-completion | Build and test BannerUI, sign-up and login screens, team and approver screens, wire new APIs | all UI |
 
 Each bolt ends with passing tests in `tests/` and an updated `bolt.md`.

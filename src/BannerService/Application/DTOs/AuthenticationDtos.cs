@@ -6,7 +6,11 @@ namespace BannerService.Application.DTOs
         public string Password { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
+        /// <summary>Not accepted on sign-up: logins for an existing shop are created by its owner.</summary>
         public string? ShopId { get; set; }
+        public string ShopName { get; set; } = string.Empty;
+        public string? City { get; set; }
+        public string? PhoneNumber { get; set; }
         public string? IpAddress { get; set; }
         public string? UserAgent { get; set; }
     }

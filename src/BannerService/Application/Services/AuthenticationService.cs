@@ -23,19 +23,22 @@ namespace BannerService.Application.Services
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IPasswordHashService _passwordHashService;
         private readonly IRefreshTokenRepository _refreshTokenRepository;
+        private readonly IShopRepository _shopRepository;
 
         public AuthenticationService(
             IUserRepository userRepository,
             IRoleRepository roleRepository,
             IJwtTokenService jwtTokenService,
             IPasswordHashService passwordHashService,
-            IRefreshTokenRepository refreshTokenRepository)
+            IRefreshTokenRepository refreshTokenRepository,
+            IShopRepository shopRepository)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
             _jwtTokenService = jwtTokenService;
             _passwordHashService = passwordHashService;
             _refreshTokenRepository = refreshTokenRepository;
+            _shopRepository = shopRepository;
         }
 
         public async Task<(bool success, string message, AuthTokenDto? tokens)> RegisterAsync(RegisterDto request)
@@ -49,20 +52,51 @@ namespace BannerService.Application.Services
             if (request.Password.Length < 8)
                 return (false, "Password must be at least 8 characters", null);
 
+            // Sign-up is for shop owners. Sales executives are created by the owner of their shop.
+            if (!string.IsNullOrWhiteSpace(request.ShopId))
+                return (false, "Logins for an existing shop are created by the shop owner", null);
+
+            if (string.IsNullOrWhiteSpace(request.ShopName))
+                return (false, "Shop name is required", null);
+
             var user = new User
             {
-                Email = request.Email.ToLower(),
+                Email = request.Email.Trim().ToLower(),
                 PasswordHash = _passwordHashService.HashPassword(request.Password),
                 FirstName = request.FirstName ?? string.Empty,
                 LastName = request.LastName ?? string.Empty,
-                ShopId = request.ShopId ?? string.Empty,
                 IsActive = true
             };
 
             var createdUser = await _userRepository.CreateAsync(user);
 
-            // Assign default role (SalesExecutive)
-            await _roleRepository.AssignRoleAsync(createdUser.Id, "3");
+            try
+            {
+                var ownerId = Guid.Parse(createdUser.Id);
+                var shop = await _shopRepository.CreateAsync(new Shop
+                {
+                    Name = request.ShopName.Trim(),
+                    City = request.City,
+                    PhoneNumber = request.PhoneNumber,
+                    Status = ShopStatus.Active,
+                    OwnerUserId = ownerId,
+                    CreatedByUserId = ownerId
+                });
+
+                createdUser.ShopId = shop.Id.ToString();
+                await _userRepository.UpdateAsync(createdUser);
+
+                // The sign-up user owns the shop
+                await _roleRepository.AssignRoleAsync(createdUser.Id, "2");
+            }
+            catch
+            {
+                await _userRepository.DeleteAsync(createdUser.Id);
+                throw;
+            }
+
+            // Reload so the token carries the role names
+            createdUser = await _userRepository.GetByEmailAsync(user.Email) ?? createdUser;
 
             var (accessToken, jwtId) = _jwtTokenService.GenerateAccessToken(createdUser);
             var refreshToken = _jwtTokenService.GenerateRefreshToken();
