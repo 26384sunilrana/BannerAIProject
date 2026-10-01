@@ -9,12 +9,67 @@ export interface PropertyPanelProps {
   selectedComponent: BannerComponent | null
   onPropertyChange: (property: string, value: any) => void
   onDeleteComponent: () => void
+  /** Uploads a chosen file and puts it in the selected component. */
+  onUploadMedia?: (file: File) => void
+  /** 0-100 while a file is uploading, otherwise null. */
+  uploadProgress?: number | null
+  uploadError?: string | null
+}
+
+function UploadControl({
+  accept,
+  label,
+  onUploadMedia,
+  progress,
+  error,
+}: {
+  accept: string
+  label: string
+  onUploadMedia?: (file: File) => void
+  progress?: number | null
+  error?: string | null
+}) {
+  if (!onUploadMedia) return null
+  const uploading = progress !== null && progress !== undefined
+
+  return (
+    <div className="space-y-1">
+      <label className="block text-sm font-medium text-gray-700" htmlFor="media-upload">
+        {label}
+      </label>
+      <input
+        id="media-upload"
+        type="file"
+        accept={accept}
+        disabled={uploading}
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) onUploadMedia(file)
+          e.target.value = ''
+        }}
+        className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-blue-700"
+      />
+      {uploading && (
+        <div role="progressbar" aria-valuenow={progress ?? 0} aria-valuemin={0} aria-valuemax={100} className="h-2 w-full rounded bg-gray-200">
+          <div className="h-2 rounded bg-blue-600" style={{ width: `${progress}%` }} />
+        </div>
+      )}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
+    </div>
+  )
 }
 
 export function PropertyPanel({
   selectedComponent,
   onPropertyChange,
   onDeleteComponent,
+  onUploadMedia,
+  uploadProgress,
+  uploadError,
 }: PropertyPanelProps) {
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -210,6 +265,14 @@ export function PropertyPanel({
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-700">Image</h4>
 
+            <UploadControl
+              accept="image/png,image/jpeg,image/gif,image/webp"
+              label="Upload an image"
+              onUploadMedia={onUploadMedia}
+              progress={uploadProgress}
+              error={uploadError}
+            />
+
             <Input
               label="Image address (URL)"
               type="url"
@@ -240,6 +303,14 @@ export function PropertyPanel({
         {selectedComponent.type === 'video' && (
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-700">Video</h4>
+
+            <UploadControl
+              accept="video/mp4,video/webm"
+              label="Upload a video"
+              onUploadMedia={onUploadMedia}
+              progress={uploadProgress}
+              error={uploadError}
+            />
 
             <Input
               label="Video address (URL)"

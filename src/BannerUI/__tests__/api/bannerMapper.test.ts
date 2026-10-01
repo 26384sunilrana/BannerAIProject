@@ -82,6 +82,27 @@ describe('component mapping', () => {
   })
 })
 
+describe('uploaded media', () => {
+  it('saves the media file id but never the expiring link', () => {
+    const api = toApiComponent({
+      type: 'image', x: 0, y: 0, width: 10, height: 10, zIndex: 0,
+      data: { mediaFileId: 'm1', mediaUrl: 'http://localhost:5000/api/media/m1/download?expires=1&sig=x', alt: 'Logo', objectFit: 'cover' },
+    })
+
+    expect(api.properties.mediaFileId).toBe('m1')
+    expect(api.properties).not.toHaveProperty('mediaUrl')
+  })
+
+  it('keeps an address typed in by the user', () => {
+    const api = toApiComponent({
+      type: 'image', x: 0, y: 0, width: 10, height: 10, zIndex: 0,
+      data: { mediaFileId: '', mediaUrl: 'https://example.com/a.png' },
+    })
+
+    expect(api.properties.mediaUrl).toBe('https://example.com/a.png')
+  })
+})
+
 describe('banner mapping', () => {
   it('trims the name and keeps size within limits', () => {
     expect(toApiBanner({ title: '  Sale  ', description: '', width: 99999, height: 0 })).toEqual({

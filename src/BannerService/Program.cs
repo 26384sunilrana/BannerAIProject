@@ -106,6 +106,7 @@ builder.Services.AddScoped<IMediaUploadService, MediaUploadService>();
 builder.Services.AddScoped<ICarouselService, CarouselService>();
 builder.Services.AddScoped<MetadataExtractionService>();
 builder.Services.AddScoped<IStorageProvider, LocalStorageProvider>();
+builder.Services.AddSingleton<BannerService.Infrastructure.Security.IMediaUrlSigner, BannerService.Infrastructure.Security.MediaUrlSigner>();
 builder.Services.AddScoped<IBannerService, BannerService.Application.Services.BannerService>();
 
 builder.Services.AddControllers(options => options.Filters.Add<BannerService.Presentation.Security.TenantAccessFilter>());

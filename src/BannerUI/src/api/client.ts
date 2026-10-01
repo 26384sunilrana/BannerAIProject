@@ -4,6 +4,15 @@ import { clearSession, getAccessToken, getRefreshToken, saveTokens } from '@/lib
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 
+/** Scheme and host of the API, for links the API returns as paths. */
+export const API_ORIGIN = (() => {
+  try {
+    return new URL(API_URL).origin
+  } catch {
+    return ''
+  }
+})()
+
 const ENVELOPE_KEYS = new Set(['success', 'data', 'message', 'errors', 'error', 'timestamp'])
 
 /**
@@ -29,6 +38,7 @@ export function getErrorMessage(error: unknown, fallback = 'Something went wrong
     if (typeof body === 'string') return body
     if (typeof body.message === 'string') return body.message
     if (typeof body.error?.message === 'string') return body.error.message
+    if (typeof body.error === 'string') return body.error
     if (body.errors && typeof body.errors === 'object') {
       const first = Object.values(body.errors).flat()[0]
       if (typeof first === 'string') return first
@@ -138,6 +148,19 @@ class ApiClient {
   async delete<T>(path: string, config?: any): Promise<T> {
     const response = await this.client.delete(path, config)
     return unwrap<T>(response.data)
+  }
+
+  /** Sends a file or piece of one as the raw request body (not a form). */
+  async putBinary(
+    path: string,
+    body: Blob,
+    options: { headers?: Record<string, string>; onProgress?: (loaded: number) => void } = {}
+  ): Promise<void> {
+    await this.client.put(path, body, {
+      headers: { ...(options.headers ?? {}), 'Content-Type': 'application/octet-stream' },
+      timeout: 5 * 60 * 1000,
+      onUploadProgress: (event: { loaded: number }) => options.onProgress?.(event.loaded),
+    })
   }
 
   async upload<T>(

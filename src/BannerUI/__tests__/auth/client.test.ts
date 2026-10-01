@@ -13,6 +13,12 @@ describe('getErrorMessage', () => {
     )
   })
 
+  it('reads an error given as plain text', () => {
+    expect(getErrorMessage(failure(400, { error: 'Checksum mismatch - data integrity failed' }))).toBe(
+      'Checksum mismatch - data integrity failed'
+    )
+  })
+
   it('reads the first validation error', () => {
     expect(getErrorMessage(failure(400, { errors: { Email: ['Email is required'] } }))).toBe('Email is required')
   })

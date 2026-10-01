@@ -23,9 +23,12 @@ public class SmokeFactory : WebApplicationFactory<Program>
     /// <summary>Set SMOKE_SQL to a SQL Server connection string to run the same tests against a real database (migrations and seeding included).</summary>
     private static readonly string? SqlConnection = Environment.GetEnvironmentVariable("SMOKE_SQL");
 
+    private readonly string _mediaFolder = Path.Combine(Path.GetTempPath(), "banner-smoke-" + Guid.NewGuid());
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.UseSetting("MediaService:LocalStoragePath", _mediaFolder);
 
         if (!string.IsNullOrEmpty(SqlConnection))
         {
@@ -185,5 +188,96 @@ public class PipelineSmokeTests : IClassFixture<SmokeFactory>
         var auditBody = await audit.Content.ReadAsStringAsync();
         Assert.Contains("/api/authentication/register", auditBody);
         Assert.Contains("/api/authentication/login", auditBody);
+    }
+
+    private static byte[] PngBytes(int length)
+    {
+        var bytes = new byte[length];
+        new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }.CopyTo(bytes, 0);
+        for (var i = 8; i < length; i++) bytes[i] = (byte)(i % 251);
+        return bytes;
+    }
+
+    private static string Md5(byte[] bytes) =>
+        Convert.ToHexString(System.Security.Cryptography.MD5.HashData(bytes)).ToLowerInvariant();
+
+    [Fact]
+    public async Task Media_UploadInChunks_ThenDownloadWithSignedLink()
+    {
+        var (client, _, _) = await RegisterOwnerAsync("media1@example.com");
+        var bytes = PngBytes(20_000);
+
+        var init = await client.PostAsJsonAsync("/api/media/upload/initialize",
+            new { fileName = "logo.png", contentType = "image/png", totalSizeBytes = bytes.Length, fileType = 1 });
+        Assert.Equal(HttpStatusCode.OK, init.StatusCode);
+        var initBody = await init.Content.ReadFromJsonAsync<JsonElement>();
+        var mediaId = initBody.GetProperty("mediaFileId").GetGuid();
+        Assert.Equal(1, initBody.GetProperty("totalChunks").GetInt32());
+
+        // two pieces, sent out of order
+        var pieces = new[] { bytes[..12_000], bytes[12_000..] };
+        foreach (var number in new[] { 1, 0 })
+        {
+            var request = new HttpRequestMessage(HttpMethod.Put, $"/api/media/{mediaId}/chunks/{number}")
+            {
+                Content = new ByteArrayContent(pieces[number])
+            };
+            request.Headers.Add("X-Checksum-MD5", Md5(pieces[number]));
+            Assert.Equal(HttpStatusCode.OK, (await client.SendAsync(request)).StatusCode);
+        }
+
+        var complete = await client.PostAsync($"/api/media/{mediaId}/complete", null);
+        Assert.Equal(HttpStatusCode.OK, complete.StatusCode);
+
+        var link = (await (await client.GetAsync($"/api/media/{mediaId}/url?expirationMinutes=30")).Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("url").GetString()!;
+
+        // the link works without any sign-in, which is how an <img> or <video> tag loads it
+        var anonymous = _factory.CreateClient();
+        var download = await anonymous.GetAsync(link);
+        Assert.Equal(HttpStatusCode.OK, download.StatusCode);
+        Assert.Equal("image/png", download.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("nosniff", download.Headers.GetValues("X-Content-Type-Options").Single());
+        Assert.Equal(bytes, await download.Content.ReadAsByteArrayAsync());
+
+        // video players seek with range requests
+        var ranged = new HttpRequestMessage(HttpMethod.Get, link);
+        ranged.Headers.Range = new RangeHeaderValue(100, 199);
+        var partial = await anonymous.SendAsync(ranged);
+        Assert.Equal(HttpStatusCode.PartialContent, partial.StatusCode);
+        Assert.Equal(bytes[100..200], await partial.Content.ReadAsByteArrayAsync());
+
+        // an altered link is refused
+        var tampered = await anonymous.GetAsync(link[..^2] + "AA");
+        Assert.Equal(HttpStatusCode.Forbidden, tampered.StatusCode);
+    }
+
+    [Fact]
+    public async Task Media_WrongChecksumHtmlContentAndOtherShops_AreRefused()
+    {
+        var (owner, _, _) = await RegisterOwnerAsync("media2@example.com");
+        var (other, _, _) = await RegisterOwnerAsync("media3@example.com");
+
+        var refused = await owner.PostAsJsonAsync("/api/media/upload/initialize",
+            new { fileName = "x.svg", contentType = "image/svg+xml", totalSizeBytes = 100, fileType = 1 });
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+
+        var bytes = PngBytes(500);
+        var init = await owner.PostAsJsonAsync("/api/media/upload/initialize",
+            new { fileName = "a.png", contentType = "image/png", totalSizeBytes = bytes.Length, fileType = 1 });
+        var mediaId = (await init.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("mediaFileId").GetGuid();
+
+        var bad = new HttpRequestMessage(HttpMethod.Put, $"/api/media/{mediaId}/chunks/0") { Content = new ByteArrayContent(bytes) };
+        bad.Headers.Add("X-Checksum-MD5", new string('0', 32));
+        Assert.Equal(HttpStatusCode.BadRequest, (await owner.SendAsync(bad)).StatusCode);
+
+        var good = new HttpRequestMessage(HttpMethod.Put, $"/api/media/{mediaId}/chunks/0") { Content = new ByteArrayContent(bytes) };
+        good.Headers.Add("X-Checksum-MD5", Md5(bytes));
+        Assert.Equal(HttpStatusCode.OK, (await owner.SendAsync(good)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await owner.PostAsync($"/api/media/{mediaId}/complete", null)).StatusCode);
+
+        // another shop cannot get a link to, or look at, this file
+        Assert.Equal(HttpStatusCode.NotFound, (await other.GetAsync($"/api/media/{mediaId}/url")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await other.GetAsync($"/api/media/{mediaId}")).StatusCode);
     }
 }

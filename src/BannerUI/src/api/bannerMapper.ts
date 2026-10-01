@@ -74,6 +74,10 @@ export function toApiComponent(component: {
   isVisible?: boolean
   data: ComponentData | Record<string, unknown>
 }): ApiComponentRequest {
+  const content = { ...(component.data as Record<string, unknown>) }
+  // A media file is referenced by id and its link is made fresh whenever the banner is opened
+  if (content.mediaFileId) delete content.mediaUrl
+
   return {
     componentType: TYPE_TO_API[component.type],
     positionX: clampInt(component.x, 0, Number.MAX_SAFE_INTEGER),
@@ -82,7 +86,7 @@ export function toApiComponent(component: {
     sizeHeight: clampInt(component.height, 1, LIMITS.maxSize),
     zIndex: clampInt(component.zIndex, 0, LIMITS.maxZIndex),
     properties: {
-      ...(component.data as Record<string, unknown>),
+      ...content,
       rotation: component.rotation ?? 0,
       opacity: component.opacity ?? 1,
       isVisible: component.isVisible ?? true,

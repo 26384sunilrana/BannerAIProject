@@ -25,7 +25,7 @@ public class InitializeUploadResponseDto
     public Guid MediaFileId { get; set; }
     public string FileName { get; set; } = string.Empty;
     public long TotalSizeBytes { get; set; }
-    public long ChunkSizeBytes { get; set; } = 104857600;  // 100MB
+    public long ChunkSizeBytes { get; set; }
     public int TotalChunks { get; set; }
 }
 

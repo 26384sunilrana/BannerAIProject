@@ -42,6 +42,13 @@ SMOKE_SQL="Server=(localdb)\MSSQLLocalDB;Database=BannerAI_Smoke;Trusted_Connect
 | `Security__RequireHttpsRedirect` | `false` behind a TLS-terminating ingress |
 | `Swagger__Enabled` | `true` to expose Swagger in production |
 
+### Uploaded media
+Images and videos are stored as files under `MediaService__LocalStoragePath` (`/media` in the containers), not in the database.
+Mount the same persistent volume on every API pod (`banner-media`, `ReadWriteMany`) and include it in backups. The browser loads
+files through short-lived signed links (`/api/media/{id}/download?expires=...&sig=...`) signed with `Media__SigningKey`
+(defaults to a key derived from `Jwt__SecretKey`). Only PNG, JPEG, GIF, WebP, MP4 and WebM are accepted, the content is checked
+against its type, and uploads are limited to 500 MB (sent in 8 MB pieces). Azure Blob storage is not implemented.
+
 ### Encryption keys
 Personal and payment fields are encrypted with ASP.NET Data Protection. **Losing the key ring makes that data unreadable.**
 Back up the `Security__KeyDirectory` contents, mount the same volume on every API pod (the `banner-keys` claim is

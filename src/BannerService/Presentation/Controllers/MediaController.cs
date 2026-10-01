@@ -30,13 +30,7 @@ public class MediaController : ControllerBase
         return shopId;
     }
 
-    private Guid GetUserId()
-    {
-        var userIdClaim = User.FindFirst("sub")?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
-            throw new UnauthorizedAccessException("Invalid or missing user ID");
-        return userId;
-    }
+    private Guid GetUserId() => User.GetUserId();
 
     [HttpPost("upload/initialize")]
     [ProducesResponseType(typeof(InitializeUploadResponseDto), StatusCodes.Status200OK)]
@@ -62,13 +56,14 @@ public class MediaController : ControllerBase
                 request.FileName, request.ContentType, request.TotalSizeBytes,
                 request.FileType, shopId, userId);
 
-            var totalChunks = (int)Math.Ceiling((double)request.TotalSizeBytes / (100 * 1024 * 1024));
+            var totalChunks = (int)Math.Ceiling((double)request.TotalSizeBytes / MediaUploadService.ChunkSizeBytes);
 
             return Ok(new InitializeUploadResponseDto
             {
                 MediaFileId = mediaFile.Id,
                 FileName = mediaFile.FileName,
                 TotalSizeBytes = mediaFile.SizeBytes,
+                ChunkSizeBytes = MediaUploadService.ChunkSizeBytes,
                 TotalChunks = totalChunks
             });
         }
@@ -184,6 +179,29 @@ public class MediaController : ControllerBase
             _logger.LogWarning(ex, "Unauthorized");
             return Unauthorized();
         }
+    }
+
+    /// <summary>
+    /// Serves a file to anyone holding a valid signed link (see GET {id}/url). Browsers load images and videos
+    /// through this address, so it cannot require an Authorization header.
+    /// </summary>
+    [HttpGet("{mediaFileId}/download")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> Download(Guid mediaFileId, [FromQuery] long expires, [FromQuery] string? sig)
+    {
+        var download = await _mediaUploadService.OpenDownloadAsync(mediaFileId, expires, sig);
+        if (download == null)
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "This link is invalid or has expired" });
+
+        // The content is user supplied: never let a browser guess a type or run it as a page
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
+        Response.Headers["Content-Security-Policy"] = "sandbox; default-src 'none'";
+        Response.Headers["Cross-Origin-Resource-Policy"] = "cross-origin";
+        Response.RegisterForDisposeAsync(download);
+
+        return File(download.Content, download.ContentType, enableRangeProcessing: true);
     }
 
     [HttpGet("{mediaFileId}/url")]

@@ -41,10 +41,15 @@ spec:
           volumeMounts:
             - name: keys
               mountPath: /keys
+            - name: media
+              mountPath: /media
       volumes:
         - name: keys
           persistentVolumeClaim:
             claimName: banner-keys
+        - name: media
+          persistentVolumeClaim:
+            claimName: banner-media
 ---
 apiVersion: v1
 kind: Service

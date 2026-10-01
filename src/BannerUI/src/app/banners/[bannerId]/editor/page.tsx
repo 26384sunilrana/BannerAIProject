@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { EditorProvider } from '@/context/EditorContext'
 import { useEditor } from '@/hooks/useEditor'
 import { useSave } from '@/hooks/useSave'
+import { useMediaUpload } from '@/hooks/useMediaUpload'
 import { useToast } from '@/hooks/useToast'
 import { bannerService } from '@/api/bannerService'
 import { layerService } from '@/api/layerService'
@@ -29,6 +30,7 @@ function EditorContent() {
   const { state, setBanner, setError, setPreviewMode, selectComponent, addComponent, updateComponent, deleteComponent } = useEditor()
   const save = useSave(id, state.components, state.banner)
   const toast = useToast()
+  const media = useMediaUpload()
 
   // The toast helpers change on every render; keep the latest in a ref so loading runs once per banner.
   const toastRef = useRef(toast)
@@ -107,11 +109,33 @@ function EditorContent() {
     }
 
     if (CONTENT_PROPERTIES.has(property)) {
-      updateComponent(selected.id, { data: { ...(selected.data as object), [property]: value } as typeof selected.data })
+      const next = { ...(selected.data as object), [property]: value } as Record<string, unknown>
+      if (property === 'mediaUrl') next.mediaFileId = '' // an address typed in replaces any uploaded file
+      updateComponent(selected.id, { data: next as unknown as typeof selected.data })
     } else {
       updateComponent(selected.id, { [property]: value })
     }
     save.markDirty()
+  }
+
+  /** Uploads the chosen file and stores it in the selected image or video component. */
+  const handleUploadMedia = async (file: File) => {
+    const selected = state.components.find((c) => c.id === state.selectedComponentId)
+    if (!selected || (selected.type !== 'image' && selected.type !== 'video')) return
+
+    const result = await media.upload(file, selected.type)
+    if (!result) return
+
+    updateComponent(selected.id, {
+      data: {
+        ...(selected.data as object),
+        mediaFileId: result.mediaFileId,
+        mediaUrl: result.url,
+        ...(selected.type === 'image' ? { alt: (selected.data as any).alt && (selected.data as any).alt !== 'Image' ? (selected.data as any).alt : file.name } : {}),
+      } as typeof selected.data,
+    })
+    save.markDirty()
+    toast.success(`${file.name} uploaded`)
   }
 
   const handleDeleteComponent = async () => {
@@ -205,6 +229,9 @@ function EditorContent() {
           selectedComponent={selectedComponent || null}
           onPropertyChange={handlePropertyChange}
           onDeleteComponent={handleDeleteComponent}
+          onUploadMedia={handleUploadMedia}
+          uploadProgress={media.isUploading ? media.progress : null}
+          uploadError={media.error}
         />
       </div>
 

@@ -1,200 +1,113 @@
-import { renderHook, act, waitFor } from '@testing-library/react'
-import { useMediaUpload } from '@/hooks/useMediaUpload'
-import { setupFetchMockCleanup, mockFetchOnce } from '../helpers/mockFetch'
-import * as mediaService from '@/api/mediaService'
+import { act, renderHook } from '@testing-library/react'
+import { checkUploadFile, MAX_UPLOAD_BYTES, useMediaUpload } from '@/hooks/useMediaUpload'
+import { mediaService } from '@/api/mediaService'
+
+jest.mock('@/api/mediaService', () => ({
+  mediaService: {
+    initializeUpload: jest.fn(),
+    uploadChunk: jest.fn(),
+    completeUpload: jest.fn(),
+    getMediaUrl: jest.fn(),
+  },
+}))
+
+const mocked = mediaService as jest.Mocked<typeof mediaService>
+
+// 20 bytes cut into pieces of 8
+const file = (type = 'image/png') => new File([new Uint8Array(20).fill(1)], 'logo.png', { type })
+
+beforeEach(() => {
+  jest.clearAllMocks()
+  mocked.initializeUpload.mockResolvedValue({
+    mediaFileId: 'm1',
+    fileName: 'logo.png',
+    totalSizeBytes: 20,
+    chunkSizeBytes: 8,
+    totalChunks: 3,
+  })
+  mocked.uploadChunk.mockResolvedValue(undefined)
+  mocked.completeUpload.mockResolvedValue({} as never)
+  mocked.getMediaUrl.mockResolvedValue({ mediaFileId: 'm1', url: 'http://localhost:5000/api/media/m1/download', expiresAt: null })
+})
+
+describe('checkUploadFile', () => {
+  it('accepts supported images and videos', () => {
+    expect(checkUploadFile({ type: 'image/webp', size: 10 }, 'image')).toBeNull()
+    expect(checkUploadFile({ type: 'video/mp4', size: 10 }, 'video')).toBeNull()
+  })
+
+  it('refuses other types, wrong kinds, empty and oversize files', () => {
+    expect(checkUploadFile({ type: 'image/svg+xml', size: 10 }, 'image')).toMatch(/PNG, JPEG/)
+    expect(checkUploadFile({ type: 'video/mp4', size: 10 }, 'image')).toMatch(/image/)
+    expect(checkUploadFile({ type: 'image/png', size: 10 }, 'video')).toMatch(/video/)
+    expect(checkUploadFile({ type: 'image/png', size: 0 }, 'image')).toMatch(/empty/)
+    expect(checkUploadFile({ type: 'image/png', size: MAX_UPLOAD_BYTES + 1 }, 'image')).toMatch(/500 MB/)
+  })
+})
 
 describe('useMediaUpload', () => {
-  setupFetchMockCleanup()
+  it('cuts the file to the size the server asked for and sends each piece with its checksum', async () => {
+    const { result } = renderHook(() => useMediaUpload())
 
-  beforeEach(() => {
-    jest.spyOn(mediaService, 'mediaService', 'get').mockReturnValue({
-      initializeUpload: jest.fn().mockResolvedValue({ mediaFileId: 'file-123' }),
-      uploadChunk: jest.fn().mockResolvedValue({ uploaded: true }),
-      completeUpload: jest.fn().mockResolvedValue({
-        id: 'file-123',
-        fileName: 'test.jpg',
-        fileType: 'image/jpeg',
-        fileSize: 1000,
-        status: 'complete',
-      }),
-      getMediaInfo: jest.fn(),
-      getMediaUrl: jest.fn(),
-      deleteMedia: jest.fn(),
-    } as any)
+    let uploaded: Awaited<ReturnType<typeof result.current.upload>> = null
+    await act(async () => {
+      uploaded = await result.current.upload(file(), 'image')
+    })
+
+    expect(mocked.initializeUpload).toHaveBeenCalledWith({ fileName: 'logo.png', contentType: 'image/png', totalSizeBytes: 20, fileType: 1 })
+    expect(mocked.uploadChunk.mock.calls.map((c) => [c[1], (c[2] as Blob).size])).toEqual([[0, 8], [1, 8], [2, 4]])
+    expect(mocked.uploadChunk.mock.calls.every((c) => /^[0-9a-f]{32}$/.test(c[3] as string))).toBe(true)
+    expect(mocked.completeUpload).toHaveBeenCalledWith('m1')
+    expect(uploaded).toEqual({ mediaFileId: 'm1', url: 'http://localhost:5000/api/media/m1/download' })
+    expect(result.current.progress).toBe(100)
+    expect(result.current.isUploading).toBe(false)
   })
 
-  it('initializes with empty uploads', () => {
+  it('uses the video file type for videos', async () => {
     const { result } = renderHook(() => useMediaUpload())
-    expect(result.current.activeUploads).toEqual([])
-  })
-
-  it('starts upload with file', async () => {
-    const { result } = renderHook(() => useMediaUpload())
-    const file = new File(['content'], 'test.txt', { type: 'text/plain' })
-
-    mockFetchOnce(200, { mediaFileId: 'file-123' })
 
     await act(async () => {
-      await result.current.uploadFile(file)
+      await result.current.upload(file('video/mp4'), 'video')
     })
 
-    expect(result.current.activeUploads.length).toBeGreaterThan(0)
+    expect(mocked.initializeUpload).toHaveBeenCalledWith(expect.objectContaining({ contentType: 'video/mp4', fileType: 2 }))
   })
 
-  it('tracks upload progress', async () => {
+  it('retries a piece after a server error, then continues', async () => {
+    mocked.uploadChunk.mockRejectedValueOnce({ response: { status: 503 } }).mockResolvedValue(undefined)
     const { result } = renderHook(() => useMediaUpload())
-    const file = new File(['a'.repeat(1000)], 'large.txt', { type: 'text/plain' })
-
-    mockFetchOnce(200, { mediaFileId: 'file-123' })
 
     await act(async () => {
-      await result.current.uploadFile(file)
+      await result.current.upload(file(), 'image')
     })
 
-    const upload = result.current.activeUploads[0]
-    if (upload) {
-      expect(upload.progress).toBeGreaterThanOrEqual(0)
-      expect(upload.progress).toBeLessThanOrEqual(100)
-    }
+    expect(mocked.uploadChunk).toHaveBeenCalledTimes(4) // 3 pieces + 1 retry
+    expect(result.current.error).toBeNull()
   })
 
-  it('updates upload status during process', async () => {
+  it('stops at once on a client error and shows the server message', async () => {
+    mocked.uploadChunk.mockRejectedValue({ response: { status: 400, data: { error: { message: 'Checksum mismatch' } } } })
     const { result } = renderHook(() => useMediaUpload())
-    const file = new File(['content'], 'test.txt', { type: 'text/plain' })
 
-    mockFetchOnce(200, { mediaFileId: 'file-123' })
-
-    let uploadId: string | null = null
-
+    let uploaded: unknown = 'unset'
     await act(async () => {
-      uploadId = await result.current.uploadFile(file)
+      uploaded = await result.current.upload(file(), 'image')
     })
 
-    expect(uploadId).toBeTruthy()
+    expect(uploaded).toBeNull()
+    expect(mocked.uploadChunk).toHaveBeenCalledTimes(1)
+    expect(mocked.completeUpload).not.toHaveBeenCalled()
+    expect(result.current.error).toBe('Checksum mismatch')
   })
 
-  it('handles upload errors gracefully', async () => {
-    const { result } = renderHook(() => useMediaUpload())
-    const file = new File(['content'], 'test.txt', { type: 'text/plain' })
-
-    mockFetchOnce(500, { error: 'Server error' })
-
-    await act(async () => {
-      const uploadId = await result.current.uploadFile(file)
-      expect(uploadId).toBeNull()
-    })
-
-    const upload = result.current.activeUploads[0]
-    if (upload) {
-      expect(upload.status).toBe('error')
-      expect(upload.error).toBeTruthy()
-    }
-  })
-
-  it('provides upload progress info', async () => {
-    const { result } = renderHook(() => useMediaUpload())
-    const file = new File(['content'], 'test.txt', { type: 'text/plain' })
-
-    mockFetchOnce(200, { mediaFileId: 'file-123' })
-
-    let fileId: string | null = null
-
-    await act(async () => {
-      fileId = await result.current.uploadFile(file)
-    })
-
-    if (fileId) {
-      const progress = result.current.getUploadProgress(fileId)
-      expect(progress).toBeDefined()
-      expect(progress?.fileName).toBe('test.txt')
-      expect(progress?.progress).toBeGreaterThanOrEqual(0)
-    }
-  })
-
-  it('cancels upload', async () => {
-    const { result } = renderHook(() => useMediaUpload())
-    const file = new File(['content'], 'test.txt', { type: 'text/plain' })
-
-    mockFetchOnce(200, { mediaFileId: 'file-123' })
-
-    let fileId: string | null = null
-
-    await act(async () => {
-      fileId = await result.current.uploadFile(file)
-    })
-
-    const initialCount = result.current.activeUploads.length
-
-    if (fileId) {
-      act(() => {
-        result.current.cancelUpload(fileId)
-      })
-
-      const progress = result.current.getUploadProgress(fileId)
-      expect(progress).toBeUndefined()
-    }
-  })
-
-  it('clears completed uploads', async () => {
+  it('does not contact the server for an unsupported file', async () => {
     const { result } = renderHook(() => useMediaUpload())
 
-    act(() => {
-      result.current.clearCompleted()
-    })
-
-    const completedCount = result.current.activeUploads.filter(
-      (u) => u.status === 'complete' || u.status === 'error'
-    ).length
-    expect(completedCount).toBe(0)
-  })
-
-  it('handles multiple simultaneous uploads', async () => {
-    const { result } = renderHook(() => useMediaUpload())
-    const file1 = new File(['content1'], 'file1.txt', { type: 'text/plain' })
-    const file2 = new File(['content2'], 'file2.txt', { type: 'text/plain' })
-
-    mockFetchOnce(200, { mediaFileId: 'file-1' })
-
     await act(async () => {
-      await result.current.uploadFile(file1)
+      await result.current.upload(file('image/svg+xml'), 'image')
     })
 
-    mockFetchOnce(200, { mediaFileId: 'file-2' })
-
-    await act(async () => {
-      await result.current.uploadFile(file2)
-    })
-
-    expect(result.current.activeUploads.length).toBeGreaterThanOrEqual(1)
-  })
-
-  it('returns media file ID on successful upload', async () => {
-    const { result } = renderHook(() => useMediaUpload())
-    const file = new File(['content'], 'test.txt', { type: 'text/plain' })
-
-    mockFetchOnce(200, { mediaFileId: 'file-123' })
-
-    let uploadedId: string | null = null
-
-    await act(async () => {
-      uploadedId = await result.current.uploadFile(file)
-    })
-
-    expect(uploadedId).toBeTruthy()
-  })
-
-  it('returns null on upload failure', async () => {
-    const { result } = renderHook(() => useMediaUpload())
-    const file = new File(['content'], 'test.txt', { type: 'text/plain' })
-
-    mockFetchOnce(500, { error: 'Upload failed' })
-
-    let uploadedId: string | null = null
-
-    await act(async () => {
-      uploadedId = await result.current.uploadFile(file)
-    })
-
-    expect(uploadedId).toBeNull()
+    expect(mocked.initializeUpload).not.toHaveBeenCalled()
+    expect(result.current.error).toMatch(/PNG, JPEG/)
   })
 })

@@ -15,11 +15,11 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 # Data Protection keys and logs live on mounted volumes
-RUN mkdir -p /keys /app/logs && chown -R app:app /keys /app/logs
+RUN mkdir -p /keys /media /app/logs && chown -R app:app /keys /media /app/logs
 USER app
 
 ENV ASPNETCORE_URLS=http://+:5000 \
-    Security__KeyDirectory=/keys
+    Security__KeyDirectory=/keys \n    MediaService__LocalStoragePath=/media
 EXPOSE 5000
 
 ENTRYPOINT ["dotnet", "BannerService.dll"]

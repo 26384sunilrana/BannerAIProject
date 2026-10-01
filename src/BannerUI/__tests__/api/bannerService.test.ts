@@ -1,5 +1,6 @@
 import { bannerService } from '@/api/bannerService'
 import * as client from '@/api/client'
+import { mediaService } from '@/api/mediaService'
 
 const summary = {
   id: 'b1',
@@ -109,5 +110,33 @@ describe('bannerService', () => {
       expect.objectContaining({ componentType: 4, positionX: 0, sizeWidth: 5000, sizeHeight: 1, zIndex: 100 })
     )
     expect(del).toHaveBeenCalledWith('/banners/b1/components/c1')
+  })
+
+  it('gives uploaded media a fresh link when the banner is loaded', async () => {
+    jest.spyOn(client.apiClient, 'get').mockImplementation(async (path: string) =>
+      (path.endsWith('/preview')
+        ? { components: [apiComponent({ componentType: 2, properties: { mediaFileId: 'm1', alt: 'Logo' } })] }
+        : summary) as never
+    )
+    const link = jest.spyOn(mediaService, 'getMediaUrl').mockResolvedValue({ mediaFileId: 'm1', url: 'http://api/dl?sig=1', expiresAt: null })
+
+    const banner = await bannerService.getBanner('b1')
+
+    expect(link).toHaveBeenCalledWith('m1')
+    expect((banner.components[0].data as any).mediaUrl).toBe('http://api/dl?sig=1')
+  })
+
+  it('still opens the banner when a media link cannot be made', async () => {
+    jest.spyOn(client.apiClient, 'get').mockImplementation(async (path: string) =>
+      (path.endsWith('/preview')
+        ? { components: [apiComponent({ componentType: 2, properties: { mediaFileId: 'gone' } })] }
+        : summary) as never
+    )
+    jest.spyOn(mediaService, 'getMediaUrl').mockRejectedValue({ response: { status: 404 } })
+
+    const banner = await bannerService.getBanner('b1')
+
+    expect(banner.components).toHaveLength(1)
+    expect((banner.components[0].data as any).mediaUrl).toBe('')
   })
 })

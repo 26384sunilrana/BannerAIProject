@@ -8,6 +8,8 @@ data:
   # TLS ends at the ingress
   Security__RequireHttpsRedirect: "false"
   Security__KeyDirectory: /keys
+  # Uploaded images and videos; shared by every API pod
+  MediaService__LocalStoragePath: /media
   # Migrations run in the banner-migrate Job, not in every pod
   Database__MigrateOnStartup: "false"
   # The web app and API share one host through the ingress, so no cross-origin access is needed.

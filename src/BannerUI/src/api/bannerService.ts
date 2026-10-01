@@ -1,5 +1,6 @@
 import { apiClient } from './client'
 import { Banner, BannerComponent, ComponentData, ComponentType } from '@/types/banner'
+import { mediaService } from './mediaService'
 import {
   ApiBannerSummary,
   ApiComponent,
@@ -36,7 +37,9 @@ export const bannerService = {
       apiClient.get<ApiBannerSummary>(`/banners/${bannerId}`),
       apiClient.get<{ components: ApiComponent[] }>(`/banners/${bannerId}/preview`),
     ])
-    return toBanner(summary, preview.components ?? [])
+    const banner = toBanner(summary, preview.components ?? [])
+    await attachMediaLinks(banner)
+    return banner
   },
 
   /** Changes the given fields; the rest keep their current values. */
@@ -67,4 +70,22 @@ export const bannerService = {
   async deleteComponent(bannerId: string, componentId: string): Promise<void> {
     await apiClient.delete(`/banners/${bannerId}/components/${componentId}`)
   },
+}
+
+/** Images and videos that were uploaded are stored by id; give each one a link the browser can load now. */
+async function attachMediaLinks(banner: Banner): Promise<void> {
+  await Promise.all(
+    banner.components.map(async (component) => {
+      const data = component.data as unknown as Record<string, unknown>
+      const mediaFileId = typeof data.mediaFileId === 'string' ? data.mediaFileId : ''
+      if (!mediaFileId) return
+
+      try {
+        data.mediaUrl = (await mediaService.getMediaUrl(mediaFileId)).url
+      } catch {
+        // the file may still be uploading or was removed: the component simply shows no picture
+        data.mediaUrl = ''
+      }
+    })
+  )
 }

@@ -6,6 +6,8 @@ public interface IMediaFileRepository
 {
     Task<MediaFile> SaveAsync(MediaFile mediaFile);
     Task<MediaFile?> GetByIdAsync(Guid id, Guid shopId);
+    /// <summary>Only for serving a signed download link, where the signature proves access.</summary>
+    Task<MediaFile?> GetByIdUnscopedAsync(Guid id);
     Task<List<MediaFile>> GetByShopAsync(Guid shopId);
     Task UpdateAsync(MediaFile mediaFile);
     Task DeleteAsync(Guid id, Guid shopId);

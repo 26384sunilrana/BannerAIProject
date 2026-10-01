@@ -1,0 +1,13 @@
+# Uploaded images and videos. Every API pod must see the same files, so the claim is ReadWriteMany.
+# Size it for the stored media (the largest upload is 500 MB) and back it up: it is not in the database.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: banner-media
+  namespace: bannerai
+spec:
+  accessModes: ["ReadWriteMany"]
+  storageClassName: azurefile-csi
+  resources:
+    requests:
+      storage: 50Gi

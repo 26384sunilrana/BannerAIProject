@@ -27,6 +27,11 @@ public class MediaFileRepository : IMediaFileRepository
             .FirstOrDefaultAsync(m => m.Id == id && m.ShopId == shopId);
     }
 
+    public async Task<MediaFile?> GetByIdUnscopedAsync(Guid id)
+    {
+        return await _context.MediaFiles.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id);
+    }
+
     public async Task<List<MediaFile>> GetByShopAsync(Guid shopId)
     {
         return await _context.MediaFiles
