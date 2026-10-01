@@ -12,6 +12,8 @@ public class Banner
     public int Width { get; set; }
     public int Height { get; set; }
     public bool IsPublished { get; set; }
+    public DateTime? PublishStartAt { get; private set; }
+    public DateTime? PublishEndAt { get; private set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
@@ -81,6 +83,26 @@ public class Banner
         first.Update(new Position(first.PositionX, first.PositionY), new Size(first.SizeWidth, first.SizeHeight), second.ZIndex, first.PropertiesJson);
         second.Update(new Position(second.PositionX, second.PositionY), new Size(second.SizeWidth, second.SizeHeight), firstZ, second.PropertiesJson);
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    public PublishWindow? GetPublishWindow() =>
+        PublishStartAt.HasValue && PublishEndAt.HasValue ? new PublishWindow(PublishStartAt.Value, PublishEndAt.Value) : null;
+
+    /// <summary>Sets the publish window. Returns true when the change must go through approval again.</summary>
+    public bool SetSchedule(PublishWindow window)
+    {
+        var changed = PublishStartAt != window.Start || PublishEndAt != window.End;
+        var hadSchedule = PublishStartAt.HasValue;
+
+        PublishStartAt = window.Start;
+        PublishEndAt = window.End;
+        UpdatedAt = DateTime.UtcNow;
+
+        if (!changed || !hadSchedule)
+            return false;
+
+        IsPublished = false;
+        return true;
     }
 
     public void Publish()

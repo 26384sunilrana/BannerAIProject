@@ -94,6 +94,8 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ComponentValidationService>();
 builder.Services.AddScoped<BannerService.Domain.Services.EffectValidator>();
 builder.Services.AddScoped<BannerService.Domain.Services.LayerManagementService>();
+builder.Services.AddScoped<BannerService.Domain.Services.BannerScheduleService>();
+builder.Services.AddScoped<BannerService.Application.Services.BannerScheduleAppService>();
 builder.Services.AddScoped<IVersionControlService, VersionControlService>();
 builder.Services.AddScoped<IEffectService, EffectService>();
 builder.Services.AddScoped<IMediaUploadService, MediaUploadService>();

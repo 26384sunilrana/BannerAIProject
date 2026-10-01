@@ -52,6 +52,17 @@ public class BannerRepository : IBannerRepository
             .ToListAsync();
     }
 
+    public async Task<List<Banner>> GetScheduledByShopAsync(Guid shopId)
+    {
+        if (shopId != _shopContext.ShopId)
+            throw new UnauthorizedAccessException("Cannot access banners from different shop");
+
+        return await _context.Banners
+            .Where(b => b.ShopId == shopId && b.PublishStartAt != null && b.PublishEndAt != null)
+            .OrderBy(b => b.PublishStartAt)
+            .ToListAsync();
+    }
+
     public async Task<Banner> UpdateAsync(Banner banner)
     {
         if (banner.ShopId != _shopContext.ShopId)

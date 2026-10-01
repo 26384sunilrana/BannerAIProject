@@ -45,6 +45,27 @@ namespace BannerService.Domain.Entities
             });
         }
 
+        public void ResubmitForApproval(Guid userId, string userName, string reason)
+        {
+            Status = PublishStatus.PendingApproval;
+            ApprovedAt = null;
+            PublishedAt = null;
+            RejectedAt = null;
+            RejectionReason = null;
+            SubmittedAt = DateTime.UtcNow;
+            UpdatedAt = DateTime.UtcNow;
+
+            Events.Add(new PublishEvent
+            {
+                EventType = PublishEventType.SubmittedForApproval,
+                ActorId = userId,
+                ActorName = userName,
+                OccurredAt = DateTime.UtcNow,
+                Comment = reason,
+                Outcome = "Resubmitted"
+            });
+        }
+
         public void Approve(Guid reviewerId, string reviewerName, string? comment = null)
         {
             Status = PublishStatus.Approved;
