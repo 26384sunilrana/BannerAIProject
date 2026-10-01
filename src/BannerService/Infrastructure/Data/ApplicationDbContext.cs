@@ -204,12 +204,14 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<UserRole>(entity =>
         {
             entity.HasKey(e => new { e.UserId, e.RoleId });
-            entity.HasOne<User>()
-                .WithMany()
+            // Mapped through the navigation properties; without them EF treats UserRoles/Role as a second,
+            // unrelated relationship and user.UserRoles (and so every role claim) comes back empty.
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.UserRoles)
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne<Role>()
-                .WithMany()
+            entity.HasOne(e => e.Role)
+                .WithMany(r => r.UserRoles)
                 .HasForeignKey(e => e.RoleId)
                 .OnDelete(DeleteBehavior.Cascade);
         });

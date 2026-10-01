@@ -126,6 +126,9 @@ builder.Services.AddCors(options =>
 
 // Authentication (JWT bearer token validation)
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] ?? "your-secret-key-change-in-production";
+// The shipped placeholder must never sign production tokens: supply Jwt__SecretKey from a secret store
+if (builder.Environment.IsProduction() && (jwtSecretKey.Length < 32 || jwtSecretKey.Contains("change-this") || jwtSecretKey.Contains("change-in-production")))
+    throw new InvalidOperationException("Jwt:SecretKey must be set to a strong secret (at least 32 characters) in production");
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "BannerAIProject";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "BannerAIProjectUsers";
 

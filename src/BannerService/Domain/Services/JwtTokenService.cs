@@ -25,7 +25,7 @@ namespace BannerService.Domain.Services
             _configuration = configuration;
 
             var key = Encoding.ASCII.GetBytes(
-                _configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured")
+                _configuration["Jwt:SecretKey"] ?? _configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured")
             );
 
             _signingCredentials = new SigningCredentials(
@@ -54,7 +54,7 @@ namespace BannerService.Domain.Services
                 claims.Add(new Claim(ClaimTypes.Role, role ?? string.Empty));
             }
 
-            var expiresIn = int.Parse(_configuration["Jwt:ExpiresInMinutes"] ?? "15");
+            var expiresIn = int.Parse(_configuration["Jwt:AccessTokenExpirationMinutes"] ?? _configuration["Jwt:ExpiresInMinutes"] ?? "15");
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
@@ -89,7 +89,7 @@ namespace BannerService.Domain.Services
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.ASCII.GetBytes(
-                            _configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured")
+                            _configuration["Jwt:SecretKey"] ?? _configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured")
                         )
                     ),
                     ValidateLifetime = false
@@ -130,7 +130,7 @@ namespace BannerService.Domain.Services
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.ASCII.GetBytes(
-                            _configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured")
+                            _configuration["Jwt:SecretKey"] ?? _configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured")
                         )
                     ),
                     ValidateLifetime = true

@@ -30,11 +30,11 @@
 | 4.8 | Multiple banners, every one approved | Done | PublishWorkflow |
 | 4.9 | Preview for all logins | Done | PreviewConfiguration (verify role access) |
 | 4.10-4.12 | 10 versions, restore goes through approval, latest preserved | **Partial** | VersionControlService exists; restore-to-approval link not verified |
-| 4.13 | Backend data encrypted | **Gap** | No encryption at rest beyond password hashing |
+| 4.13 | Backend data encrypted | Done (bolt 024) | field-level AES via Data Protection; TDE at deployment |
 | 4.14-4.18 | Ad space by %, mega ad swap, popup | **Gap** | `Advertisement` has Type/Target; no layout %, no mega swap, no popup mode |
 | 4.19-4.21 | Ad charges by locality/area/size, shop-level override, notify shops | **Gap** | No charge rule entity; no notification |
 | 5v-vi | No-code publish; same-day hour windows must not overlap | Done (bolt 017) | overlap validation |
-| 5viii | User / shop / banner management pages, reporting, HIPAA/PHI | **Partial** | Admin + shop owner dashboards, analytics; no user-management API/UI, no audit log |
+| 5viii | User / shop / banner management, reporting, HIPAA/PHI | Partial | admin user API and audit log done (bolt 024); UI pending |
 | Tech | Next.js, ASP.NET Core, JWT, MSSQL, Docker, K8s | **Partial** | All present except K8s manifests; Dockerfile exists |
 
 ## Bolt plan (priority order)
