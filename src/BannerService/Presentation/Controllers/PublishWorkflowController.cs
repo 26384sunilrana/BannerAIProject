@@ -8,6 +8,7 @@ namespace BannerService.Presentation.Controllers
     using Domain.ValueObjects;
 
     [ApiController]
+    [Microsoft.AspNetCore.Authorization.Authorize]
     [Route("api/publish-workflow")]
     public class PublishWorkflowController : ControllerBase
     {
@@ -26,8 +27,10 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("initiate")]
-        public async Task<IActionResult> InitiateWorkflow([FromBody] SubmitForApprovalDto dto, [FromHeader] Guid userId, [FromHeader] string userName)
+        public async Task<IActionResult> InitiateWorkflow([FromBody] SubmitForApprovalDto dto)
         {
+            var userId = User.GetUserId();
+            var userName = User.GetUserName();
             try
             {
                 var workflow = await _workflowService.InitiateWorkflowAsync(dto.BannerId, Guid.NewGuid(), userId, userName);
@@ -41,8 +44,10 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{workflowId}/submit")]
-        public async Task<IActionResult> SubmitForApproval(Guid workflowId, [FromHeader] Guid userId, [FromHeader] string userName)
+        public async Task<IActionResult> SubmitForApproval(Guid workflowId)
         {
+            var userId = User.GetUserId();
+            var userName = User.GetUserName();
             try
             {
                 var workflow = await _workflowService.SubmitForApprovalAsync(workflowId, userId, userName);
@@ -60,12 +65,18 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{workflowId}/approve")]
-        public async Task<IActionResult> ApproveWorkflow(Guid workflowId, [FromBody] ApproveWorkflowDto dto, [FromHeader] Guid userId, [FromHeader] string userName)
+        public async Task<IActionResult> ApproveWorkflow(Guid workflowId, [FromBody] ApproveWorkflowDto dto)
         {
+            var userId = User.GetUserId();
+            var userName = User.GetUserName();
             try
             {
                 var workflow = await _workflowService.ApproveAsync(workflowId, userId, userName, dto.Comment);
                 return Ok(new { success = true, data = MapToDto(workflow) });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { success = false, message = ex.Message });
             }
             catch (KeyNotFoundException ex)
             {
@@ -83,12 +94,18 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{workflowId}/reject")]
-        public async Task<IActionResult> RejectWorkflow(Guid workflowId, [FromBody] RejectWorkflowDto dto, [FromHeader] Guid userId, [FromHeader] string userName)
+        public async Task<IActionResult> RejectWorkflow(Guid workflowId, [FromBody] RejectWorkflowDto dto)
         {
+            var userId = User.GetUserId();
+            var userName = User.GetUserName();
             try
             {
                 var workflow = await _workflowService.RejectAsync(workflowId, userId, userName, dto.Reason);
                 return Ok(new { success = true, data = MapToDto(workflow) });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { success = false, message = ex.Message });
             }
             catch (KeyNotFoundException ex)
             {
@@ -106,8 +123,10 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{workflowId}/publish")]
-        public async Task<IActionResult> PublishWorkflow(Guid workflowId, [FromHeader] Guid userId, [FromHeader] string userName)
+        public async Task<IActionResult> PublishWorkflow(Guid workflowId)
         {
+            var userId = User.GetUserId();
+            var userName = User.GetUserName();
             try
             {
                 var workflow = await _workflowService.PublishAsync(workflowId, userId, userName);
@@ -129,8 +148,10 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{workflowId}/unpublish")]
-        public async Task<IActionResult> UnpublishWorkflow(Guid workflowId, [FromHeader] Guid userId, [FromHeader] string userName)
+        public async Task<IActionResult> UnpublishWorkflow(Guid workflowId)
         {
+            var userId = User.GetUserId();
+            var userName = User.GetUserName();
             try
             {
                 var workflow = await _workflowService.UnpublishAsync(workflowId, userId, userName);
@@ -249,8 +270,9 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("approval-requests/{requestId}/approve")]
-        public async Task<IActionResult> ApproveRequest(Guid requestId, [FromBody] ApproveRequestDto dto, [FromHeader] Guid userId)
+        public async Task<IActionResult> ApproveRequest(Guid requestId, [FromBody] ApproveRequestDto dto)
         {
+            var userId = User.GetUserId();
             try
             {
                 await _workflowService.ApproveRequestAsync(requestId, userId, dto.Comment);
@@ -268,8 +290,9 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("approval-requests/{requestId}/reject")]
-        public async Task<IActionResult> RejectRequest(Guid requestId, [FromBody] RejectRequestDto dto, [FromHeader] Guid userId)
+        public async Task<IActionResult> RejectRequest(Guid requestId, [FromBody] RejectRequestDto dto)
         {
+            var userId = User.GetUserId();
             try
             {
                 await _workflowService.RejectRequestAsync(requestId, userId, dto.Reason);

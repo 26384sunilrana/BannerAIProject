@@ -74,6 +74,43 @@ namespace BannerService.Domain.Entities
             UpdatedAt = DateTime.UtcNow;
         }
 
+        // Sales executives per shop, in addition to the owner
+        public const int MaxSalesExecutives = 2;
+
+        // Who may approve new or changed banners: the owner, either executive, or both
+        public bool OwnerIsApprover { get; private set; } = true;
+        public List<string> ApproverUserIds { get; private set; } = new();
+
+        public bool CanApprove(Guid userId)
+        {
+            if (OwnerIsApprover && OwnerUserId == userId)
+                return true;
+
+            return ApproverUserIds.Contains(userId.ToString(), StringComparer.OrdinalIgnoreCase);
+        }
+
+        public void SetApprovers(bool ownerIsApprover, IEnumerable<string> approverUserIds)
+        {
+            var ids = approverUserIds.Select(i => i.ToLowerInvariant()).Distinct().ToList();
+            if (!ownerIsApprover && ids.Count == 0)
+                throw new InvalidOperationException("A shop needs at least one approver");
+
+            OwnerIsApprover = ownerIsApprover;
+            ApproverUserIds = ids;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        public void RemoveApprover(string userId)
+        {
+            ApproverUserIds = ApproverUserIds.Where(i => !string.Equals(i, userId, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            // Never leave a shop without anyone able to approve banners
+            if (!OwnerIsApprover && ApproverUserIds.Count == 0)
+                OwnerIsApprover = true;
+
+            UpdatedAt = DateTime.UtcNow;
+        }
+
         public void AssignOwner(Guid userId)
         {
             OwnerUserId = userId;

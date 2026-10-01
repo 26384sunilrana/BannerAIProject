@@ -45,6 +45,7 @@ namespace BannerService.Domain.Services
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Name, user.GetFullName()),
                 new Claim("ShopId", user.ShopId),
+                new Claim("shop_id", user.ShopId),
                 new Claim("JwtId", jwtId)
             };
 

@@ -7,10 +7,21 @@ namespace BannerService.Application.Services
     public class PublishWorkflowService : IPublishWorkflowService
     {
         private readonly IPublishWorkflowRepository _repository;
+        private readonly IShopRepository _shopRepository;
 
-        public PublishWorkflowService(IPublishWorkflowRepository repository)
+        public PublishWorkflowService(IPublishWorkflowRepository repository, IShopRepository shopRepository)
         {
             _repository = repository;
+            _shopRepository = shopRepository;
+        }
+
+        private async Task EnsureCanApproveAsync(Guid shopId, Guid reviewerId)
+        {
+            var shop = await _shopRepository.GetByIdAsync(shopId)
+                ?? throw new KeyNotFoundException($"Shop {shopId} not found");
+
+            if (!shop.CanApprove(reviewerId))
+                throw new UnauthorizedAccessException("You are not an approver for this shop");
         }
 
         public async Task<PublishWorkflow> InitiateWorkflowAsync(Guid bannerId, Guid shopId, Guid userId, string userName)
@@ -45,6 +56,8 @@ namespace BannerService.Application.Services
             if (!workflow.CanBeRejected && workflow.Status != PublishStatus.PendingApproval)
                 throw new InvalidOperationException("Workflow is not pending approval");
 
+            await EnsureCanApproveAsync(workflow.ShopId, reviewerId);
+
             workflow.Approve(reviewerId, reviewerName, comment);
             return await _repository.UpdateAsync(workflow);
         }
@@ -57,6 +70,8 @@ namespace BannerService.Application.Services
 
             if (!workflow.CanBeRejected)
                 throw new InvalidOperationException("Workflow cannot be rejected in its current state");
+
+            await EnsureCanApproveAsync(workflow.ShopId, reviewerId);
 
             workflow.Reject(reviewerId, reviewerName, reason);
             return await _repository.UpdateAsync(workflow);
@@ -150,6 +165,8 @@ namespace BannerService.Application.Services
             if (request == null)
                 throw new KeyNotFoundException($"Approval request {requestId} not found");
 
+            await EnsureRequestReviewerAsync(request, reviewerId);
+
             request.Approve(comment);
             await _repository.UpdateApprovalRequestAsync(request);
 
@@ -181,6 +198,8 @@ namespace BannerService.Application.Services
             if (request == null)
                 throw new KeyNotFoundException($"Approval request {requestId} not found");
 
+            await EnsureRequestReviewerAsync(request, reviewerId);
+
             request.Reject(reason);
             await _repository.UpdateApprovalRequestAsync(request);
 
@@ -190,6 +209,17 @@ namespace BannerService.Application.Services
                 workflow.Reject(reviewerId, request.ReviewerName, reason);
                 await _repository.UpdateAsync(workflow);
             }
+        }
+
+        private async Task EnsureRequestReviewerAsync(ApprovalRequest request, Guid reviewerId)
+        {
+            if (request.ReviewerId != reviewerId)
+                throw new UnauthorizedAccessException("This approval request is assigned to another reviewer");
+
+            var workflow = await _repository.GetByIdAsync(request.PublishWorkflowId)
+                ?? throw new KeyNotFoundException($"Workflow {request.PublishWorkflowId} not found");
+
+            await EnsureCanApproveAsync(workflow.ShopId, reviewerId);
         }
 
         private async Task<bool> AreAllApprovalsCompletedAsync(Guid workflowId)

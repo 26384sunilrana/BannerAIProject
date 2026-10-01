@@ -16,23 +16,12 @@ public class ShopContextMiddleware
     {
         try
         {
+            // Anonymous requests (login, register, health) have no shop; [Authorize] rejects them where needed.
+            // Authenticated requests only get a shop context when the token carries a valid shop_id.
             var shopIdClaim = context.User.FindFirst("shop_id")?.Value;
 
-            if (string.IsNullOrEmpty(shopIdClaim) || !Guid.TryParse(shopIdClaim, out var shopId))
-            {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsJsonAsync(new
-                {
-                    error = new
-                    {
-                        code = "UNAUTHORIZED",
-                        message = "Missing or invalid shop_id in token"
-                    }
-                });
-                return;
-            }
-
-            shopContextAccessor.SetShopId(shopId);
+            if (context.User.Identity?.IsAuthenticated == true && Guid.TryParse(shopIdClaim, out var shopId))
+                shopContextAccessor.SetShopId(shopId);
         }
         catch (Exception ex)
         {

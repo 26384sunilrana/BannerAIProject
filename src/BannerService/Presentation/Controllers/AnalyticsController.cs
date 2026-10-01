@@ -8,6 +8,7 @@ namespace BannerService.Presentation.Controllers
     using Domain.ValueObjects;
 
     [ApiController]
+    [Microsoft.AspNetCore.Authorization.Authorize]
     [Route("api/analytics")]
     public class AnalyticsController : ControllerBase
     {
@@ -26,8 +27,9 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("reports/generate")]
-        public async Task<IActionResult> GenerateReport(Guid shopId, [FromBody] GenerateReportDto dto, [FromHeader] Guid userId)
+        public async Task<IActionResult> GenerateReport(Guid shopId, [FromBody] GenerateReportDto dto)
         {
+            var userId = User.GetUserId();
             try
             {
                 if (!Enum.TryParse<ReportType>(dto.ReportType, out var reportType))

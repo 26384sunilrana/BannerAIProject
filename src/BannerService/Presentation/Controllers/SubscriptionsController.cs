@@ -7,6 +7,7 @@ namespace BannerService.Presentation.Controllers
     using Domain.Entities;
 
     [ApiController]
+    [Microsoft.AspNetCore.Authorization.Authorize]
     [Route("api/[controller]")]
     public class SubscriptionsController : ControllerBase
     {

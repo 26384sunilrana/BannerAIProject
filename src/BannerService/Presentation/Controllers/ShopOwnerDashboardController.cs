@@ -8,6 +8,7 @@ namespace BannerService.Presentation.Controllers
     using Domain.ValueObjects;
 
     [ApiController]
+    [Microsoft.AspNetCore.Authorization.Authorize]
     [Route("api/shop/{shopId}/dashboard")]
     public class ShopOwnerDashboardController : ControllerBase
     {

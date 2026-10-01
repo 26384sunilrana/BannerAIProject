@@ -19,10 +19,10 @@
 | 2b-e | Group / City / State / Country hierarchy with unique IDs | **Partial** | Country, State, District entities; no Group or City entity; no unique IDs |
 | 2f | CRUD for Shop, Group, City, State, Country | **Partial** | `ShopController`, `AddressController`; none for Group/City |
 | 3a-i | Register / sign up | Done | `AuthenticationController` |
-| 3a-ii/iii | Max 2 active logins per shop, delete and recreate | **Gap** | `MaxUsers` on plan only; not enforced |
-| 3a-iii.1 | Approver config (owner / either / both) | **Gap** | `PublishWorkflow` has per-decision reviewer; no shop-level approver setting |
-| 3a-2 | Date or content change re-enters approval | **Gap** | Banner has no schedule fields |
-| 3a-3 | No current-date banner falls back to local default | **Gap** | No scheduling, no default banner |
+| 3a-ii/iii | Max 2 active logins per shop, delete and recreate | Done (bolt 018) | ShopTeamService |
+| 3a-iii.1 | Approver config (owner / either / both) | Done (bolt 018) | Shop.CanApprove enforced in workflow |
+| 3a-2 | Date or content change re-enters approval | Done (bolt 017) | schedule change resubmits workflow |
+| 3a-3 | No current-date banner falls back to local default | Done (bolt 017) | useDefaultBanner flag |
 | 4.1-4.2 | Components, drag/drop, z-index | Done | Component, LayerManagement, UI canvas (UI untested) |
 | 4.3 | Per-component visual effects | Done | EffectService |
 | 4.4, 4.7 | Rotating component lists (hero carousel) | Done | CarouselService |
@@ -33,7 +33,7 @@
 | 4.13 | Backend data encrypted | **Gap** | No encryption at rest beyond password hashing |
 | 4.14-4.18 | Ad space by %, mega ad swap, popup | **Gap** | `Advertisement` has Type/Target; no layout %, no mega swap, no popup mode |
 | 4.19-4.21 | Ad charges by locality/area/size, shop-level override, notify shops | **Gap** | No charge rule entity; no notification |
-| 5v-vi | No-code publish; same-day hour windows must not overlap | **Gap** | No time-window validation |
+| 5v-vi | No-code publish; same-day hour windows must not overlap | Done (bolt 017) | overlap validation |
 | 5viii | User / shop / banner management pages, reporting, HIPAA/PHI | **Partial** | Admin + shop owner dashboards, analytics; no user-management API/UI, no audit log |
 | Tech | Next.js, ASP.NET Core, JWT, MSSQL, Docker, K8s | **Partial** | All present except K8s manifests; Dockerfile exists |
 

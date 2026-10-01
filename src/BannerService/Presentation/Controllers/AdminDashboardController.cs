@@ -7,6 +7,7 @@ namespace BannerService.Presentation.Controllers
     using Domain.ValueObjects;
 
     [ApiController]
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
     [Route("api/admin/dashboard")]
     public class AdminDashboardController : ControllerBase
     {

@@ -8,6 +8,7 @@ namespace BannerService.Presentation.Controllers
     using Domain.ValueObjects;
 
     [ApiController]
+    [Microsoft.AspNetCore.Authorization.Authorize]
     [Route("api/advertisements")]
     public class AdvertisementController : ControllerBase
     {
@@ -26,8 +27,9 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("shop/{shopId}")]
-        public async Task<IActionResult> CreateAd(Guid shopId, [FromBody] CreateAdvertisementDto dto, [FromHeader] Guid userId)
+        public async Task<IActionResult> CreateAd(Guid shopId, [FromBody] CreateAdvertisementDto dto)
         {
+            var userId = User.GetUserId();
             try
             {
                 if (!Enum.TryParse<AdType>(dto.Type, out var adType))
@@ -95,8 +97,9 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPut("{adId}")]
-        public async Task<IActionResult> UpdateAd(Guid adId, [FromBody] UpdateAdvertisementDto dto, [FromHeader] Guid userId)
+        public async Task<IActionResult> UpdateAd(Guid adId, [FromBody] UpdateAdvertisementDto dto)
         {
+            var userId = User.GetUserId();
             try
             {
                 var ad = await _adService.UpdateAdAsync(adId, dto.Title, dto.Description, userId);
@@ -118,8 +121,9 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{adId}/target")]
-        public async Task<IActionResult> SetTarget(Guid adId, [FromBody] SetAdTargetDto dto, [FromHeader] Guid userId)
+        public async Task<IActionResult> SetTarget(Guid adId, [FromBody] SetAdTargetDto dto)
         {
+            var userId = User.GetUserId();
             try
             {
                 var target = MapFromDto(dto.Target);
@@ -138,8 +142,9 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{adId}/budget")]
-        public async Task<IActionResult> SetBudget(Guid adId, [FromBody] SetBudgetDto dto, [FromHeader] Guid userId)
+        public async Task<IActionResult> SetBudget(Guid adId, [FromBody] SetBudgetDto dto)
         {
+            var userId = User.GetUserId();
             try
             {
                 var ad = await _adService.SetBudgetAsync(adId, dto.BudgetLimit, dto.DailyBudgetLimit, userId);
@@ -161,8 +166,9 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{adId}/dates")]
-        public async Task<IActionResult> SetDates(Guid adId, [FromBody] SetAdDatesDto dto, [FromHeader] Guid userId)
+        public async Task<IActionResult> SetDates(Guid adId, [FromBody] SetAdDatesDto dto)
         {
+            var userId = User.GetUserId();
             try
             {
                 var ad = await _adService.SetDatesAsync(adId, dto.StartDate, dto.EndDate, userId);
@@ -184,8 +190,9 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{adId}/activate")]
-        public async Task<IActionResult> ActivateAd(Guid adId, [FromHeader] Guid userId)
+        public async Task<IActionResult> ActivateAd(Guid adId)
         {
+            var userId = User.GetUserId();
             try
             {
                 var ad = await _adService.ActivateAdAsync(adId, userId);
@@ -207,8 +214,9 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{adId}/pause")]
-        public async Task<IActionResult> PauseAd(Guid adId, [FromHeader] Guid userId)
+        public async Task<IActionResult> PauseAd(Guid adId)
         {
+            var userId = User.GetUserId();
             try
             {
                 var ad = await _adService.PauseAdAsync(adId, userId);
@@ -230,8 +238,9 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{adId}/complete")]
-        public async Task<IActionResult> CompleteAd(Guid adId, [FromHeader] Guid userId)
+        public async Task<IActionResult> CompleteAd(Guid adId)
         {
+            var userId = User.GetUserId();
             try
             {
                 var ad = await _adService.CompleteAdAsync(adId, userId);
@@ -253,8 +262,9 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{adId}/cancel")]
-        public async Task<IActionResult> CancelAd(Guid adId, [FromHeader] Guid userId)
+        public async Task<IActionResult> CancelAd(Guid adId)
         {
+            var userId = User.GetUserId();
             try
             {
                 var ad = await _adService.CancelAdAsync(adId, userId);
@@ -276,8 +286,9 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpDelete("{adId}")]
-        public async Task<IActionResult> DeleteAd(Guid adId, [FromHeader] Guid userId)
+        public async Task<IActionResult> DeleteAd(Guid adId)
         {
+            var userId = User.GetUserId();
             try
             {
                 var result = await _adService.DeleteAdAsync(adId, userId);

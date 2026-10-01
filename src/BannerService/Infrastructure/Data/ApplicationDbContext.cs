@@ -119,6 +119,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.UpdatedAt).IsRequired();
             entity.Property(e => e.CreatedByUserId).IsRequired();
+            entity.Property(e => e.OwnerIsApprover).HasDefaultValue(true);
+            Json(entity.Property(e => e.ApproverUserIds));
 
             // Hierarchy configuration
             entity.HasOne(e => e.ParentShop)

@@ -5,6 +5,7 @@ namespace BannerService.Presentation.Controllers
     using Domain.Interfaces;
 
     [ApiController]
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
     [Route("api/admin/subscription-plans")]
     public class SubscriptionPlanController : ControllerBase
     {
