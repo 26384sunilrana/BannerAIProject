@@ -62,5 +62,6 @@ Manifests are in `deploy/k8s` (kustomize).
 ## Checked vs not checked
 - Verified: the solution builds; migrations apply to SQL Server LocalDB; the API runs its sign-up, role, tenant and audit flows
   against SQL Server (smoke tests); `--migrate` mode; `docker compose config`; `kubectl kustomize deploy/k8s` renders.
-- Not verified: Docker image builds (the Docker daemon was not running), the web app build and image (dependencies are not
-  installed in this repository), and anything on a real cluster.
+- Also verified: the web app type-checks and `next build` succeeds, and the sign-up, login, subscription, team and approval
+  screens were driven in Chrome against the real API and SQL Server (28 checks).
+- Not verified: Docker image builds (the Docker daemon was not running) and anything on a real cluster.

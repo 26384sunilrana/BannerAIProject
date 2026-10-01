@@ -55,7 +55,7 @@ export function useCanvas(
 
   const canvasToScreenCoords = useCallback(
     (canvasX: number, canvasY: number): Point => {
-      if (!canvasRef.current) return { canvasX, canvasY }
+      if (!canvasRef.current) return { x: canvasX, y: canvasY }
       const rect = canvasRef.current.getBoundingClientRect()
       return canvasToScreen(canvasX, canvasY, rect, scale)
     },

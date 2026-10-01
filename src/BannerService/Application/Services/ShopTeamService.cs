@@ -51,6 +51,20 @@ public class ShopTeamService
         };
     }
 
+    /// <summary>What the caller may do in this shop's approval flow (any member of the shop can ask).</summary>
+    public async Task<MyApprovalRoleDto> GetMyApprovalRoleAsync(Guid shopId, Guid callerId)
+    {
+        var shop = await _shopRepository.GetByIdAsync(shopId)
+            ?? throw new KeyNotFoundException("Shop not found");
+
+        return new MyApprovalRoleDto
+        {
+            ShopId = shop.Id,
+            IsOwner = shop.OwnerUserId == callerId,
+            CanApprove = shop.CanApprove(callerId)
+        };
+    }
+
     public async Task<TeamMemberDto> AddSalesExecutiveAsync(Guid shopId, Guid callerId, AddSalesExecutiveDto request)
     {
         var shop = await GetOwnedShopAsync(shopId, callerId);

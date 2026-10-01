@@ -32,7 +32,7 @@ export const Canvas = React.forwardRef<HTMLDivElement, CanvasProps>(
       selectedComponentId,
       onComponentSelect,
       onComponentMove,
-      onComponentResize,
+      onComponentResize: _onComponentResize,
     },
     ref
   ) => {
@@ -53,7 +53,7 @@ export const Canvas = React.forwardRef<HTMLDivElement, CanvasProps>(
     )
 
     const handleMouseMove = useCallback(
-      (e: React.MouseEvent) => {
+      (_e: React.MouseEvent) => {
         if (drag.isDragging && drag.draggedComponentId) {
           const finalPos = drag.getFinalPosition()
           if (finalPos) {

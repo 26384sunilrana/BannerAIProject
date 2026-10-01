@@ -1,5 +1,3 @@
-import { Banner, BannerComponent, BannerVersion } from './banner'
-
 export interface ApiResponse<T> {
   success: boolean
   data: T

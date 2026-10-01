@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useReducer, useCallback, ReactNode } from 'react'
-import { EditorState, EditorAction, EditorHistoryEntry } from '@/types/editor'
+import { EditorState, EditorAction } from '@/types/editor'
 import { Banner, BannerComponent } from '@/types/banner'
 
 export interface EditorContextType {

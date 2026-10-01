@@ -48,7 +48,7 @@ export function useSave(bannerId: string, components: BannerComponent[], banner:
             rotation: component.rotation,
             opacity: component.opacity,
             isVisible: component.isVisible,
-            data: component.data,
+            data: component.data as unknown as Record<string, unknown>,
           })
         } catch (error) {
           console.error(`Failed to save component ${component.id}:`, error)

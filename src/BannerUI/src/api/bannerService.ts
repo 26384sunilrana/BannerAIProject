@@ -1,6 +1,6 @@
 import { apiClient } from './client'
 import { Banner, BannerComponent } from '@/types/banner'
-import { BannerRequest, BannerUpdateRequest, ComponentRequest, ComponentUpdateRequest } from '@/types/api'
+import { BannerUpdateRequest, ComponentRequest, ComponentUpdateRequest } from '@/types/api'
 
 export const bannerService = {
   async getBanner(bannerId: string): Promise<Banner> {

@@ -28,7 +28,7 @@ export function PropertyPanel({
         property === 'y' ? Number(value) : selectedComponent?.y || 0
       )
       if (!result.valid) {
-        newErrors[property] = result.error
+        newErrors[property] = result.error ?? 'Invalid value'
         setErrors(newErrors)
         return
       }
@@ -41,7 +41,7 @@ export function PropertyPanel({
         property === 'height' ? Number(value) : selectedComponent?.height || 0
       )
       if (!result.valid) {
-        newErrors[property] = result.error
+        newErrors[property] = result.error ?? 'Invalid value'
         setErrors(newErrors)
         return
       }
@@ -51,7 +51,7 @@ export function PropertyPanel({
     if (property === 'zIndex') {
       const result = validation.isValidZIndex(Number(value))
       if (!result.valid) {
-        newErrors[property] = result.error
+        newErrors[property] = result.error ?? 'Invalid value'
         setErrors(newErrors)
         return
       }

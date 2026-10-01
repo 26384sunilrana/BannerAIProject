@@ -17,6 +17,13 @@ namespace BannerService.Application.DTOs
         public List<string>? ApproverUserIds { get; set; }
     }
 
+    public class MyApprovalRoleDto
+    {
+        public Guid ShopId { get; set; }
+        public bool IsOwner { get; set; }
+        public bool CanApprove { get; set; }
+    }
+
     public class TeamMemberDto
     {
         public string UserId { get; set; } = string.Empty;

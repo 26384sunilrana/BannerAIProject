@@ -178,14 +178,18 @@ namespace BannerService.Application.Services
 
         public async Task<(bool success, string message, AuthTokenDto? tokens)> RefreshTokenAsync(string refreshToken, string userId)
         {
-            if (string.IsNullOrWhiteSpace(refreshToken) || string.IsNullOrWhiteSpace(userId))
-                return (false, "Refresh token and user ID are required", null);
+            if (string.IsNullOrWhiteSpace(refreshToken))
+                return (false, "Refresh token is required", null);
 
             var storedRefreshToken = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
 
-            if (storedRefreshToken == null || !storedRefreshToken.IsActive || storedRefreshToken.UserId != userId)
+            // The access token has usually expired by now, so the caller is anonymous; the token itself identifies the user.
+            // When a user id is supplied it must still match.
+            if (storedRefreshToken == null || !storedRefreshToken.IsActive ||
+                (!string.IsNullOrWhiteSpace(userId) && storedRefreshToken.UserId != userId))
                 return (false, "Invalid refresh token", null);
 
+            userId = storedRefreshToken.UserId;
             var user = await _userRepository.GetByIdAsync(userId);
 
             if (user == null || !user.IsActive)

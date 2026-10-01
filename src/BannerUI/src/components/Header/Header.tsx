@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { Button } from '@/components/Common'
-import { useEditor } from '@/hooks/useEditor'
 
 export interface HeaderProps {
   bannerId: string

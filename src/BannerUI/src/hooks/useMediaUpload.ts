@@ -84,7 +84,7 @@ export function useMediaUpload() {
               }
               return newMap
             })
-          })
+          }, checksum)
         }
 
         // Complete upload

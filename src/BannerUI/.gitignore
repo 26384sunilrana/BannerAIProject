@@ -38,3 +38,5 @@ lerna-debug.log*
 
 # OS
 Thumbs.db
+
+tsconfig.tsbuildinfo

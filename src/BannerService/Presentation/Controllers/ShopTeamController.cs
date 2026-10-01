@@ -22,6 +22,11 @@ public class ShopTeamController : ControllerBase
     public Task<IActionResult> GetTeam(Guid shopId) =>
         Run(() => _service.GetTeamAsync(shopId, User.GetUserId()));
 
+    /// <summary>Lets any member of the shop find out whether they own it and whether they approve banners.</summary>
+    [HttpGet("my-role")]
+    public Task<IActionResult> GetMyRole(Guid shopId) =>
+        Run(() => _service.GetMyApprovalRoleAsync(shopId, User.GetUserId()));
+
     [HttpPost("executives")]
     public Task<IActionResult> AddSalesExecutive(Guid shopId, [FromBody] AddSalesExecutiveDto request) =>
         Run(async () => (object)await _service.AddSalesExecutiveAsync(shopId, User.GetUserId(), request), StatusCodes.Status201Created);

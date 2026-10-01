@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import { MediaUploadRequest, MediaChunkRequest } from '@/types/api'
+import { MediaUploadRequest } from '@/types/api'
 
 export interface MediaFile {
   id: string
@@ -19,12 +19,14 @@ export const mediaService = {
     mediaFileId: string,
     chunkNumber: number,
     chunkData: Blob,
-    onProgress?: (progress: number) => void
+    onProgress?: (progress: number) => void,
+    checksumMD5?: string
   ): Promise<{ uploaded: boolean }> {
     return apiClient.upload<{ uploaded: boolean }>(
       `/media/${mediaFileId}/chunks/${chunkNumber}`,
       chunkData as unknown as File,
-      onProgress
+      onProgress,
+      checksumMD5 ? { headers: { 'X-Checksum-MD5': checksumMD5 } } : undefined
     )
   },
 

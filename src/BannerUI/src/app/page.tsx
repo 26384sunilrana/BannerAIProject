@@ -1,37 +1,39 @@
+'use client'
+
+import { useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext'
 
 export default function Home() {
+  const { user, ready } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (ready && user) router.replace('/dashboard')
+  }, [ready, user, router])
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Banner Editor</h1>
-        <p className="text-xl text-gray-600 mb-8">Create and edit banners with drag-and-drop</p>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
+      <div className="text-center max-w-xl">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">Banner AI</h1>
+        <p className="text-xl text-gray-600 mb-8">
+          Design digital banners with drag and drop, send them for approval, and publish them to your shop display.
+        </p>
 
-        <div className="space-y-4">
-          <p className="text-gray-500 mb-6">
-            Enter a banner ID to start editing
-          </p>
-
-          <form className="max-w-sm mx-auto">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                id="bannerId"
-                placeholder="Banner ID"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                type="submit"
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-              >
-                Open
-              </button>
-            </div>
-          </form>
-
-          <div className="mt-8 text-sm text-gray-500">
-            <p>Example: Try ID: <code className="bg-gray-100 px-2 py-1 rounded">1</code></p>
-          </div>
+        <div className="flex flex-wrap justify-center gap-3">
+          <Link
+            href="/register"
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+          >
+            Create your shop account
+          </Link>
+          <Link
+            href="/login"
+            className="px-6 py-3 bg-white text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-100 transition font-medium"
+          >
+            Sign in
+          </Link>
         </div>
       </div>
     </div>

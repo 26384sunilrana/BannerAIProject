@@ -11,7 +11,7 @@ import { Header, Toolbar, Canvas, PropertyPanel, Toast } from '@/components'
 
 function EditorContent() {
   const { bannerId } = useParams()
-  const { state, setBanner, setLoading, setError, selectComponent, addComponent, updateComponent, deleteComponent } = useEditor()
+  const { state, setBanner, setError, selectComponent, addComponent, updateComponent, deleteComponent } = useEditor()
   const save = useSave(typeof bannerId === 'string' ? bannerId : '', state.components, state.banner)
   const toast = useToast()
 
