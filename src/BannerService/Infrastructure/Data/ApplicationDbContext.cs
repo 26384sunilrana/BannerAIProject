@@ -1,6 +1,7 @@
 namespace BannerService.Infrastructure.Data;
 
 using System.Text.Json;
+using BannerService.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Domain.Entities;
@@ -111,11 +112,11 @@ public class ApplicationDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).HasMaxLength(256).IsRequired();
             entity.Property(e => e.Description).HasMaxLength(2000);
-            entity.Property(e => e.Address).HasMaxLength(256);
+            entity.Property(e => e.Address).HasMaxLength(1024);
             entity.Property(e => e.City).HasMaxLength(128);
-            entity.Property(e => e.PostalCode).HasMaxLength(20);
+            entity.Property(e => e.PostalCode).HasMaxLength(256);
             entity.Property(e => e.CountryCode).HasMaxLength(2);
-            entity.Property(e => e.PhoneNumber).HasMaxLength(20);
+            entity.Property(e => e.PhoneNumber).HasMaxLength(256);
             entity.Property(e => e.Website).HasMaxLength(256);
             entity.Property(e => e.Status).IsRequired();
             entity.Property(e => e.CreatedAt).IsRequired();
@@ -434,6 +435,20 @@ public class ApplicationDbContext : DbContext
         });
 
         ConfigurePublishAdvertisingAndDashboards(modelBuilder);
+        ConfigureFieldEncryption(modelBuilder);
+    }
+
+    // Personal and payment fields are encrypted before they reach the database
+    private static void ConfigureFieldEncryption(ModelBuilder modelBuilder)
+    {
+        var encrypted = new EncryptedStringConverter();
+
+        modelBuilder.Entity<User>().Property(e => e.PhoneNumber).HasConversion(encrypted);
+        modelBuilder.Entity<Shop>().Property(e => e.PhoneNumber).HasConversion(encrypted);
+        modelBuilder.Entity<Shop>().Property(e => e.Address).HasConversion(encrypted);
+        modelBuilder.Entity<Shop>().Property(e => e.PostalCode).HasConversion(encrypted);
+        modelBuilder.Entity<Subscription>().Property(e => e.PaymentMethodId).HasConversion(encrypted);
+        modelBuilder.Entity<Invoice>().Property(e => e.PaymentReference).HasConversion(encrypted);
     }
 
     // Complex values (value objects, lists, dictionaries) are stored as JSON columns.

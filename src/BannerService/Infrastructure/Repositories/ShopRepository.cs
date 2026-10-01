@@ -109,8 +109,7 @@ namespace BannerService.Infrastructure.Repositories
             {
                 var term = searchTerm.ToLower();
                 query = query.Where(s => s.Name.ToLower().Contains(term) ||
-                                        (s.Description != null && s.Description.ToLower().Contains(term)) ||
-                                        (s.PhoneNumber != null && s.PhoneNumber.Contains(term)));
+                                        (s.Description != null && s.Description.ToLower().Contains(term)));
             }
 
             if (!string.IsNullOrWhiteSpace(city))

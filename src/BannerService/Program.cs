@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -146,7 +147,21 @@ builder.Services.AddAuthentication("Bearer")
 
 builder.Services.AddAuthorization();
 
+// Keys for field-level encryption. Production should keep them in a protected store (Azure Blob + Key Vault);
+// see Security:KeyDirectory and Security:EncryptionEnabled in configuration.
+if (builder.Configuration.GetValue("Security:EncryptionEnabled", true))
+{
+    var keyDirectory = builder.Configuration["Security:KeyDirectory"] ?? Path.Combine(AppContext.BaseDirectory, "keys");
+    builder.Services.AddDataProtection()
+        .SetApplicationName("BannerAIProject")
+        .PersistKeysToFileSystem(new DirectoryInfo(keyDirectory));
+}
+
 var app = builder.Build();
+
+if (builder.Configuration.GetValue("Security:EncryptionEnabled", true))
+    BannerService.Infrastructure.Security.FieldEncryption.Configure(
+        app.Services.GetRequiredService<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>());
 
 // Apply database migrations and seed data
 using (var scope = app.Services.CreateScope())

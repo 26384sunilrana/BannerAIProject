@@ -138,8 +138,7 @@ namespace BannerService.Infrastructure.Repositories
                 .Where(u => u.ShopId == shopId && u.IsActive &&
                     (u.Email.Contains(term) ||
                      u.FirstName.Contains(term) ||
-                     u.LastName.Contains(term) ||
-                     u.PhoneNumber != null && u.PhoneNumber.Contains(term)))
+                     u.LastName.Contains(term)))
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .ToListAsync();
