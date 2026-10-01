@@ -258,6 +258,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("cleanup/events")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> CleanupOldEvents([FromQuery] int daysToKeep = 365)
         {
             try
@@ -273,6 +274,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("cleanup/reports")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> CleanupExpiredReports([FromQuery] int retentionDays = 90)
         {
             try

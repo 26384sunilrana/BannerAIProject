@@ -105,6 +105,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpGet("status/{status}")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetInvoicesByStatus(string status)
         {
             try
@@ -125,6 +126,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpGet("overdue")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetOverdueInvoices()
         {
             try
@@ -142,6 +144,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpGet("unpaid")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetUnpaidInvoices()
         {
             try
@@ -159,6 +162,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateInvoice([FromBody] CreateInvoiceDto request)
         {
             try
@@ -185,6 +189,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{invoiceId}/issue")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> IssueInvoice(Guid invoiceId)
         {
             try
@@ -207,6 +212,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{invoiceId}/mark-paid")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> MarkAsPaid(Guid invoiceId, [FromBody] MarkInvoicePaidDto request)
         {
             try
@@ -229,6 +235,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{invoiceId}/cancel")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> CancelInvoice(Guid invoiceId, [FromBody] CancelInvoiceDto request)
         {
             try
@@ -248,6 +255,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{invoiceId}/refund")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> RefundInvoice(Guid invoiceId, [FromBody] RefundInvoiceDto request)
         {
             try
@@ -267,6 +275,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{invoiceId}/retry-payment")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> RetryPayment(Guid invoiceId)
         {
             try
@@ -289,6 +298,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{invoiceId}/mark-overdue")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> MarkOverdue(Guid invoiceId)
         {
             try
@@ -308,6 +318,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpGet("metrics")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetBillingMetrics()
         {
             try

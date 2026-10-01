@@ -33,8 +33,12 @@ namespace BannerService.Presentation.Controllers
             var userName = User.GetUserName();
             try
             {
-                var workflow = await _workflowService.InitiateWorkflowAsync(dto.BannerId, Guid.NewGuid(), userId, userName);
+                var workflow = await _workflowService.InitiateWorkflowAsync(dto.BannerId, User.GetShopId(), userId, userName);
                 return Ok(new { success = true, data = MapToDto(workflow) });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { success = false, message = ex.Message });
             }
             catch (Exception ex)
             {
@@ -235,6 +239,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpGet("pending")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetPendingWorkflows()
         {
             try

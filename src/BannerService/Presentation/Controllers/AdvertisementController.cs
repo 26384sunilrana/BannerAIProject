@@ -305,6 +305,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpGet("expiring/{daysThreshold}")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetExpiringAds(int daysThreshold = 7)
         {
             try
@@ -321,6 +322,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{adId}/metrics")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateMetrics(Guid adId, [FromBody] UpdateAdMetricsDto dto)
         {
             try

@@ -105,7 +105,7 @@ builder.Services.AddScoped<MetadataExtractionService>();
 builder.Services.AddScoped<IStorageProvider, LocalStorageProvider>();
 builder.Services.AddScoped<IBannerService, BannerService.Application.Services.BannerService>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => options.Filters.Add<BannerService.Presentation.Security.TenantAccessFilter>());
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

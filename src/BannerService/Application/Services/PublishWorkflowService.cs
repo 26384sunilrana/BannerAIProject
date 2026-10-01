@@ -34,6 +34,10 @@ namespace BannerService.Application.Services
 
         public async Task<PublishWorkflow> InitiateWorkflowAsync(Guid bannerId, Guid shopId, Guid userId, string userName)
         {
+            var banner = await _bannerRepository.GetByIdAsync(bannerId, shopId);
+            if (banner == null)
+                throw new KeyNotFoundException($"Banner {bannerId} not found");
+
             var workflow = new PublishWorkflow
             {
                 BannerId = bannerId,

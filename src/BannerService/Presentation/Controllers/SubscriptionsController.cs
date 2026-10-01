@@ -259,6 +259,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpGet("renewals/pending")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetPendingRenewals()
         {
             try

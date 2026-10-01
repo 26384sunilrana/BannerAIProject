@@ -23,6 +23,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         [Authorize]
         public async Task<IActionResult> CreateShop([FromBody] CreateShopDto request)
         {
@@ -73,6 +74,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpGet]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         [Authorize]
         public async Task<IActionResult> ListShops(
             [FromQuery] int pageNumber = 1,
@@ -163,6 +165,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpDelete("{shopId}")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         [Authorize]
         public async Task<IActionResult> DeleteShop(Guid shopId)
         {
@@ -190,6 +193,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPost("{shopId}/assign-owner")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         [Authorize]
         public async Task<IActionResult> AssignOwner(Guid shopId, [FromBody] AssignOwnerDto request)
         {
@@ -208,6 +212,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpDelete("{shopId}/remove-owner")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         [Authorize]
         public async Task<IActionResult> RemoveOwner(Guid shopId)
         {
@@ -223,6 +228,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpGet("search")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         [Authorize]
         public async Task<IActionResult> SearchShops(
             [FromQuery] string? searchTerm = null,
