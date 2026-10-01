@@ -96,6 +96,7 @@ public class BannerService : IBannerService
         if (banner == null)
             throw new InvalidOperationException($"Banner {bannerId} not found");
 
+        request.Properties.Remove("playbackPlan"); // derived for the player, never stored
         var propertiesJson = JsonSerializer.Serialize(request.Properties);
         var position = new Position(request.PositionX, request.PositionY);
         var size = new Size(request.SizeWidth, request.SizeHeight);
@@ -128,6 +129,7 @@ public class BannerService : IBannerService
         if (component == null)
             throw new InvalidOperationException($"Component {componentId} not found in banner");
 
+        request.Properties.Remove("playbackPlan"); // derived for the player, never stored
         var propertiesJson = JsonSerializer.Serialize(request.Properties);
         var position = new Position(request.PositionX, request.PositionY);
         var size = new Size(request.SizeWidth, request.SizeHeight);
@@ -192,6 +194,9 @@ public class BannerService : IBannerService
         _validationService.ValidatePosition(request.PositionX, request.PositionY, int.MaxValue, int.MaxValue);
         _validationService.ValidateSize(request.SizeWidth, request.SizeHeight);
         _validationService.ValidateZIndex(request.ZIndex);
+
+        if ((ComponentType)request.ComponentType == ComponentType.Video)
+            _validationService.ValidateVideoPlaylist(request.Properties);
     }
 
     private BannerResponseDto MapToResponseDto(Banner banner)
@@ -214,6 +219,14 @@ public class BannerService : IBannerService
     private ComponentResponseDto MapToComponentDto(Component component)
     {
         var properties = JsonSerializer.Deserialize<Dictionary<string, object>>(component.PropertiesJson) ?? new();
+
+        // Give the player a ready-made schedule for video playlists
+        if (component.Type == ComponentType.Video)
+        {
+            var playlist = VideoPlaylist.FromProperties(properties);
+            if (playlist != null)
+                properties["playbackPlan"] = playlist.BuildPlan();
+        }
 
         return new ComponentResponseDto
         {

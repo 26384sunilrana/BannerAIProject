@@ -60,6 +60,12 @@ public class ComponentValidationService
             throw new ArgumentException("RotationDegrees must be -360 to 360");
     }
 
+    /// <summary>Validates the optional video playlist of a video component's properties.</summary>
+    public void ValidateVideoPlaylist(IDictionary<string, object>? properties)
+    {
+        VideoPlaylist.FromProperties(properties)?.Validate();
+    }
+
     public void ValidateVideoComponent(VideoComponentProperties props)
     {
         if (string.IsNullOrWhiteSpace(props.VideoReference))
