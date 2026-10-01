@@ -63,7 +63,7 @@ namespace BannerService.Infrastructure.Repositories
             return await _context.Invoices
                 .Include(i => i.Shop)
                 .Include(i => i.Subscription)
-                .Where(i => i.DueDate < now && i.Status == InvoiceStatus.Issued)
+                .Where(i => i.DueDate < now && (i.Status == InvoiceStatus.Issued || i.Status == InvoiceStatus.Overdue))
                 .OrderBy(i => i.DueDate)
                 .ToListAsync();
         }
@@ -135,7 +135,7 @@ namespace BannerService.Infrastructure.Repositories
             var year = DateTime.UtcNow.Year;
             var lastInvoice = await _context.Invoices
                 .Where(i => i.InvoiceNumber.StartsWith($"INV-{year}-"))
-                .OrderByDescending(i => i.CreatedAt)
+                .OrderByDescending(i => i.InvoiceNumber)
                 .FirstOrDefaultAsync();
 
             int nextNumber = 1;

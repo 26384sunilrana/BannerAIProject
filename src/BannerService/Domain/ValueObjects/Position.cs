@@ -16,7 +16,7 @@ public class Position : IEquatable<Position>
 
     public bool Equals(Position? other)
     {
-        return other != null && X == other.X && Y == other.Y;
+        return other is not null && X == other.X && Y == other.Y;
     }
 
     public override bool Equals(object? obj)
@@ -31,7 +31,7 @@ public class Position : IEquatable<Position>
 
     public static bool operator ==(Position? left, Position? right)
     {
-        return left?.Equals(right) ?? right == null;
+        return left?.Equals(right) ?? right is null;
     }
 
     public static bool operator !=(Position? left, Position? right)

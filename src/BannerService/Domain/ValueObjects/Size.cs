@@ -19,7 +19,7 @@ public class Size : IEquatable<Size>
 
     public bool Equals(Size? other)
     {
-        return other != null && Width == other.Width && Height == other.Height;
+        return other is not null && Width == other.Width && Height == other.Height;
     }
 
     public override bool Equals(object? obj)
@@ -34,7 +34,7 @@ public class Size : IEquatable<Size>
 
     public static bool operator ==(Size? left, Size? right)
     {
-        return left?.Equals(right) ?? right == null;
+        return left?.Equals(right) ?? right is null;
     }
 
     public static bool operator !=(Size? left, Size? right)

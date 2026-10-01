@@ -70,6 +70,19 @@ public class Banner
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void SwapComponentZIndexes(Guid firstId, Guid secondId)
+    {
+        var first = _components.FirstOrDefault(c => c.Id == firstId)
+            ?? throw new InvalidOperationException($"Component {firstId} not found");
+        var second = _components.FirstOrDefault(c => c.Id == secondId)
+            ?? throw new InvalidOperationException($"Component {secondId} not found");
+
+        var firstZ = first.ZIndex;
+        first.Update(new Position(first.PositionX, first.PositionY), new Size(first.SizeWidth, first.SizeHeight), second.ZIndex, first.PropertiesJson);
+        second.Update(new Position(second.PositionX, second.PositionY), new Size(second.SizeWidth, second.SizeHeight), firstZ, second.PropertiesJson);
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void Publish()
     {
         IsPublished = true;

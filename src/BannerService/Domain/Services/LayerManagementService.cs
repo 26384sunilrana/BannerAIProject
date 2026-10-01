@@ -23,12 +23,8 @@ public class LayerManagementService
         var occupying = banner.Components.FirstOrDefault(c => c.ZIndex == newZIndex && c.Id != componentId);
         if (occupying != null)
         {
-            // Swap z-indexes
-            banner.UpdateComponent(occupying.Id,
-                new Position(occupying.PositionX, occupying.PositionY),
-                new Size(occupying.SizeWidth, occupying.SizeHeight),
-                oldZIndex,
-                occupying.PropertiesJson);
+            banner.SwapComponentZIndexes(componentId, occupying.Id);
+            return new LayerOrder(componentId, oldZIndex, newZIndex, "reorder");
         }
 
         // Update target component

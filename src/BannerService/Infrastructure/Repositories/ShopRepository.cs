@@ -17,7 +17,6 @@ namespace BannerService.Infrastructure.Repositories
         public async Task<Shop?> GetByIdAsync(Guid shopId)
         {
             return await _context.Shops
-                .Include(s => s.Owner)
                 .Include(s => s.ChildShops)
                 .FirstOrDefaultAsync(s => s.Id == shopId);
         }
@@ -25,14 +24,12 @@ namespace BannerService.Infrastructure.Repositories
         public async Task<Shop?> GetByNameAsync(string name)
         {
             return await _context.Shops
-                .Include(s => s.Owner)
                 .FirstOrDefaultAsync(s => s.Name == name && s.Status != ShopStatus.Archived);
         }
 
         public async Task<List<Shop>> GetAllAsync()
         {
             return await _context.Shops
-                .Include(s => s.Owner)
                 .Where(s => s.Status != ShopStatus.Archived)
                 .OrderBy(s => s.Name)
                 .ToListAsync();
@@ -41,7 +38,6 @@ namespace BannerService.Infrastructure.Repositories
         public async Task<List<Shop>> GetActiveAsync()
         {
             return await _context.Shops
-                .Include(s => s.Owner)
                 .Where(s => s.Status == ShopStatus.Active)
                 .OrderBy(s => s.Name)
                 .ToListAsync();
@@ -50,7 +46,6 @@ namespace BannerService.Infrastructure.Repositories
         public async Task<List<Shop>> GetByOwnerAsync(Guid ownerId)
         {
             return await _context.Shops
-                .Include(s => s.Owner)
                 .Where(s => s.OwnerUserId == ownerId && s.Status != ShopStatus.Archived)
                 .OrderBy(s => s.Name)
                 .ToListAsync();
@@ -59,7 +54,6 @@ namespace BannerService.Infrastructure.Repositories
         public async Task<List<Shop>> GetByParentAsync(Guid parentShopId)
         {
             return await _context.Shops
-                .Include(s => s.Owner)
                 .Where(s => s.ParentShopId == parentShopId && s.Status != ShopStatus.Archived)
                 .OrderBy(s => s.Name)
                 .ToListAsync();
@@ -109,14 +103,13 @@ namespace BannerService.Infrastructure.Repositories
         public async Task<List<Shop>> SearchAsync(string searchTerm, string? city = null, ShopStatus? status = null)
         {
             var query = _context.Shops
-                .Include(s => s.Owner)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 var term = searchTerm.ToLower();
-                query = query.Where(s => s.Name.Contains(term) ||
-                                        (s.Description != null && s.Description.Contains(term)) ||
+                query = query.Where(s => s.Name.ToLower().Contains(term) ||
+                                        (s.Description != null && s.Description.ToLower().Contains(term)) ||
                                         (s.PhoneNumber != null && s.PhoneNumber.Contains(term)));
             }
 
@@ -142,7 +135,6 @@ namespace BannerService.Infrastructure.Repositories
         public async Task<List<Shop>> GetPaginatedAsync(int pageNumber, int pageSize, string? city = null, ShopStatus? status = null)
         {
             var query = _context.Shops
-                .Include(s => s.Owner)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(city))
@@ -235,7 +227,6 @@ namespace BannerService.Infrastructure.Repositories
                 return;
 
             var children = await _context.Shops
-                .Include(s => s.Owner)
                 .Where(s => s.ParentShopId == shop.Id)
                 .ToListAsync();
 

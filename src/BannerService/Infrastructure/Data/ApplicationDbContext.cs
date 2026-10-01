@@ -1,6 +1,8 @@
 namespace BannerService.Infrastructure.Data;
 
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Domain.Entities;
 using Domain.ValueObjects;
 
@@ -37,6 +39,18 @@ public class ApplicationDbContext : DbContext
     public DbSet<UploadChunk> UploadChunks { get; set; } = null!;
     public DbSet<Carousel> Carousels { get; set; } = null!;
     public DbSet<CarouselComponent> CarouselComponents { get; set; } = null!;
+
+    // Publish workflow, advertising and dashboards
+    public DbSet<PublishWorkflow> PublishWorkflows { get; set; } = null!;
+    public DbSet<ApprovalRequest> ApprovalRequests { get; set; } = null!;
+    public DbSet<Advertisement> Advertisements { get; set; } = null!;
+    public DbSet<AdminDashboard> AdminDashboards { get; set; } = null!;
+    public DbSet<AdminDashboardAlert> AdminDashboardAlerts { get; set; } = null!;
+    public DbSet<DashboardMetricSnapshot> DashboardMetricSnapshots { get; set; } = null!;
+    public DbSet<DashboardReport> DashboardReports { get; set; } = null!;
+    public DbSet<ShopOwnerDashboard> ShopOwnerDashboards { get; set; } = null!;
+    public DbSet<ShopDashboardAlert> ShopDashboardAlerts { get; set; } = null!;
+    public DbSet<ShopDashboardMetricSnapshot> ShopDashboardMetricSnapshots { get; set; } = null!;
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
@@ -414,5 +428,89 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.ComponentId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+        ConfigurePublishAdvertisingAndDashboards(modelBuilder);
+    }
+
+    // Complex values (value objects, lists, dictionaries) are stored as JSON columns.
+    private static void ConfigurePublishAdvertisingAndDashboards(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PublishWorkflow>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.ShopId);
+            e.HasIndex(x => x.BannerId);
+            e.Property(x => x.Status).HasConversion<int>();
+            Json(e.Property(x => x.Events));
+        });
+
+        modelBuilder.Entity<ApprovalRequest>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.PublishWorkflowId);
+            e.HasIndex(x => x.ReviewerId);
+        });
+
+        modelBuilder.Entity<Advertisement>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.ShopId);
+            e.HasIndex(x => x.Status);
+            e.Property(x => x.BudgetLimit).HasPrecision(18, 2);
+            e.Property(x => x.DailyBudgetLimit).HasPrecision(18, 2);
+            Json(e.Property(x => x.Target));
+            Json(e.Property(x => x.Metrics));
+        });
+
+        modelBuilder.Entity<AdminDashboard>(e =>
+        {
+            e.HasKey(x => x.Id);
+            Json(e.Property(x => x.CurrentSummary));
+        });
+        modelBuilder.Entity<AdminDashboardAlert>(e => e.HasKey(x => x.Id));
+        modelBuilder.Entity<DashboardMetricSnapshot>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.MetricValue).HasPrecision(18, 4);
+            Json(e.Property(x => x.MetadataJson));
+        });
+
+        modelBuilder.Entity<DashboardReport>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.ShopId);
+            Json(e.Property(x => x.Metrics));
+            Json(e.Property(x => x.ComparisonData));
+            Json(e.Property(x => x.TrendData));
+        });
+
+        modelBuilder.Entity<ShopOwnerDashboard>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.ShopId);
+            Json(e.Property(x => x.CurrentSummary));
+        });
+        modelBuilder.Entity<ShopDashboardAlert>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.ShopId);
+        });
+        modelBuilder.Entity<ShopDashboardMetricSnapshot>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.ShopId);
+            e.Property(x => x.MetricValue).HasPrecision(18, 4);
+        });
+    }
+
+    private static void Json<T>(Microsoft.EntityFrameworkCore.Metadata.Builders.PropertyBuilder<T> property) where T : class
+    {
+        property.HasConversion(
+            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+            v => JsonSerializer.Deserialize<T>(v, (JsonSerializerOptions?)null)!,
+            new ValueComparer<T>(
+                (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(),
+                v => JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!));
     }
 }
