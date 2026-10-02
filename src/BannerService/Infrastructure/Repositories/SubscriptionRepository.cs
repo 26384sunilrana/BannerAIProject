@@ -108,6 +108,31 @@ namespace BannerService.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<(List<Subscription> items, int total)> GetPagedAsync(
+            SubscriptionStatus? status, string? shopSearch, int page, int pageSize)
+        {
+            var query = _context.Subscriptions.AsQueryable();
+
+            if (status.HasValue)
+                query = query.Where(s => s.Status == status.Value);
+            if (!string.IsNullOrWhiteSpace(shopSearch))
+            {
+                var term = shopSearch.Trim().ToLower();
+                query = query.Where(s => s.Shop != null && s.Shop.Name.ToLower().Contains(term));
+            }
+
+            var total = await query.CountAsync();
+            var items = await query
+                .Include(s => s.Shop)
+                .Include(s => s.Plan)
+                .OrderBy(s => s.RenewalDate)
+                .Skip((Math.Max(page, 1) - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, total);
+        }
+
         public async Task<List<Subscription>> GetAllAsync()
         {
             return await _context.Subscriptions

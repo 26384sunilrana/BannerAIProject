@@ -22,6 +22,9 @@ const NAV: NavItem[] = [
   { href: '/display', label: 'Shop screen', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/shops', label: 'Shops', roles: [Roles.Admin] },
   { href: '/admin/subscription-plans', label: 'Plans', roles: [Roles.Admin] },
+  { href: '/admin/subscriptions', label: 'Subscriptions', roles: [Roles.Admin] },
+  { href: '/admin/users', label: 'Users', roles: [Roles.Admin] },
+  { href: '/admin/audit-log', label: 'Activity', roles: [Roles.Admin] },
 ]
 
 interface AppShellProps {

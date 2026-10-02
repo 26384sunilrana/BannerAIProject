@@ -368,4 +368,39 @@ public class PipelineSmokeTests : IClassFixture<SmokeFactory>
         Assert.True(renew.StatusCode == HttpStatusCode.OK, await renew.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.OK, (await Login()).StatusCode);
     }
+
+    [Fact]
+    public async Task Admin_ListsEveryShopsSubscription_AndOwnersCannot()
+    {
+        var (owner, _, shopId) = await RegisterOwnerAsync("subs-owner@example.com");
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var plan = new SubscriptionPlan { Id = Guid.NewGuid(), Name = "Listed", MonthlyPrice = 10, AnnualPrice = 100 };
+            context.SubscriptionPlans.Add(plan);
+            context.Subscriptions.Add(new Subscription
+            {
+                Id = Guid.NewGuid(), ShopId = shopId, PlanId = plan.Id, Status = SubscriptionStatus.GracePeriod,
+                BillingPeriod = BillingPeriod.Monthly, CurrentPrice = 10, RenewalDate = DateTime.UtcNow.AddDays(-2)
+            });
+            await context.SaveChangesAsync();
+        }
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.GetAsync("/api/admin/subscriptions")).StatusCode);
+
+        var admin = _factory.CreateClient();
+        var login = await admin.PostAsJsonAsync("/api/authentication/login", new { email = "admin@example.com", password = "AdminPass123!" });
+        admin.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await TokenFrom(login));
+
+        var all = await (await admin.GetAsync("/api/admin/subscriptions?search=Olive")).Content.ReadFromJsonAsync<JsonElement>();
+        var grace = await (await admin.GetAsync($"/api/admin/subscriptions?status={(int)SubscriptionStatus.GracePeriod}")).Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal(1, all.GetProperty("total").GetInt32());
+        var row = all.GetProperty("items")[0];
+        Assert.Equal("Olive Mart", row.GetProperty("shopName").GetString());
+        Assert.Equal("Listed", row.GetProperty("planName").GetString());
+        Assert.Equal((int)SubscriptionStatus.GracePeriod, row.GetProperty("status").GetInt32());
+        Assert.EndsWith("Z", row.GetProperty("renewalDate").GetString());
+        Assert.Equal(all.GetProperty("total").GetInt32(), grace.GetProperty("total").GetInt32());
+    }
 }

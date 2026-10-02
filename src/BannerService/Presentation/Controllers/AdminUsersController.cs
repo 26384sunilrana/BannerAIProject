@@ -2,6 +2,7 @@ namespace BannerService.Presentation.Controllers;
 
 using System.Security.Claims;
 using Application.Services;
+using Domain.Entities;
 using Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,11 +15,13 @@ public class AdminUsersController : ControllerBase
 {
     private readonly UserAdminService _users;
     private readonly IAuditLogRepository _audit;
+    private readonly ISubscriptionRepository _subscriptions;
 
-    public AdminUsersController(UserAdminService users, IAuditLogRepository audit)
+    public AdminUsersController(UserAdminService users, IAuditLogRepository audit, ISubscriptionRepository subscriptions)
     {
         _users = users;
         _audit = audit;
+        _subscriptions = subscriptions;
     }
 
     [HttpGet("users")]
@@ -39,6 +42,36 @@ public class AdminUsersController : ControllerBase
 
     [HttpPost("users/{userId}/unlock")]
     public Task<IActionResult> Unlock(string userId) => Run(() => _users.UnlockAsync(userId));
+
+    /// <summary>Every shop's subscription, soonest renewal first. Filter by status or shop name.</summary>
+    [HttpGet("subscriptions")]
+    public async Task<IActionResult> Subscriptions(
+        [FromQuery] int? status, [FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
+    {
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var (items, total) = await _subscriptions.GetPagedAsync(
+            status.HasValue ? (SubscriptionStatus)status.Value : null, search, page, pageSize);
+
+        return Ok(new
+        {
+            items = items.Select(s => new
+            {
+                id = s.Id,
+                shopId = s.ShopId,
+                shopName = s.Shop?.Name ?? "Unknown shop",
+                planName = s.Plan?.Name ?? "Unknown plan",
+                status = (int)s.Status,
+                billingPeriod = (int)s.BillingPeriod,
+                currentPrice = s.CurrentPrice,
+                renewalDate = s.RenewalDate,
+                autoRenew = s.AutoRenew,
+                graceEndsAt = s.GraceEndsAt
+            }),
+            total,
+            page,
+            pageSize
+        });
+    }
 
     /// <summary>Who accessed what, newest first. Filter by user, shop, time range, or failures only (minStatusCode=400).</summary>
     [HttpGet("audit-logs")]
