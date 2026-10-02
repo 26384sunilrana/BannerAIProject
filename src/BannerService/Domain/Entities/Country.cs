@@ -6,6 +6,8 @@ namespace BannerService.Domain.Entities
         public string Name { get; set; } = string.Empty;
         public string? RegionName { get; set; }
         public string? PhoneCode { get; set; } // "+91" for India
+        /// <summary>Platform-wide identifier, e.g. CNT-7KQ2-9M4D. Assigned once and never changed.</summary>
+        public string? UniqueId { get; set; }
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

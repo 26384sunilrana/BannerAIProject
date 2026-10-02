@@ -6,10 +6,14 @@ import { useRouter } from 'next/navigation';
 import { ShopDto } from '@/types/shop';
 import { useShops } from '@/hooks/useShops';
 import { ShopCard } from '@/components/shops/ShopCard';
+import { useAuth } from '@/context/AuthContext';
+import { Roles } from '@/lib/session';
 
 export default function MyShopsPage() {
   const router = useRouter();
-  const { loading, error, getMyShops, deactivateShop } = useShops();
+  const { loading, error, getMyShops, getAllShops, deactivateShop } = useShops();
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole(Roles.Admin);
   const [shops, setShops] = useState<ShopDto[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -23,7 +27,7 @@ export default function MyShopsPage() {
 
   const loadShops = async () => {
     try {
-      const response = await getMyShops(pageNumber, pageSize, statusFilter || undefined);
+      const response = await (isAdmin ? getAllShops : getMyShops)(pageNumber, pageSize, statusFilter || undefined);
       setShops(response.items);
       setTotalShops(response.total);
     } catch (err) {
@@ -54,15 +58,17 @@ export default function MyShopsPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Shops</h1>
-          <p className="text-gray-600 mt-1">Manage all your shop locations</p>
+          <h1 className="text-3xl font-bold text-gray-900">{isAdmin ? 'All shops' : 'My Shops'}</h1>
+          <p className="text-gray-600 mt-1">{isAdmin ? 'Every shop on the platform' : 'Manage all your shop locations'}</p>
         </div>
-        <Link
-          href="/shops/new"
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
-        >
-          + Create Shop
-        </Link>
+        {isAdmin && (
+          <Link
+            href="/shops/new"
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+          >
+            + Create Shop
+          </Link>
+        )}
       </div>
 
       {/* Messages */}
@@ -147,12 +153,14 @@ export default function MyShopsPage() {
       ) : shops.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <p className="text-gray-600 mb-4">No shops found</p>
-          <Link
-            href="/shops/new"
-            className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
-          >
-            Create Your First Shop
-          </Link>
+          {isAdmin && (
+            <Link
+              href="/shops/new"
+              className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+            >
+              Create the first shop
+            </Link>
+          )}
         </div>
       ) : (
         <>

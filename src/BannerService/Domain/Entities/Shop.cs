@@ -15,6 +15,11 @@ namespace BannerService.Domain.Entities
         public string? CountryCode { get; set; } // FK to Country.ISOCode
         public int? StateId { get; set; } // FK to State.Id
         public int? DistrictId { get; set; } // FK to District.Id
+        public int? CityId { get; set; } // FK to City.Id
+        public int? GroupId { get; set; } // FK to LocationGroup.Id; the group belongs to CityId
+
+        /// <summary>Platform-wide identifier (SHP-...) given when the shop takes a subscription. Never changed.</summary>
+        public string? UniqueId { get; set; }
 
         // Location - Details
         public string? Address { get; set; }
@@ -27,6 +32,8 @@ namespace BannerService.Domain.Entities
         public virtual Country? CountryNav { get; set; }
         public virtual State? StateNav { get; set; }
         public virtual District? DistrictNav { get; set; }
+        public virtual City? CityNav { get; set; }
+        public virtual LocationGroup? GroupNav { get; set; }
 
         // Status & Contact
         public ShopStatus Status { get; set; } = ShopStatus.Active;
@@ -58,6 +65,17 @@ namespace BannerService.Domain.Entities
             PostalCode = postalCode;
             Latitude = latitude;
             Longitude = longitude;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        /// <summary>Places the shop in a city and, optionally, a location group inside that city.</summary>
+        public void SetLocation(City city, LocationGroup? group)
+        {
+            CityId = city.Id;
+            City = city.Name;
+            StateId = city.StateId;
+            CountryCode = city.State?.CountryCode ?? CountryCode;
+            GroupId = group?.Id;
             UpdatedAt = DateTime.UtcNow;
         }
 
@@ -128,6 +146,8 @@ namespace BannerService.Domain.Entities
         public bool IsInactive => Status == ShopStatus.Inactive;
     }
 
+    // sent to the web app as its name (Active, Inactive, Archived); numbers are still accepted when reading
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
     public enum ShopStatus
     {
         Active = 1,

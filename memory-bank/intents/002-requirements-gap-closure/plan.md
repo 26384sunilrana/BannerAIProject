@@ -46,7 +46,7 @@
 | 018-user-limits-approvers | Max 2 logins per shop, delete/recreate, approver settings | 3a-ii/iii |
 | 019-restore-approval | Restore version creates pending workflow | 4.10-4.12 |
 | 020-video-rotation | Play-full vs N-seconds, volume, short-video rule | 4.5-4.6 |
-| 021-location-hierarchy | Group, City entities, unique IDs, CRUD, shop unique ID | 2a-f |
+| 021-location-hierarchy | Group, City entities, unique IDs, CRUD, shop unique ID | 2a-f - Done (bolt 033) |
 | 022-renewal-lifecycle | SMS + email reminders, daily grace reminders, login lockout, default static banner | 1e, 1g |
 | 023-ad-layout-charges | Ad space %, mega swap, popup, charge rules, location notify | 4.14-4.21 |
 | 024-security-compliance | Encryption at rest, audit log, user-management API/UI | 4.13, 5viii |

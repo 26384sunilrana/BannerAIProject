@@ -25,6 +25,7 @@ const CARDS: Card[] = [
   { href: '/subscription', title: 'Subscription', text: 'Choose a plan, switch billing period, turn automatic renewal on or off.', roles: [Roles.ShopOwner] },
   { href: '/shops', title: 'Shops', text: 'Manage every shop on the platform.', roles: [Roles.Admin] },
   { href: '/admin/subscription-plans', title: 'Subscription plans', text: 'Edit plans and prices.', roles: [Roles.Admin] },
+  { href: '/admin/locations', title: 'Places', text: 'Countries, states, cities and groups with their identifiers, and which shops are in each.', roles: [Roles.Admin] },
   { href: '/admin/subscriptions', title: 'Subscriptions', text: 'See each shop plan, reactivate shops that were switched off, run the renewal job.', roles: [Roles.Admin] },
   { href: '/admin/users', title: 'Users', text: 'Search logins, deactivate, reactivate or unlock them.', roles: [Roles.Admin] },
   { href: '/admin/audit-log', title: 'Activity log', text: 'Who called what and when, with failures highlighted.', roles: [Roles.Admin] },

@@ -14,6 +14,13 @@ export interface ShopLocation {
 
 export interface ShopDto extends ShopLocation {
   id: string;
+  /** SHP-XXXX-XXXX, given when the shop takes a subscription. */
+  uniqueId?: string | null;
+  cityId?: number | null;
+  groupId?: number | null;
+  cityUniqueId?: string | null;
+  groupName?: string | null;
+  groupUniqueId?: string | null;
   name: string;
   description?: string;
   parentShopId?: string;

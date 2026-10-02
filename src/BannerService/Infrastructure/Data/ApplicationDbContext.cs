@@ -19,6 +19,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Country> Countries { get; set; } = null!;
     public DbSet<State> States { get; set; } = null!;
     public DbSet<District> Districts { get; set; } = null!;
+    public DbSet<City> Cities { get; set; } = null!;
+    public DbSet<LocationGroup> LocationGroups { get; set; } = null!;
 
     // Shop management
     public DbSet<Shop> Shops { get; set; } = null!;
@@ -79,6 +81,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.RegionName).HasMaxLength(128);
             entity.Property(e => e.PhoneCode).HasMaxLength(10);
             entity.HasIndex(e => e.Name).HasName("IX_Countries_Name");
+            entity.Property(e => e.UniqueId).HasMaxLength(16);
+            entity.HasIndex(e => e.UniqueId).HasDatabaseName("IX_Countries_UniqueId").IsUnique().HasFilter("[UniqueId] IS NOT NULL");
         });
 
         modelBuilder.Entity<State>(entity =>
@@ -97,6 +101,39 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.CountryCode).HasName("IX_States_CountryCode");
             entity.HasIndex(e => e.Name).HasName("IX_States_Name");
             entity.HasIndex(e => new { e.CountryCode, e.Code }).HasName("IX_States_CountryCode_Code").IsUnique();
+            entity.Property(e => e.UniqueId).HasMaxLength(16);
+            entity.HasIndex(e => e.UniqueId).HasDatabaseName("IX_States_UniqueId").IsUnique().HasFilter("[UniqueId] IS NOT NULL");
+        });
+
+        modelBuilder.Entity<City>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.UniqueId).HasMaxLength(16).IsRequired();
+
+            entity.HasOne(e => e.State)
+                .WithMany(s => s.Cities)
+                .HasForeignKey(e => e.StateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => new { e.StateId, e.Name }).HasDatabaseName("IX_Cities_StateId_Name").IsUnique();
+            entity.HasIndex(e => e.UniqueId).HasDatabaseName("IX_Cities_UniqueId").IsUnique();
+        });
+
+        modelBuilder.Entity<LocationGroup>(entity =>
+        {
+            entity.ToTable("LocationGroups");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.UniqueId).HasMaxLength(16).IsRequired();
+
+            entity.HasOne(e => e.City)
+                .WithMany(c => c.Groups)
+                .HasForeignKey(e => e.CityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => new { e.CityId, e.Name }).HasDatabaseName("IX_LocationGroups_CityId_Name").IsUnique();
+            entity.HasIndex(e => e.UniqueId).HasDatabaseName("IX_LocationGroups_UniqueId").IsUnique();
         });
 
         modelBuilder.Entity<District>(entity =>
@@ -159,6 +196,22 @@ public class ApplicationDbContext : DbContext
                 .WithMany(d => d.Shops)
                 .HasForeignKey(e => e.DistrictId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Location hierarchy: shops are never deleted with their city or group (NoAction), the service refuses such deletes
+            entity.HasOne(e => e.CityNav)
+                .WithMany(c => c.Shops)
+                .HasForeignKey(e => e.CityId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(e => e.GroupNav)
+                .WithMany(g => g.Shops)
+                .HasForeignKey(e => e.GroupId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.Property(e => e.UniqueId).HasMaxLength(16);
+            entity.HasIndex(e => e.UniqueId).HasDatabaseName("IX_Shops_UniqueId").IsUnique().HasFilter("[UniqueId] IS NOT NULL");
+            entity.HasIndex(e => e.CityId).HasDatabaseName("IX_Shops_CityId");
+            entity.HasIndex(e => e.GroupId).HasDatabaseName("IX_Shops_GroupId");
 
             // Indexes for performance
             entity.HasIndex(e => e.ParentShopId).HasName("IX_Shops_ParentShopId");

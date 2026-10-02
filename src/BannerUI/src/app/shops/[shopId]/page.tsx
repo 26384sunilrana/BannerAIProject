@@ -61,6 +61,26 @@ export default function ShopDetailPage() {
 
       {error && <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">{error}</div>}
 
+      {/* Identifiers: the shop's own, and its place in Country > State > City > Group */}
+      <div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-700" data-testid="shop-identifiers">
+        <p>
+          Shop identifier:{' '}
+          <span className="font-mono font-semibold text-gray-900">{shop.uniqueId ?? 'given when a subscription starts'}</span>
+        </p>
+        {shop.groupName && (
+          <p>
+            Group: <span className="font-semibold text-gray-900">{shop.groupName}</span>{' '}
+            <span className="font-mono text-gray-500">{shop.groupUniqueId}</span>
+          </p>
+        )}
+        {shop.city && shop.cityUniqueId && (
+          <p>
+            City: <span className="font-semibold text-gray-900">{shop.city}</span>{' '}
+            <span className="font-mono text-gray-500">{shop.cityUniqueId}</span>
+          </p>
+        )}
+      </div>
+
       {/* Status Badge */}
       <div className="inline-block">
         <span

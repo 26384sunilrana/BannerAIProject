@@ -33,7 +33,7 @@ Nothing in R0, R3 or R4 needs a decision from outside, so they can start straigh
 | Phase | Bolts | Scope | Depends on | Size |
 |---|---|---|---|---|
 | **R0 Safety net** | 032 (done) | GitHub/Azure CI pipeline (build, .NET tests, Jest, tsc); triage the 46 excluded test files (rewrite what still matters, delete the rest); fix or retire the 103 failing Jest tests; move secrets out of `appsettings.json`; baseline migration for databases built from the old model [E] | none | M |
-| **R3 Location hierarchy** | 033 | Group and City entities, unique IDs for shops/groups/cities/states/countries, CRUD API and admin screens, shop assigned to a city and group [A, req 2a-f] | R0 | L |
+| **R3 Location hierarchy** | 033 (done) | Group and City entities, unique IDs for shops/groups/cities/states/countries, CRUD API and admin screens, shop assigned to a city and group [A, req 2a-f] | R0 | L |
 | **R4 Media foundation** | 034 | Blob storage provider behind the existing media interface, media library screen, delete and clean-up, storage used per shop, video length and size read on upload [D, B] | R0 | L |
 | **R1 Providers (LAST)** | 044 | Payment gateway (charge, refund, receipt, failed payment), real email wiring, SMS provider, all behind the existing seams [B] | R0, your provider choices | L |
 | **R2 Accounts** | 036 | Cookie session instead of local storage, account settings, owner transfer and move user between shops [C]. Forgot password, email verification and self-service renewal wait for providers (044) | R0 | M |

@@ -85,15 +85,18 @@ namespace BannerService.Presentation.Controllers
             if (pageNumber < 1 || pageSize < 1)
                 return BadRequest(new { message = "Page number and size must be greater than 0" });
 
-            var shops = await _shopService.GetPaginatedAsync(pageNumber, pageSize, city, status);
-            var shopDtos = shops.Select(MapToDto).ToList();
+            var all = (await _shopService.GetAllAsync())
+                .Where(s => (status == null || s.Status == status)
+                    && (string.IsNullOrWhiteSpace(city) || (s.City != null && s.City.Equals(city, StringComparison.OrdinalIgnoreCase))))
+                .ToList();
+            var shopDtos = all.Skip((pageNumber - 1) * pageSize).Take(pageSize).Select(MapToDto).ToList();
 
             return Ok(new
             {
                 pageNumber,
                 pageSize,
                 items = shopDtos,
-                total = shops.Count
+                total = all.Count
             });
         }
 
@@ -132,7 +135,7 @@ namespace BannerService.Presentation.Controllers
         }
 
         [HttpPut("{shopId}")]
-        [Authorize]
+        [Authorize(Roles = "Admin,ShopOwner")]
         public async Task<IActionResult> UpdateShop(Guid shopId, [FromBody] UpdateShopDto request)
         {
             if (!ModelState.IsValid)
@@ -301,6 +304,12 @@ namespace BannerService.Presentation.Controllers
                 CountryName = shop.CountryNav?.Name,
                 StateName = shop.StateNav?.Name,
                 DistrictName = shop.DistrictNav?.Name,
+                UniqueId = shop.UniqueId,
+                CityId = shop.CityId,
+                GroupId = shop.GroupId,
+                CityUniqueId = shop.CityNav?.UniqueId,
+                GroupName = shop.GroupNav?.Name,
+                GroupUniqueId = shop.GroupNav?.UniqueId,
                 Address = shop.Address,
                 City = shop.City,
                 PostalCode = shop.PostalCode,

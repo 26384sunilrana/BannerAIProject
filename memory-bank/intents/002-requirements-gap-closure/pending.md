@@ -7,7 +7,6 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 
 | Item | Requirement | Notes |
 |---|---|---|
-| **Bolt 021** Location hierarchy | 2a-f: unique ID per shop owner; Group (by location), City, State, Country levels with unique IDs; CRUD for Shop, Group, City, State, Country | Today: Country, State, District and a shop parent link exist; no Group or City entity, no unique IDs |
 | **Bolt 023** Advertising | 4.14-4.21: ad space as a percentage of the banner, mega advertisement (sides switch for a period), popup ads (size irrelevant), minor ad as a chargeable component, major ad notification to shops by location, charge rules by locality / area / banner size with shop-level override, space returns to the shop banner when an ad ends | Today: an `Advertisement` entity with type, budget, target and metrics exists; no layout, popup, charge rules or notifications |
 | Pricing by storage / banner size | 1h: subscription cost based on banner size and storage | Plans carry a storage limit; usage is never measured or enforced |
 | Reporting and HIPAA/PHI | 5viii: per-user and overall reporting with HIPAA/PHI in mind | Dashboards, analytics and an audit log exist; no formal HIPAA review, retention or export |
@@ -55,6 +54,7 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 - Video playback of real MP4 files was not tried (test uploads used files with a valid header only).
 - Multi-pod behaviour (shared keys and media volumes, the lifecycle job on several pods) was reasoned about and unit tested, not run.
 
+- Location hierarchy leftovers [033]: the older District level is still there and unused by the new screens (cities replace it for placing shops; districts are not shown); an owner cannot ask for a new city or group (they ask the administrator); no bulk import of cities; a shop moved to another group keeps no history; identifiers are shown but there is no search by identifier; creating a shop for an owner (admin) does not yet attach an owner login.
 - `GET /api/subscriptions/{shopId}` returns 404 when a shop has no subscription; noisy in the activity log [031].
 
 - **Deliberately last (bolt 044), by decision on 2026-10-02:** real payment / SMS / email providers, forgot-password and email verification, self-service renewal, Azure Blob + Key Vault + Azure SQL, after a full human review. See `roadmap.md`.

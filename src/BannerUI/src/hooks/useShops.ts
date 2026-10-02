@@ -39,6 +39,37 @@ export const useShops = () => {
     []
   );
 
+  // Every shop (administrators only)
+  const getAllShops = useCallback(
+    async (pageNumber = 1, pageSize = 10, status?: string): Promise<ShopsListResponse> => {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams();
+        params.append('pageNumber', pageNumber.toString());
+        params.append('pageSize', pageSize.toString());
+        if (status) params.append('status', status);
+
+        const response = await authFetch(`/shops?${params}`, {
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch shops');
+        }
+
+        return await response.json();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to fetch shops';
+        setError(message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
   // Get single shop by ID
   const getShopById = useCallback(async (shopId: string): Promise<ShopDto> => {
     setLoading(true);
@@ -147,6 +178,7 @@ export const useShops = () => {
     loading,
     error,
     getMyShops,
+    getAllShops,
     getShopById,
     createShop,
     updateShop,

@@ -18,6 +18,11 @@ namespace BannerService.Infrastructure.Repositories
         {
             return await _context.Shops
                 .Include(s => s.ChildShops)
+                .Include(s => s.CountryNav)
+                .Include(s => s.StateNav)
+                .Include(s => s.DistrictNav)
+                .Include(s => s.CityNav)
+                .Include(s => s.GroupNav)
                 .FirstOrDefaultAsync(s => s.Id == shopId);
         }
 
@@ -30,6 +35,8 @@ namespace BannerService.Infrastructure.Repositories
         public async Task<List<Shop>> GetAllAsync()
         {
             return await _context.Shops
+                .Include(s => s.CityNav)
+                .Include(s => s.GroupNav)
                 .Where(s => s.Status != ShopStatus.Archived)
                 .OrderBy(s => s.Name)
                 .ToListAsync();
@@ -46,6 +53,11 @@ namespace BannerService.Infrastructure.Repositories
         public async Task<List<Shop>> GetByOwnerAsync(Guid ownerId)
         {
             return await _context.Shops
+                .Include(s => s.CountryNav)
+                .Include(s => s.StateNav)
+                .Include(s => s.DistrictNav)
+                .Include(s => s.CityNav)
+                .Include(s => s.GroupNav)
                 .Where(s => s.OwnerUserId == ownerId && s.Status != ShopStatus.Archived)
                 .OrderBy(s => s.Name)
                 .ToListAsync();

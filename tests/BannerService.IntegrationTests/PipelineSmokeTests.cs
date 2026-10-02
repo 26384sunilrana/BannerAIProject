@@ -1,3 +1,4 @@
+using BannerService.Domain.Interfaces;
 using BannerService.Application.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
@@ -405,5 +406,109 @@ public class PipelineSmokeTests : IClassFixture<SmokeFactory>
         Assert.Equal((int)SubscriptionStatus.GracePeriod, row.GetProperty("status").GetInt32());
         Assert.EndsWith("Z", row.GetProperty("renewalDate").GetString());
         Assert.Equal(all.GetProperty("total").GetInt32(), grace.GetProperty("total").GetInt32());
+    }
+
+    [Fact]
+    public async Task Locations_AdminBuildsTheHierarchy_OwnersPlaceTheirShop_AndNothingInUseIsDeleted()
+    {
+        var (owner, _, shopId) = await RegisterOwnerAsync("loc-owner@example.com");
+        int stateId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            if (!await context.Countries.AnyAsync(c => c.ISOCode == "IN"))
+                context.Countries.Add(new Country { ISOCode = "IN", Name = "India" });
+            var state = await context.States.FirstOrDefaultAsync(s => s.CountryCode == "IN" && s.Code == "MH");
+            if (state == null)
+                context.States.Add(state = new State { CountryCode = "IN", Code = "MH", Name = "Maharashtra" });
+            await context.SaveChangesAsync();
+            stateId = state.Id;
+        }
+
+        var admin = _factory.CreateClient();
+        var login = await admin.PostAsJsonAsync("/api/authentication/login", new { email = "admin@example.com", password = "AdminPass123!" });
+        admin.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await TokenFrom(login));
+
+        // only an administrator changes the hierarchy
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _factory.CreateClient().GetAsync("/api/locations/countries")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.PostAsJsonAsync("/api/locations/cities", new { stateId, name = "Pune" })).StatusCode);
+
+        // City > Group, each with its own identifier
+        var cityResponse = await admin.PostAsJsonAsync("/api/locations/cities", new { stateId, name = "Mumbai" });
+        Assert.Equal(HttpStatusCode.Created, cityResponse.StatusCode);
+        var city = await cityResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var cityId = int.Parse(city.GetProperty("id").GetString()!);
+        Assert.Matches("^CTY-[0-9A-Z]{4}-[0-9A-Z]{4}$", city.GetProperty("uniqueId").GetString()!);
+        Assert.Equal(HttpStatusCode.Conflict, (await admin.PostAsJsonAsync("/api/locations/cities", new { stateId, name = "mumbai" })).StatusCode);
+
+        var group = await (await admin.PostAsJsonAsync("/api/locations/groups", new { cityId, name = "Andheri" })).Content.ReadFromJsonAsync<JsonElement>();
+        var groupId = int.Parse(group.GetProperty("id").GetString()!);
+        Assert.StartsWith("GRP-", group.GetProperty("uniqueId").GetString());
+
+        var other = await (await admin.PostAsJsonAsync("/api/locations/cities", new { stateId, name = "Pune" })).Content.ReadFromJsonAsync<JsonElement>();
+        var otherCityId = int.Parse(other.GetProperty("id").GetString()!);
+        var otherGroup = await (await admin.PostAsJsonAsync("/api/locations/groups", new { cityId = otherCityId, name = "Kothrud" })).Content.ReadFromJsonAsync<JsonElement>();
+
+        // anyone signed in can read them to fill in an address
+        var cities = await (await owner.GetAsync($"/api/locations/cities?stateId={stateId}")).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(2, cities.GetArrayLength());
+
+        // the owner places the shop; a group of another city is refused
+        var wrongGroup = await owner.PutAsJsonAsync($"/api/locations/shops/{shopId}", new { cityId, groupId = int.Parse(otherGroup.GetProperty("id").GetString()!) });
+        Assert.Equal(HttpStatusCode.BadRequest, wrongGroup.StatusCode);
+
+        var placed = await owner.PutAsJsonAsync($"/api/locations/shops/{shopId}", new { cityId, groupId });
+        Assert.Equal(HttpStatusCode.OK, placed.StatusCode);
+        var shop = await (await owner.GetAsync($"/api/shops/{shopId}")).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(cityId, shop.GetProperty("cityId").GetInt32());
+        Assert.Equal("Andheri", shop.GetProperty("groupName").GetString());
+        Assert.Equal("Mumbai", shop.GetProperty("city").GetString());
+        Assert.Equal(stateId, shop.GetProperty("stateId").GetInt32());
+
+        // another owner cannot move this shop
+        var (intruder, _, _) = await RegisterOwnerAsync("loc-intruder@example.com");
+        Assert.Equal(HttpStatusCode.Forbidden, (await intruder.PutAsJsonAsync($"/api/locations/shops/{shopId}", new { cityId })).StatusCode);
+
+        // the administrator sees which shops are in the group; things in use are not deleted
+        var members = await (await admin.GetAsync($"/api/locations/groups/{groupId}/shops")).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(shopId, members[0].GetProperty("id").GetGuid());
+        Assert.Equal(HttpStatusCode.Conflict, (await admin.DeleteAsync($"/api/locations/groups/{groupId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await admin.DeleteAsync($"/api/locations/cities/{cityId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await admin.DeleteAsync($"/api/locations/states/{stateId}")).StatusCode);
+
+        // switching a city off hides it from the pickers but keeps it for the admin
+        var off = await admin.PutAsJsonAsync($"/api/locations/cities/{otherCityId}", new { name = "Pune", isActive = false });
+        Assert.Equal(HttpStatusCode.OK, off.StatusCode);
+        Assert.Equal(1, (await (await owner.GetAsync($"/api/locations/cities?stateId={stateId}&includeInactive=true")).Content.ReadFromJsonAsync<JsonElement>()).GetArrayLength());
+        Assert.Equal(2, (await (await admin.GetAsync($"/api/locations/cities?stateId={stateId}&includeInactive=true")).Content.ReadFromJsonAsync<JsonElement>()).GetArrayLength());
+
+        // an unused group can go
+        var spare = await (await admin.PostAsJsonAsync("/api/locations/groups", new { cityId, name = "Bandra" })).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(HttpStatusCode.OK, (await admin.DeleteAsync($"/api/locations/groups/{spare.GetProperty("id").GetString()}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task UniqueIds_AreGivenOnceToShopsAndBackfilledForOlderRows()
+    {
+        var (_, _, shopId) = await RegisterOwnerAsync("uid-owner@example.com");
+        using var scope = _factory.Services.CreateScope();
+        var locations = scope.ServiceProvider.GetRequiredService<ILocationService>();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var first = await locations.EnsureShopUniqueIdAsync(shopId);
+        var second = await locations.EnsureShopUniqueIdAsync(shopId);
+        Assert.Matches("^SHP-[0-9A-Z]{4}-[0-9A-Z]{4}$", first!);
+        Assert.Equal(first, second);
+
+        if (!await context.Countries.AnyAsync(c => c.ISOCode == "XX"))
+            context.Countries.Add(new Country { ISOCode = "XX", Name = "Old country" });
+        if (!await context.States.AnyAsync(s => s.CountryCode == "XX"))
+            context.States.Add(new State { CountryCode = "XX", Code = "OS", Name = "Old state" });
+        await context.SaveChangesAsync();
+
+        Assert.True(await locations.BackfillUniqueIdsAsync() >= 2);
+        Assert.StartsWith("CNT-", (await context.Countries.FirstAsync(c => c.ISOCode == "XX")).UniqueId);
+        Assert.StartsWith("STA-", (await context.States.FirstAsync(s => s.Code == "OS")).UniqueId);
+        Assert.Equal(0, await locations.BackfillUniqueIdsAsync());
     }
 }

@@ -65,6 +65,14 @@ namespace BannerService.Application.DTOs
         public string? StateName { get; set; }
         public string? DistrictName { get; set; }
 
+        // Location hierarchy: Country > State > City > Group > Shop
+        public string? UniqueId { get; set; }
+        public int? CityId { get; set; }
+        public int? GroupId { get; set; }
+        public string? CityUniqueId { get; set; }
+        public string? GroupName { get; set; }
+        public string? GroupUniqueId { get; set; }
+
         // Address details
         public string? Address { get; set; }
         public string? City { get; set; }

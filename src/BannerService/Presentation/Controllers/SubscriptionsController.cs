@@ -1,5 +1,6 @@
 namespace BannerService.Presentation.Controllers
 {
+    using BannerService.Domain.Interfaces;
     using Microsoft.AspNetCore.Mvc;
     using System.Security.Claims;
     using Application.Services;
@@ -15,6 +16,7 @@ namespace BannerService.Presentation.Controllers
         private readonly RenewalService _renewalService;
         private readonly BillingService _billingService;
         private readonly SubscriptionLifecycleService _lifecycle;
+        private readonly ILocationService _locations;
         private readonly ILogger<SubscriptionsController> _logger;
 
         public SubscriptionsController(
@@ -22,8 +24,10 @@ namespace BannerService.Presentation.Controllers
             RenewalService renewalService,
             BillingService billingService,
             SubscriptionLifecycleService lifecycle,
+            ILocationService locations,
             ILogger<SubscriptionsController> logger)
         {
+            _locations = locations;
             _lifecycle = lifecycle;
             _subscriptionService = subscriptionService;
             _renewalService = renewalService;
@@ -122,6 +126,17 @@ namespace BannerService.Presentation.Controllers
 
                 if (!result.success)
                     return BadRequest(new { success = false, message = result.message });
+
+                // every shop that takes a subscription gets its platform-wide identifier; a failure here must not undo the purchase,
+                // the start-up backfill picks such a shop up later
+                try
+                {
+                    await _locations.EnsureShopUniqueIdAsync(result.subscription!.ShopId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Could not give shop {ShopId} its identifier", result.subscription!.ShopId);
+                }
 
                 var subscriptionDto = MapToDto(result.subscription!);
                 return CreatedAtAction(nameof(GetShopSubscription),

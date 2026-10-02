@@ -43,6 +43,8 @@ builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
 // Address master data repositories
 builder.Services.AddScoped<IAddressRepository, AddressRepository>();
+builder.Services.AddScoped<ILocationRepository, LocationRepository>();
+builder.Services.AddScoped<ILocationService, LocationService>();
 
 // Shop management repositories & services
 builder.Services.AddScoped<IShopRepository, ShopRepository>();
@@ -197,6 +199,11 @@ if (migrateOnly || app.Configuration.GetValue("Database:MigrateOnStartup", true)
         // Seed master data
         await BannerService.Infrastructure.Data.DatabaseSeeder.SeedAsync(dbContext);
         Log.Information("Database seeded with master data successfully");
+
+        // countries, states and subscribed shops that predate the unique identifiers get theirs
+        var backfilled = await scope.ServiceProvider.GetRequiredService<BannerService.Domain.Interfaces.ILocationService>().BackfillUniqueIdsAsync();
+        if (backfilled > 0)
+            Log.Information("Gave unique identifiers to {Count} existing rows", backfilled);
     }
     catch (Exception ex)
     {
