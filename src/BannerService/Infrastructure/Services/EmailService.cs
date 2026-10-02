@@ -46,21 +46,36 @@ namespace BannerService.Application.Services
             return await SendEmailAsync(email, "Password Reset", body, isHtml: true);
         }
 
+        /// <summary>
+        /// Sends through SMTP when Email:Smtp:Host is set (Port, User, Password, From, EnableSsl alongside it).
+        /// Without it nothing can be sent: the message is logged without its body and false is returned.
+        /// </summary>
         public async Task<bool> SendEmailAsync(string toEmail, string subject, string body, bool isHtml = false)
         {
+            var host = _configuration["Email:Smtp:Host"];
+            if (string.IsNullOrWhiteSpace(host))
+            {
+                _logger.LogWarning("Email not sent to {Email} ({Subject}): Email:Smtp:Host is not configured", toEmail, subject);
+                return false;
+            }
+
             try
             {
-                // Log email instead of sending in development mode
+                using var client = new System.Net.Mail.SmtpClient(host, _configuration.GetValue("Email:Smtp:Port", 587))
+                {
+                    EnableSsl = _configuration.GetValue("Email:Smtp:EnableSsl", true)
+                };
+
+                var user = _configuration["Email:Smtp:User"];
+                if (!string.IsNullOrEmpty(user))
+                    client.Credentials = new System.Net.NetworkCredential(user, _configuration["Email:Smtp:Password"]);
+
+                var from = _configuration["Email:Smtp:From"] ?? user ?? "noreply@bannerai.local";
+                using var message = new System.Net.Mail.MailMessage(from, toEmail, subject, body) { IsBodyHtml = isHtml };
+
+                await client.SendMailAsync(message);
                 _logger.LogInformation("Email sent to {Email}: {Subject}", toEmail, subject);
-                _logger.LogDebug("Email body: {Body}", body);
-
-                // TODO: Implement SMTP configuration for production
-                // For now, we log the email to console/file for testing
-                Console.WriteLine($"[EMAIL] To: {toEmail}");
-                Console.WriteLine($"[EMAIL] Subject: {subject}");
-                Console.WriteLine($"[EMAIL] Body: {body}");
-
-                return await Task.FromResult(true);
+                return true;
             }
             catch (Exception ex)
             {

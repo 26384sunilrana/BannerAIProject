@@ -19,4 +19,7 @@ public class ActiveBannerResponseDto
     /// <summary>Null when nothing is live; the client then shows the default banner from the local machine.</summary>
     public BannerResponseDto? Banner { get; set; }
     public bool UseDefaultBanner { get; set; }
+
+    /// <summary>Why the default banner is used: NothingScheduled or SubscriptionEnded.</summary>
+    public string? Reason { get; set; }
 }

@@ -24,6 +24,10 @@ namespace BannerService.Application.Services
         private readonly IPasswordHashService _passwordHashService;
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IShopRepository _shopRepository;
+        private readonly ISubscriptionRepository _subscriptionRepository;
+
+        public const string SubscriptionEndedMessage =
+            "Your subscription has ended, so logins are switched off. Contact support to reactivate your account.";
 
         public AuthenticationService(
             IUserRepository userRepository,
@@ -31,7 +35,8 @@ namespace BannerService.Application.Services
             IJwtTokenService jwtTokenService,
             IPasswordHashService passwordHashService,
             IRefreshTokenRepository refreshTokenRepository,
-            IShopRepository shopRepository)
+            IShopRepository shopRepository,
+            ISubscriptionRepository subscriptionRepository)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
@@ -39,6 +44,23 @@ namespace BannerService.Application.Services
             _passwordHashService = passwordHashService;
             _refreshTokenRepository = refreshTokenRepository;
             _shopRepository = shopRepository;
+            _subscriptionRepository = subscriptionRepository;
+        }
+
+        /// <summary>
+        /// A shop whose subscription expired (grace week over) or was suspended cannot sign in; it only keeps the
+        /// default banner it has on its own machine. Platform admins are never locked out.
+        /// </summary>
+        private async Task<bool> IsLockedBySubscriptionAsync(User user)
+        {
+            if (user.UserRoles.Any(r => r.Role?.Name == Role.Admin))
+                return false;
+
+            if (!Guid.TryParse(user.ShopId, out var shopId))
+                return false;
+
+            var subscription = await _subscriptionRepository.GetByShopIdAsync(shopId);
+            return subscription?.IsLocked == true;
         }
 
         public async Task<(bool success, string message, AuthTokenDto? tokens)> RegisterAsync(RegisterDto request)
@@ -147,6 +169,9 @@ namespace BannerService.Application.Services
                     return (false, "Invalid email or password", null);
             }
 
+            if (await IsLockedBySubscriptionAsync(user))
+                return (false, SubscriptionEndedMessage, null);
+
             user.ResetLoginAttempts();
             await _userRepository.UpdateAsync(user);
 
@@ -194,6 +219,9 @@ namespace BannerService.Application.Services
 
             if (user == null || !user.IsActive)
                 return (false, "User not found or inactive", null);
+
+            if (await IsLockedBySubscriptionAsync(user))
+                return (false, SubscriptionEndedMessage, null);
 
             var (accessToken, jwtId) = _jwtTokenService.GenerateAccessToken(user);
             var newRefreshToken = _jwtTokenService.GenerateRefreshToken();

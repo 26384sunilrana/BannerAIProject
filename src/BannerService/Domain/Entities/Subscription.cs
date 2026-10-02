@@ -28,6 +28,10 @@ namespace BannerService.Domain.Entities
 
         // Auto renewal and scheduled plan change (effective from the next day)
         public bool AutoRenew { get; set; } = true;
+        // After the renewal date passes unpaid the shop has a week to renew before logins are switched off
+        public const int GraceDays = 7;
+        public DateTime? GraceEndsAt { get; set; }
+
         public Guid? PendingPlanId { get; set; }
         public decimal? PendingPrice { get; set; }
         public DateTime? PendingPlanEffectiveAt { get; set; }
@@ -113,6 +117,30 @@ namespace BannerService.Domain.Entities
         {
             SetStatus(SubscriptionStatus.GracePeriod);
         }
+
+        /// <summary>The renewal date has passed without payment: a week of grace starts from that date.</summary>
+        public void EnterGracePeriod()
+        {
+            GraceEndsAt = RenewalDate.AddDays(GraceDays);
+            MoveToGracePeriod();
+        }
+
+        /// <summary>Paid for another period starting at <paramref name="from"/>; any grace period is over.</summary>
+        public void RenewFrom(DateTime from)
+        {
+            RenewalDate = BillingPeriod.AddPeriod(from);
+            GraceEndsAt = null;
+            PaymentFailureCount = 0;
+            LastPaymentAttempt = null;
+            SetStatus(SubscriptionStatus.Active);
+        }
+
+        /// <summary>True once the grace week is over or the subscription was suspended.</summary>
+        public bool IsLocked => Status == SubscriptionStatus.Expired || Status == SubscriptionStatus.Suspended;
+
+        /// <summary>True when the shop must show only its own default banner.</summary>
+        public bool ShowsDefaultBannerOnly =>
+            Status == SubscriptionStatus.GracePeriod || Status == SubscriptionStatus.Expired || Status == SubscriptionStatus.Suspended;
 
         public void Expire()
         {

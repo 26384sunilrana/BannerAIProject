@@ -100,6 +100,11 @@ builder.Services.AddScoped<BannerService.Application.Services.BannerScheduleAppS
 builder.Services.AddScoped<BannerService.Application.Services.ShopTeamService>();
 builder.Services.AddScoped<BannerService.Application.Services.UserAdminService>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+builder.Services.AddScoped<ISubscriptionNotificationRepository, SubscriptionNotificationRepository>();
+builder.Services.AddScoped<ISmsSender, BannerService.Infrastructure.Services.LoggingSmsSender>();
+builder.Services.AddScoped<IPaymentGateway, BannerService.Infrastructure.Services.NoPaymentGateway>();
+builder.Services.AddScoped<BannerService.Application.Services.SubscriptionLifecycleService>();
+builder.Services.AddHostedService<BannerService.Infrastructure.Background.SubscriptionLifecycleWorker>();
 builder.Services.AddScoped<IVersionControlService, VersionControlService>();
 builder.Services.AddScoped<IEffectService, EffectService>();
 builder.Services.AddScoped<IMediaUploadService, MediaUploadService>();

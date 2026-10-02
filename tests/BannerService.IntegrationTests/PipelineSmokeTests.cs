@@ -1,3 +1,4 @@
+using BannerService.Application.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
@@ -29,6 +30,7 @@ public class SmokeFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("MediaService:LocalStoragePath", _mediaFolder);
+        builder.UseSetting("Subscriptions:LifecycleEnabled", "false");   // the tests run the lifecycle themselves
 
         if (!string.IsNullOrEmpty(SqlConnection))
         {
@@ -307,5 +309,63 @@ public class PipelineSmokeTests : IClassFixture<SmokeFactory>
             new { startAt = start.AddHours(1), endAt = start.AddHours(4) });
         Assert.Equal(HttpStatusCode.Conflict, clash.StatusCode);
         Assert.Contains("Dated", await clash.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task EndedSubscription_SwitchesOffLogins_AndTheShopFallsBackToItsDefaultBanner()
+    {
+        var (client, _, shopId) = await RegisterOwnerAsync("lapsed@example.com");
+
+        // subscribe, with auto renewal off and a renewal date that passed yesterday
+        Guid subscriptionId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var plan = new SubscriptionPlan { Id = Guid.NewGuid(), Name = "Test", MonthlyPrice = 10, AnnualPrice = 100 };
+            context.SubscriptionPlans.Add(plan);
+            var subscription = new Subscription
+            {
+                Id = Guid.NewGuid(), ShopId = shopId, PlanId = plan.Id, Status = SubscriptionStatus.Active,
+                BillingPeriod = BillingPeriod.Monthly, AutoRenew = false, CurrentPrice = 10,
+                RenewalDate = DateTime.UtcNow.AddDays(-1), StartDate = DateTime.UtcNow.AddMonths(-1)
+            };
+            context.Subscriptions.Add(subscription);
+            await context.SaveChangesAsync();
+            subscriptionId = subscription.Id;
+        }
+
+        async Task<JsonElement> Active() =>
+            await (await client.GetAsync("/api/banners/active")).Content.ReadFromJsonAsync<JsonElement>();
+        Task<HttpResponseMessage> Login() => _factory.CreateClient().PostAsJsonAsync("/api/authentication/login",
+            new { email = "lapsed@example.com", password = "Password123!" });
+
+        // the renewal date has passed and nobody renewed: a week of grace starts
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var report = await scope.ServiceProvider.GetRequiredService<SubscriptionLifecycleService>().RunAsync(DateTime.UtcNow);
+            Assert.Equal(1, report.EnteredGrace);
+        }
+        var grace = await Active();
+        Assert.True(grace.GetProperty("useDefaultBanner").GetBoolean());
+        Assert.Equal("SubscriptionEnded", grace.GetProperty("reason").GetString());
+        Assert.Equal(HttpStatusCode.OK, (await Login()).StatusCode);   // still able to sign in during grace
+
+        // eight days later the week is over: logins are switched off
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var report = await scope.ServiceProvider.GetRequiredService<SubscriptionLifecycleService>().RunAsync(DateTime.UtcNow.AddDays(8));
+            Assert.Equal(1, report.Expired);
+        }
+        var refused = await Login();
+        Assert.NotEqual(HttpStatusCode.OK, refused.StatusCode);
+        Assert.Contains("subscription has ended", await refused.Content.ReadAsStringAsync());
+
+        // the platform admin can reactivate, after which the owner can sign in again
+        var admin = _factory.CreateClient();
+        var adminLogin = await admin.PostAsJsonAsync("/api/authentication/login", new { email = "admin@example.com", password = "AdminPass123!" });
+        admin.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await TokenFrom(adminLogin));
+        var renew = await admin.PostAsync($"/api/subscriptions/{subscriptionId}/renew", null);
+        Assert.True(renew.StatusCode == HttpStatusCode.OK, await renew.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.OK, (await Login()).StatusCode);
     }
 }

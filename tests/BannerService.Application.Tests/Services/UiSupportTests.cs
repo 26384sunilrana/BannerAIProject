@@ -72,7 +72,7 @@ public class AnonymousRefreshTests
         _jwt.Setup(j => j.GenerateRefreshToken()).Returns("new-refresh");
 
         _service = new AuthenticationService(_users.Object, Mock.Of<IRoleRepository>(), _jwt.Object,
-            new PasswordHashService(), _tokens.Object, Mock.Of<IShopRepository>());
+            new PasswordHashService(), _tokens.Object, Mock.Of<IShopRepository>(), Mock.Of<ISubscriptionRepository>());
     }
 
     [Fact]

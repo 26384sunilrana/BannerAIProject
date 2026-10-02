@@ -35,7 +35,8 @@ public class OwnerRegistrationTests
         _jwt.Setup(j => j.GenerateRefreshToken()).Returns("refresh");
 
         _service = new AuthenticationService(
-            _users.Object, _roles.Object, _jwt.Object, new PasswordHashService(), _refreshTokens.Object, _shops.Object);
+            _users.Object, _roles.Object, _jwt.Object, new PasswordHashService(), _refreshTokens.Object, _shops.Object,
+            Mock.Of<ISubscriptionRepository>());
     }
 
     private static RegisterDto Request() => new()

@@ -42,6 +42,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<CarouselComponent> CarouselComponents { get; set; } = null!;
 
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
+    public DbSet<SubscriptionNotification> SubscriptionNotifications { get; set; } = null!;
 
     // Publish workflow, advertising and dashboards
     public DbSet<PublishWorkflow> PublishWorkflows { get; set; } = null!;
@@ -483,6 +484,14 @@ public class ApplicationDbContext : DbContext
     // Complex values (value objects, lists, dictionaries) are stored as JSON columns.
     private static void ConfigurePublishAdvertisingAndDashboards(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<SubscriptionNotification>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Kind).HasMaxLength(40).IsRequired();
+            e.Property(x => x.Error).HasMaxLength(500);
+            e.HasIndex(x => new { x.SubscriptionId, x.Kind, x.Channel, x.Day }).IsUnique();
+        });
+
         modelBuilder.Entity<AuditLog>(e =>
         {
             e.HasKey(x => x.Id);

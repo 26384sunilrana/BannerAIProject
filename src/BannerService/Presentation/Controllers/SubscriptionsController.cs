@@ -14,14 +14,17 @@ namespace BannerService.Presentation.Controllers
         private readonly SubscriptionService _subscriptionService;
         private readonly RenewalService _renewalService;
         private readonly BillingService _billingService;
+        private readonly SubscriptionLifecycleService _lifecycle;
         private readonly ILogger<SubscriptionsController> _logger;
 
         public SubscriptionsController(
             SubscriptionService subscriptionService,
             RenewalService renewalService,
             BillingService billingService,
+            SubscriptionLifecycleService lifecycle,
             ILogger<SubscriptionsController> logger)
         {
+            _lifecycle = lifecycle;
             _subscriptionService = subscriptionService;
             _renewalService = renewalService;
             _billingService = billingService;
@@ -241,7 +244,7 @@ namespace BannerService.Presentation.Controllers
         {
             try
             {
-                var result = await _renewalService.ProcessRenewalAsync(subscriptionId);
+                var result = await _lifecycle.RenewNowAsync(subscriptionId);
 
                 if (!result.success)
                     return BadRequest(new { success = false, message = result.message });

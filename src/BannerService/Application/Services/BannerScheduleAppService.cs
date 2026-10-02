@@ -11,12 +11,15 @@ public class BannerScheduleAppService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPublishWorkflowRepository _workflowRepository;
     private readonly BannerScheduleService _scheduleService;
+    private readonly ISubscriptionRepository _subscriptions;
 
     public BannerScheduleAppService(
         IUnitOfWork unitOfWork,
         IPublishWorkflowRepository workflowRepository,
-        BannerScheduleService scheduleService)
+        BannerScheduleService scheduleService,
+        ISubscriptionRepository subscriptions)
     {
+        _subscriptions = subscriptions;
         _unitOfWork = unitOfWork;
         _workflowRepository = workflowRepository;
         _scheduleService = scheduleService;
@@ -57,6 +60,11 @@ public class BannerScheduleAppService
 
     public async Task<ActiveBannerResponseDto> GetActiveBannerAsync(Guid shopId, DateTime now)
     {
+        // After the renewal date passes unpaid, only the default banner on the shop's own machine is shown
+        var subscription = await _subscriptions.GetByShopIdAsync(shopId);
+        if (subscription?.ShowsDefaultBannerOnly == true)
+            return new ActiveBannerResponseDto { UseDefaultBanner = true, Reason = "SubscriptionEnded" };
+
         var scheduled = await _unitOfWork.BannerRepository.GetScheduledByShopAsync(shopId);
 
         var candidates = new List<(Banner, PublishWorkflow?)>();
@@ -66,7 +74,7 @@ public class BannerScheduleAppService
         var active = _scheduleService.ResolveActive(candidates, now);
 
         return active == null
-            ? new ActiveBannerResponseDto { UseDefaultBanner = true }
+            ? new ActiveBannerResponseDto { UseDefaultBanner = true, Reason = "NothingScheduled" }
             : new ActiveBannerResponseDto { Banner = BannerResponseDto.FromBanner(active) };
     }
 }
