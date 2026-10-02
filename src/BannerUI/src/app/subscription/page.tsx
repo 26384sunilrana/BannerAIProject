@@ -7,6 +7,8 @@ import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/hooks/useToast'
 import { PlanSummary, ShopSubscription, subscriptionService } from '@/api/subscriptionService'
 import { getErrorMessage } from '@/api/client'
+import { subscriptionNotice } from '@/lib/subscriptionNotice'
+import { SubscriptionNoticeCard } from '@/components/SubscriptionNoticeCard'
 import { Roles } from '@/lib/session'
 import {
   BillingPeriod,
@@ -97,6 +99,17 @@ function Subscription() {
         </p>
       </header>
 
+      {(() => {
+        const notice = subscriptionNotice(current ?? null)
+        return notice && current ? (
+          <SubscriptionNoticeCard
+            notice={notice}
+            renewing={busy}
+            onRenew={() => act(() => subscriptionService.renewNow(current.id), 'Your plan was renewed.')}
+          />
+        ) : null
+      })()}
+
       {current && (
         <section aria-labelledby="current-heading" className="rounded-xl border border-gray-200 bg-white p-5">
           <h2 id="current-heading" className="text-lg font-semibold text-gray-900">
@@ -127,6 +140,14 @@ function Subscription() {
             <p className="mt-3 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-800">
               Changing to {pendingPlan.name} on {new Date(current.pendingPlanEffectiveAt).toLocaleDateString()}.
             </p>
+          )}
+
+          {current.status !== 8 && current.status !== 7 && current.status !== 5 && !subscriptionNotice(current)?.canRenew && (
+            <div className="mt-4">
+              <Button size="sm" variant="secondary" isLoading={busy} onClick={() => act(() => subscriptionService.renewNow(current.id), 'Your plan was renewed for another period.')}>
+                Renew early
+              </Button>
+            </div>
           )}
 
           <label className="mt-4 flex items-center gap-3">

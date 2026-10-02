@@ -261,6 +261,15 @@ namespace BannerService.Presentation.Controllers
             }
         }
 
+        /// <summary>Runs the renewal / reminder / grace / expiry job now instead of waiting for the next scheduled run.</summary>
+        [HttpPost("admin/run-lifecycle")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        public async Task<IActionResult> RunLifecycle()
+        {
+            var report = await _lifecycle.RunAsync(DateTime.UtcNow);
+            return Ok(new { success = true, data = report });
+        }
+
         [HttpGet("renewals/pending")]
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetPendingRenewals()
@@ -297,6 +306,7 @@ namespace BannerService.Presentation.Controllers
                 PaymentFailureCount = subscription.PaymentFailureCount,
                 LastPaymentAttempt = subscription.LastPaymentAttempt,
                 AutoRenew = subscription.AutoRenew,
+                GraceEndsAt = subscription.GraceEndsAt,
                 PendingPlanId = subscription.PendingPlanId,
                 PendingPlanEffectiveAt = subscription.PendingPlanEffectiveAt,
                 CreatedAt = subscription.CreatedAt,

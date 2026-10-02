@@ -54,6 +54,8 @@ export function getErrorMessage(error: unknown, fallback = 'Something went wrong
 
 const AUTH_PATH = '/authentication/'
 
+const onShopScreen = () => typeof window !== 'undefined' && window.location.pathname.startsWith('/display')
+
 class ApiClient {
   private client: AxiosInstance
   private refreshing: Promise<boolean> | null = null
@@ -82,14 +84,15 @@ class ApiClient {
       (response) => response,
       async (error: AxiosError) => {
         const response = error.response as AxiosResponse<ErrorResponse> | undefined
-        const original = error.config as (typeof error.config & { _retried?: boolean }) | undefined
+        const original = error.config as (typeof error.config & { _retried?: boolean; skipAuthRedirect?: boolean }) | undefined
 
         if (response?.status === 401 && original && !original._retried && !original.url?.includes(AUTH_PATH)) {
           original._retried = true
           if (await this.tryRefresh()) {
             return this.client.request(original)
           }
-          this.signOut()
+          // A shop screen keeps showing its own default board when the session ends, so it is not sent to sign in
+          if (!original.skipAuthRedirect && !onShopScreen()) this.signOut()
         }
         return Promise.reject(error)
       }

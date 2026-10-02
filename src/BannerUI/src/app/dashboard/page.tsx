@@ -7,6 +7,9 @@ import { useAuth } from '@/context/AuthContext'
 import { Roles } from '@/lib/session'
 import { ActiveBanner, bannerListService } from '@/api/workflowService'
 import { formatWindow } from '@/lib/dates'
+import { subscriptionService, ShopSubscription } from '@/api/subscriptionService'
+import { subscriptionNotice } from '@/lib/subscriptionNotice'
+import { SubscriptionNoticeCard } from '@/components/SubscriptionNoticeCard'
 
 interface Card {
   href: string
@@ -37,16 +40,29 @@ function Welcome() {
   const cards = CARDS.filter((card) => card.roles.some((role) => hasRole(role)))
   const [active, setActive] = useState<ActiveBanner | null>(null)
   const inShop = hasRole(Roles.ShopOwner) || hasRole(Roles.SalesExecutive)
+  const [subscription, setSubscription] = useState<ShopSubscription | null>(null)
+  const shopId = user?.shopId ?? null
 
   useEffect(() => {
     if (!inShop) return
     bannerListService.getActive().then(setActive).catch(() => setActive(null))
   }, [inShop])
 
+  // Only the owner sees billing
+  useEffect(() => {
+    if (!shopId || !hasRole(Roles.ShopOwner)) return
+    subscriptionService.getCurrent(shopId).then(setSubscription).catch(() => setSubscription(null))
+  }, [shopId, hasRole])
+
   return (
     <div>
       <h1 className="text-2xl font-semibold text-gray-900">Welcome{user?.name ? `, ${user.name}` : ''}</h1>
       <p className="mt-1 text-gray-600">What would you like to do?</p>
+
+      {(() => {
+        const notice = subscriptionNotice(subscription)
+        return notice ? <SubscriptionNoticeCard notice={notice} manageHref="/subscription" /> : null
+      })()}
 
       {active && (
         <p className="mt-4 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm" data-testid="now-showing">

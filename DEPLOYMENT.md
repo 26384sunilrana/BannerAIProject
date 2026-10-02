@@ -42,6 +42,25 @@ SMOKE_SQL="Server=(localdb)\MSSQLLocalDB;Database=BannerAI_Smoke;Trusted_Connect
 | `Security__RequireHttpsRedirect` | `false` behind a TLS-terminating ingress |
 | `Swagger__Enabled` | `true` to expose Swagger in production |
 
+### Renewals, reminders and the shop screen
+A background job (`SubscriptionLifecycleWorker`, every `Subscriptions__LifecycleIntervalMinutes`, default 60; switch off with
+`Subscriptions__LifecycleEnabled=false`) renews subscriptions with automatic renewal, sends reminders (email and text, 7, 3 and 1
+days before an ending that will not renew itself), starts a one-week grace period when the date passes unpaid (daily reminders;
+the shop shows only its default banner), and when the week is over expires the subscription, ends the shop's sessions and
+refuses its logins. Platform admins are never locked out. An admin can run the job at once with
+`POST /api/subscriptions/admin/run-lifecycle` and reactivate a shop with `POST /api/subscriptions/{id}/renew`.
+
+Three things must be connected before this is real:
+- **Email:** set `Email__Smtp__Host` (plus `Port`, `User`, `Password`, `From`, `EnableSsl`). Without it nothing is emailed; the attempt is
+  recorded in `SubscriptionNotifications` as not delivered.
+- **Text messages:** only a logging stand-in exists (`ISmsSender`). Add a provider implementation and register it.
+- **Payments:** `IPaymentGateway` is a stand-in that reports every charge as paid (`NoPaymentGateway`), so automatic renewals and
+  "Renew now" cost nothing. Replace it before taking money.
+
+The shop screen is `/display`: sign in once on the screen's machine. It shows the live banner, switches by schedule, and falls back
+to the default board (shop name and clock), which is kept in that browser, when nothing is scheduled, the plan has ended, or the
+server cannot be reached.
+
 ### Uploaded media
 Images and videos are stored as files under `MediaService__LocalStoragePath` (`/media` in the containers), not in the database.
 Mount the same persistent volume on every API pod (`banner-media`, `ReadWriteMany`) and include it in backups. The browser loads

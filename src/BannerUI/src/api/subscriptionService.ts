@@ -20,6 +20,8 @@ export interface ShopSubscription {
   startDate: string
   renewalDate: string
   autoRenew: boolean
+  /** Last day of the grace week after an unpaid renewal date; logins are switched off then. */
+  graceEndsAt?: string | null
   pendingPlanId?: string | null
   pendingPlanEffectiveAt?: string | null
 }
@@ -39,6 +41,11 @@ export const subscriptionService = {
 
   subscribe(shopId: string, planId: string, billingPeriod: number): Promise<ShopSubscription> {
     return apiClient.post<ShopSubscription>('/subscriptions', { shopId, planId, billingPeriod })
+  },
+
+  /** Pays for another period now (early renewals add to the current period). */
+  async renewNow(subscriptionId: string): Promise<void> {
+    await apiClient.post(`/subscriptions/${subscriptionId}/renew`, {})
   },
 
   async setAutoRenew(subscriptionId: string, autoRenew: boolean): Promise<void> {

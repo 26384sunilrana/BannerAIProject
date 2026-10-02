@@ -27,6 +27,8 @@ namespace BannerService.Application.DTOs
         public int PaymentFailureCount { get; set; }
         public DateTime? LastPaymentAttempt { get; set; }
         public bool AutoRenew { get; set; }
+        /// <summary>End of the grace week after an unpaid renewal date; logins are switched off then.</summary>
+        public DateTime? GraceEndsAt { get; set; }
         public Guid? PendingPlanId { get; set; }
         public DateTime? PendingPlanEffectiveAt { get; set; }
         public DateTime CreatedAt { get; set; }

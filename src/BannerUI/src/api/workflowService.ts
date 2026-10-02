@@ -49,6 +49,8 @@ export interface ScheduleResult {
 export interface ActiveBanner {
   banner: BannerSummary | null
   useDefaultBanner: boolean
+  /** Why the default banner is used: NothingScheduled or SubscriptionEnded. */
+  reason?: string | null
 }
 
 export const bannerListService = {

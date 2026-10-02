@@ -11,9 +11,9 @@
 | 1a | Quarterly / HalfYearly / Yearly billing, equal cost | **Gap** | `BillingPeriod` has only Monthly, Annual |
 | 1b | Basic / Silver / Gold / Platinum | Done | `DatabaseSeeder` seeds four plans |
 | 1c-d | Auto renewal on/off | **Gap** | No `AutoRenew` field on `Subscription` |
-| 1e | SMS + Email renewal reminders | **Gap** | `EmailService` exists, no SMS, no reminder job |
+| 1e | SMS + Email renewal reminders | Done (bolt 030) | email via SMTP, SMS stand-in |
 | 1f | Plan change effective next day | **Partial** | `ChangePlan` is immediate; no effective date |
-| 1g | 1-week grace with default static banner, then login disabled | **Partial** | `GracePeriod` / `Suspended` status exist; no default banner, no daily reminders, no login lockout wired |
+| 1g | 1-week grace with default static banner, then login disabled | Done (bolt 030) | job, lock-out, /display default board |
 | 1h | Price based on banner size / storage | **Partial** | `MaxStorageGB` on plan; no storage metering |
 | 2a | Unique ID per shop owner | **Gap** | Shop has Guid only; no public unique code |
 | 2b-e | Group / City / State / Country hierarchy with unique IDs | **Partial** | Country, State, District entities; no Group or City entity; no unique IDs |
