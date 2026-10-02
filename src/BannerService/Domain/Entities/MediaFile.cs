@@ -17,6 +17,14 @@ public class MediaFile
     public Guid CreatedBy { get; set; }
     public string? VideoMetadataJson { get; set; }
 
+    /// <summary>Read from the file when the upload completes; empty when the header could not be understood.</summary>
+    public int? Width { get; set; }
+    public int? Height { get; set; }
+    public double? DurationSeconds { get; set; }
+
+    /// <summary>When the file was removed. The record stays for a while as a tombstone, then the clean-up job drops it.</summary>
+    public DateTime? DeletedAt { get; set; }
+
     public MediaFile() { }
 
     public MediaFile(Guid shopId, string fileName, string contentType, long sizeBytes, int fileType, Guid createdBy)
@@ -55,6 +63,20 @@ public class MediaFile
         if (Status != 1)
             throw new InvalidOperationException("Can only fail Pending uploads");
         Status = 3;
+    }
+
+    public void SetDimensions(int? width, int? height, double? durationSeconds)
+    {
+        Width = width;
+        Height = height;
+        DurationSeconds = durationSeconds;
+    }
+
+    /// <summary>Marks the file as removed. Works from any state; the stored bytes are deleted by the caller.</summary>
+    public void MarkAsDeleted()
+    {
+        Status = (int)MediaFileStatus.Deleted;
+        DeletedAt = DateTime.UtcNow;
     }
 
     public void SetVideoMetadata(string metadataJson)

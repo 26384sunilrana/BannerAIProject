@@ -73,7 +73,7 @@ public class LocalStorageProvider : IStorageProvider
         if (!File.Exists(fullPath))
             throw new FileNotFoundException($"File not found: {path}");
 
-        return Task.FromResult<Stream>(new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true));
+        return Task.FromResult<Stream>(new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, 81920, useAsync: true));
     }
 
     public async Task<Stream> GetChunkAsync(string path)

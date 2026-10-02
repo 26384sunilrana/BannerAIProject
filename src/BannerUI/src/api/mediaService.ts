@@ -10,6 +10,39 @@ export interface MediaFile {
   status: number
 }
 
+/** One file in the library. fileType: 1 image, 2 video. */
+export interface MediaLibraryItem {
+  id: string
+  fileName: string
+  fileType: number
+  contentType: string
+  sizeBytes: number
+  width: number | null
+  height: number | null
+  durationSeconds: number | null
+  createdAt: string
+  /** A link the browser can load right now (it expires). */
+  url: string
+  /** A banner (or an earlier version of one) still uses the file, so it cannot be deleted. */
+  inUse: boolean
+}
+
+export interface MediaLibraryPage {
+  items: MediaLibraryItem[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export interface MediaUsage {
+  usedBytes: number
+  fileCount: number
+  imageCount: number
+  videoCount: number
+  /** What the plan allows, or null when the shop has no plan. */
+  limitBytes: number | null
+}
+
 export interface UploadSession {
   mediaFileId: string
   fileName: string
@@ -51,6 +84,25 @@ export const mediaService = {
 
   completeUpload(mediaFileId: string): Promise<MediaFile> {
     return apiClient.post<MediaFile>(`/media/${mediaFileId}/complete`, {})
+  },
+
+  async list(options: { type?: 'image' | 'video'; search?: string; page?: number; pageSize?: number } = {}): Promise<MediaLibraryPage> {
+    const params = new URLSearchParams()
+    if (options.type) params.set('type', options.type)
+    if (options.search?.trim()) params.set('search', options.search.trim())
+    if (options.page) params.set('page', String(options.page))
+    if (options.pageSize) params.set('pageSize', String(options.pageSize))
+    const text = params.toString()
+    const page = await apiClient.get<MediaLibraryPage>(`/media${text ? `?${text}` : ''}`)
+    return { ...page, items: page.items.map((item) => ({ ...item, url: absoluteMediaUrl(item.url) })) }
+  },
+
+  usage(): Promise<MediaUsage> {
+    return apiClient.get<MediaUsage>('/media/usage')
+  },
+
+  remove(mediaFileId: string): Promise<{ message: string }> {
+    return apiClient.delete<{ message: string }>(`/media/${mediaFileId}`)
   },
 
   getMediaInfo(mediaFileId: string): Promise<MediaFile> {

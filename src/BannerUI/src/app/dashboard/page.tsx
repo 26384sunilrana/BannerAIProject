@@ -20,6 +20,7 @@ interface Card {
 
 const CARDS: Card[] = [
   { href: '/banners', title: 'Banners', text: 'Create banners, open the editor and send them for approval.', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
+  { href: '/media', title: 'My files', text: 'Your uploaded pictures and videos, how much space they use, and what is safe to delete.', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/approvals', title: 'Approvals', text: 'See what is waiting for approval, publish approved banners.', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/team', title: 'Team', text: 'Add or remove sales executive logins and choose who approves banners.', roles: [Roles.ShopOwner] },
   { href: '/subscription', title: 'Subscription', text: 'Choose a plan, switch billing period, turn automatic renewal on or off.', roles: [Roles.ShopOwner] },

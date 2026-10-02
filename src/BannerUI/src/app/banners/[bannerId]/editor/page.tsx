@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { EditorProvider } from '@/context/EditorContext'
 import { useEditor } from '@/hooks/useEditor'
@@ -14,6 +14,8 @@ import { getErrorMessage } from '@/api/client'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { Roles } from '@/lib/session'
 import { Header, Toolbar, Canvas, PropertyPanel, Toast } from '@/components'
+import { MediaPickerDialog } from '@/components/media/MediaPickerDialog'
+import { MediaLibraryItem } from '@/api/mediaService'
 import { ComponentType } from '@/types/banner'
 
 /** Properties that belong to a component's content rather than to the component itself. */
@@ -31,6 +33,7 @@ function EditorContent() {
   const save = useSave(id, state.components, state.banner)
   const toast = useToast()
   const media = useMediaUpload()
+  const [picking, setPicking] = useState<'image' | 'video' | null>(null)
 
   // The toast helpers change on every render; keep the latest in a ref so loading runs once per banner.
   const toastRef = useRef(toast)
@@ -138,6 +141,25 @@ function EditorContent() {
     toast.success(`${file.name} uploaded`)
   }
 
+  /** Puts a file that is already in the shop's library into the selected image or video component. */
+  const handlePickFromLibrary = (item: MediaLibraryItem) => {
+    const selected = state.components.find((c) => c.id === state.selectedComponentId)
+    setPicking(null)
+    if (!selected || (selected.type !== 'image' && selected.type !== 'video')) return
+
+    const data = selected.data as unknown as Record<string, unknown>
+    updateComponent(selected.id, {
+      data: {
+        ...data,
+        mediaFileId: item.id,
+        mediaUrl: item.url,
+        ...(selected.type === 'image' ? { alt: data.alt && data.alt !== 'Image' ? data.alt : item.fileName } : {}),
+      } as typeof selected.data,
+    })
+    save.markDirty()
+    toast.success(`${item.fileName} chosen`)
+  }
+
   const handleDeleteComponent = async () => {
     if (!state.selectedComponentId || !state.banner) return
 
@@ -230,10 +252,13 @@ function EditorContent() {
           onPropertyChange={handlePropertyChange}
           onDeleteComponent={handleDeleteComponent}
           onUploadMedia={handleUploadMedia}
+          onChooseFromLibrary={selectedComponent && (selectedComponent.type === 'image' || selectedComponent.type === 'video') ? () => setPicking(selectedComponent.type as 'image' | 'video') : undefined}
           uploadProgress={media.isUploading ? media.progress : null}
           uploadError={media.error}
         />
       </div>
+
+      {picking && <MediaPickerDialog kind={picking} onSelect={handlePickFromLibrary} onClose={() => setPicking(null)} />}
 
       <Toast messages={toast.messages} onRemove={toast.remove} />
     </div>

@@ -10,10 +10,12 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
   error?: string
   options: SelectOption[]
   helperText?: string
+  /** Text of the empty choice at the top of the list. */
+  placeholder?: string
 }
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, options, helperText, className, ...props }, ref) => {
+  ({ label, error, options, helperText, placeholder = 'Select an option', className, ...props }, ref) => {
     // a field without an id still needs its label tied to it, for screen readers and for clicking the label
     const generatedId = React.useId()
     const fieldId = props.id ?? generatedId
@@ -38,7 +40,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           `}
           {...props}
         >
-          <option value="">Select an option</option>
+          <option value="">{placeholder}</option>
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}

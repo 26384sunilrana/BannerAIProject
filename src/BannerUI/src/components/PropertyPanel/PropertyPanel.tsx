@@ -11,6 +11,8 @@ export interface PropertyPanelProps {
   onDeleteComponent: () => void
   /** Uploads a chosen file and puts it in the selected component. */
   onUploadMedia?: (file: File) => void
+  /** Opens the shop's own files to pick one that is already uploaded. */
+  onChooseFromLibrary?: () => void
   /** 0-100 while a file is uploading, otherwise null. */
   uploadProgress?: number | null
   uploadError?: string | null
@@ -20,12 +22,14 @@ function UploadControl({
   accept,
   label,
   onUploadMedia,
+  onChooseFromLibrary,
   progress,
   error,
 }: {
   accept: string
   label: string
   onUploadMedia?: (file: File) => void
+  onChooseFromLibrary?: () => void
   progress?: number | null
   error?: string | null
 }) {
@@ -49,6 +53,11 @@ function UploadControl({
         }}
         className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-blue-700"
       />
+      {onChooseFromLibrary && (
+        <Button type="button" size="sm" variant="secondary" disabled={uploading} onClick={onChooseFromLibrary}>
+          Choose from my files
+        </Button>
+      )}
       {uploading && (
         <div role="progressbar" aria-valuenow={progress ?? 0} aria-valuemin={0} aria-valuemax={100} className="h-2 w-full rounded bg-gray-200">
           <div className="h-2 rounded bg-blue-600" style={{ width: `${progress}%` }} />
@@ -68,6 +77,7 @@ export function PropertyPanel({
   onPropertyChange,
   onDeleteComponent,
   onUploadMedia,
+  onChooseFromLibrary,
   uploadProgress,
   uploadError,
 }: PropertyPanelProps) {
@@ -269,6 +279,7 @@ export function PropertyPanel({
               accept="image/png,image/jpeg,image/gif,image/webp"
               label="Upload an image"
               onUploadMedia={onUploadMedia}
+              onChooseFromLibrary={onChooseFromLibrary}
               progress={uploadProgress}
               error={uploadError}
             />
@@ -308,6 +319,7 @@ export function PropertyPanel({
               accept="video/mp4,video/webm"
               label="Upload a video"
               onUploadMedia={onUploadMedia}
+              onChooseFromLibrary={onChooseFromLibrary}
               progress={uploadProgress}
               error={uploadError}
             />

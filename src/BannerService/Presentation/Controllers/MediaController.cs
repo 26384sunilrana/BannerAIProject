@@ -12,13 +12,19 @@ using System.Security.Claims;
 public class MediaController : ControllerBase
 {
     private readonly IMediaUploadService _mediaUploadService;
+    private readonly MediaLibraryService _library;
+    private readonly MediaCleanupService _cleanup;
     private readonly ILogger<MediaController> _logger;
 
     public MediaController(
         IMediaUploadService mediaUploadService,
+        MediaLibraryService library,
+        MediaCleanupService cleanup,
         ILogger<MediaController> logger)
     {
         _mediaUploadService = mediaUploadService;
+        _library = library;
+        _cleanup = cleanup;
         _logger = logger;
     }
 
@@ -233,4 +239,45 @@ public class MediaController : ControllerBase
             return BadRequest(new { error = ex.Message });
         }
     }
+
+    /// <summary>The shop's files, newest first. type: image or video; search: part of the file name.</summary>
+    [HttpGet]
+    [ProducesResponseType(typeof(MediaLibraryPageDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> List(
+        [FromQuery] string? type = null, [FromQuery] string? search = null,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 24)
+    {
+        int? fileType = type?.ToLowerInvariant() switch { "image" => 1, "video" => 2, _ => null };
+        if (type != null && fileType == null)
+            return BadRequest(new { error = "type is image or video" });
+
+        return Ok(await _library.ListAsync(GetShopId(), fileType, search, page, pageSize));
+    }
+
+    /// <summary>How much the shop has stored, and what its plan allows.</summary>
+    [HttpGet("usage")]
+    [ProducesResponseType(typeof(MediaUsageDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Usage() => Ok(await _library.GetUsageAsync(GetShopId()));
+
+    /// <summary>Removes a file. Refused with 409 (naming the banners) while a banner uses it.</summary>
+    [HttpDelete("{mediaFileId}")]
+    [Authorize(Roles = "ShopOwner,SalesExecutive")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Delete(Guid mediaFileId)
+    {
+        var result = await _library.DeleteAsync(GetShopId(), mediaFileId);
+        return result.Outcome switch
+        {
+            MediaDeleteOutcome.Deleted => Ok(new { message = result.Message }),
+            MediaDeleteOutcome.InUse => Conflict(new { error = result.Message, message = result.Message, banners = result.Banners }),
+            _ => NotFound(new { error = result.Message }),
+        };
+    }
+
+    /// <summary>Runs the clean-up now instead of waiting for the timer.</summary>
+    [HttpPost("admin/cleanup")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> RunCleanup() => Ok(await _cleanup.RunAsync(DateTime.UtcNow));
 }

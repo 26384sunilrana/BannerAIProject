@@ -34,6 +34,15 @@ SMOKE_SQL="Server=(localdb)\MSSQLLocalDB;Database=BannerAI_Smoke;Trusted_Connect
   apply the differences by script, and only then insert the `InitialCreate` and later migration ids into `__EFMigrationsHistory`.
   This path has not been tried on a database with data; try it on a copy first.
 
+## Media
+- Files are stored on local disk under `MediaService__LocalStoragePath` (a shared, persistent volume when more than one pod runs). Azure Blob comes last.
+- Picture size and video length are read from the file headers; no outside tool is needed.
+- A clean-up job runs every `Media:Cleanup:IntervalHours` (default 6; `Media:Cleanup:Enabled=false` turns it off). It removes uploads that were started
+  but not finished within `Media:Cleanup:AbandonedUploadHours` (default 24) and drops the record of a deleted file after `Media:Cleanup:KeepDeletedRecordsDays` (default 30).
+  An administrator can run it at once with `POST /api/media/admin/cleanup`.
+- A file that a banner (or an earlier version of a banner) uses cannot be deleted. Deleting on Windows while a browser is still streaming the file
+  works; the bytes are removed by the next clean-up run.
+
 ## Secrets
 - Nothing secret is stored in the repository: `appsettings.json` has an empty connection string and an empty `Jwt:SecretKey`,
   and the API refuses to start without them.

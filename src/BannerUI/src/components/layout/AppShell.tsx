@@ -16,6 +16,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { href: '/dashboard', label: 'Home' },
   { href: '/banners', label: 'Banners', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
+  { href: '/media', label: 'My files', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/approvals', label: 'Approvals', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/team', label: 'Team', roles: [Roles.ShopOwner] },
   { href: '/subscription', label: 'Subscription', roles: [Roles.ShopOwner] },

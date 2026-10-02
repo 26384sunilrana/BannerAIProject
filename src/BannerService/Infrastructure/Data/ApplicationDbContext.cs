@@ -403,6 +403,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.Status).IsRequired();
 
+            entity.HasIndex(e => new { e.Status, e.CreatedAt }).HasDatabaseName("IX_MediaFiles_Cleanup");
+
             entity.HasIndex(e => new { e.ShopId, e.Status, e.CreatedAt })
                 .HasName("IX_MediaFiles_Query")
                 .IsDescending(false, false, true);

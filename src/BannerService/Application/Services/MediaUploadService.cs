@@ -3,6 +3,7 @@ namespace BannerService.Application.Services
     using Domain.Entities;
     using Domain.Interfaces;
     using Dto;
+    using Domain.Services;
     using Infrastructure.Security;
     using Infrastructure.Storage;
     using System.Security.Cryptography;
@@ -183,6 +184,13 @@ public class MediaUploadService : IMediaUploadService
             throw new InvalidOperationException("The file content does not match its type");
         }
 
+        // Picture size and video length, read from the file itself
+        await using (var stream = await _storage.OpenReadAsync(mediaFile.StoragePath))
+        {
+            var info = MediaMetadataReader.Read(stream, NormalizeContentType(mediaFile.ContentType));
+            mediaFile.SetDimensions(info.Width, info.Height, info.DurationSeconds);
+        }
+
         // Mark chunks as verified
         foreach (var chunk in chunks)
         {
@@ -307,7 +315,10 @@ public class MediaUploadService : IMediaUploadService
         SizeBytes = mediaFile.SizeBytes,
         Status = mediaFile.Status,
         CreatedAt = mediaFile.CreatedAt,
-        CompletedAt = mediaFile.CompletedAt
+        CompletedAt = mediaFile.CompletedAt,
+        Width = mediaFile.Width,
+        Height = mediaFile.Height,
+        DurationSeconds = mediaFile.DurationSeconds
     };
 }
 }

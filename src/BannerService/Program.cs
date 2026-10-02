@@ -114,6 +114,9 @@ builder.Services.AddHostedService<BannerService.Infrastructure.Background.Subscr
 builder.Services.AddScoped<IVersionControlService, VersionControlService>();
 builder.Services.AddScoped<IEffectService, EffectService>();
 builder.Services.AddScoped<IMediaUploadService, MediaUploadService>();
+builder.Services.AddScoped<MediaLibraryService>();
+builder.Services.AddScoped<MediaCleanupService>();
+builder.Services.AddHostedService<BannerService.Infrastructure.Background.MediaCleanupWorker>();
 builder.Services.AddScoped<ICarouselService, CarouselService>();
 builder.Services.AddScoped<MetadataExtractionService>();
 builder.Services.AddScoped<IStorageProvider, LocalStorageProvider>();
