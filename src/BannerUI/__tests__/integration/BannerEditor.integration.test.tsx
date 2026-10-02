@@ -101,6 +101,8 @@ describe('Banner Editor Integration', () => {
 
     act(() => {
       dragResult.current.startDrag('comp1', 100, 100)
+    })
+    act(() => {
       dragResult.current.updateDragPosition(200, 200)
     })
 
@@ -108,8 +110,9 @@ describe('Banner Editor Integration', () => {
     expect(finalPosition).not.toBeNull()
 
     act(() => {
-      dragResult.result.endDrag()
+      dragResult.current.endDrag()
     })
+    expect(dragResult.current.isDragging).toBe(false)
   })
 
   it('handles multiple toasts during edit operations', () => {
@@ -146,9 +149,11 @@ describe('Banner Editor Integration', () => {
 
     act(() => {
       resizeResult.current.startResize('comp1', 'e', 300, 100)
-      const newSize = resizeResult.current.calculateResize(400, 100)
-      expect(newSize?.width).toBeGreaterThan(200)
     })
+
+    const newSize = resizeResult.current.calculateResize(400, 100)
+    expect(newSize?.width).toBeGreaterThan(200)
+    expect((newSize?.x ?? 0) + (newSize?.width ?? 0)).toBeLessThanOrEqual(1200)
   })
 
   it('drag respects grid snapping', () => {
@@ -157,14 +162,16 @@ describe('Banner Editor Integration', () => {
     )
 
     act(() => {
-      dragResult.result.startDrag('comp1', 100, 100)
-      dragResult.result.updateDragPosition(115, 115)
+      dragResult.current.startDrag('comp1', 100, 100)
+    })
+    act(() => {
+      dragResult.current.updateDragPosition(115, 115)
     })
 
-    const finalPos = dragResult.result.getFinalPosition()
-    if (finalPos) {
-      expect(finalPos.x % 8).toBe(0)
-    }
+    const finalPos = dragResult.current.getFinalPosition()
+    expect(finalPos).not.toBeNull()
+    expect(finalPos!.x % 8).toBe(0)
+    expect(finalPos!.y % 8).toBe(0)
   })
 
   it('integrates multiple operations in sequence', () => {
@@ -205,12 +212,12 @@ describe('Banner Editor Integration', () => {
 
     act(() => {
       saveResult.current.markDirty()
-      if (saveResult.current.isDirty) {
-        toastResult.current.info('Auto-saving...')
-      }
     })
-
     expect(saveResult.current.isDirty).toBe(true)
+
+    act(() => {
+      toastResult.current.info('Auto-saving...')
+    })
     expect(toastResult.current.messages).toHaveLength(1)
   })
 

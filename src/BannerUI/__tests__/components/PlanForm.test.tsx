@@ -1,251 +1,157 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { PlanForm } from '@/components/admin/PlanForm';
-import { SubscriptionPlan } from '@/types/subscription';
+import React from 'react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { PlanForm } from '@/components/admin/PlanForm'
+import { SubscriptionPlan } from '@/types/subscription'
 
 describe('PlanForm', () => {
   const mockPlan: SubscriptionPlan = {
     id: '1',
     name: 'Professional',
+    description: 'Professional plan',
     monthlyPrice: 29.99,
     annualPrice: 299.99,
-    status: 'Active',
-    features: ['Feature 1', 'Feature 2'],
-    description: 'Professional plan',
-  };
+    features: {
+      maxBanners: 10, maxShops: 2, maxUsers: 3, maxStorageGB: 5, apiAccess: false, customDomain: false,
+      advancedAnalytics: false, dedicatedSupport: false, slaPercentage: 99, priorityQueue: false,
+    },
+    isActive: true,
+    displayOrder: 2,
+    createdAt: '2026-01-01T00:00:00Z',
+  }
 
-  const mockOnSubmit = jest.fn();
-  const mockOnCancel = jest.fn();
+  const onSubmit = jest.fn().mockResolvedValue(undefined)
+  const onCancel = jest.fn()
+  const renderForm = (props: Partial<React.ComponentProps<typeof PlanForm>> = {}) =>
+    render(<PlanForm onSubmit={onSubmit} onCancel={onCancel} {...props} />)
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+  const fill = async (name: string, monthly: string, annual: string) => {
+    await userEvent.type(screen.getByLabelText(/plan name/i), name)
+    await userEvent.clear(screen.getByLabelText(/monthly price/i))
+    await userEvent.type(screen.getByLabelText(/monthly price/i), monthly)
+    await userEvent.clear(screen.getByLabelText(/annual price/i))
+    await userEvent.type(screen.getByLabelText(/annual price/i), annual)
+  }
 
-  it('renders form with empty fields when creating new plan', () => {
-    // Arrange
-    render(
-      <PlanForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
+  beforeEach(() => jest.clearAllMocks())
 
-    // Assert
-    expect(screen.getByLabelText(/plan name/i)).toHaveValue('');
-    expect(screen.getByLabelText(/monthly price/i)).toHaveValue('');
-    expect(screen.getByLabelText(/annual price/i)).toHaveValue('');
-  });
+  it('starts empty when creating a plan', () => {
+    renderForm()
 
-  it('renders form with pre-filled data when editing existing plan', () => {
-    // Arrange
-    render(
-      <PlanForm
-        plan={mockPlan}
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
+    expect(screen.getByLabelText(/plan name/i)).toHaveValue('')
+    expect(screen.getByLabelText(/monthly price/i)).toHaveValue(0)
+    expect(screen.getByRole('button', { name: 'Create Plan' })).toBeInTheDocument()
+  })
 
-    // Assert
-    expect(screen.getByLabelText(/plan name/i)).toHaveValue(mockPlan.name);
-    expect(screen.getByLabelText(/monthly price/i)).toHaveValue(String(mockPlan.monthlyPrice));
-    expect(screen.getByLabelText(/annual price/i)).toHaveValue(String(mockPlan.annualPrice));
-  });
+  it('is filled in when editing, and the name cannot change', () => {
+    renderForm({ plan: mockPlan })
 
-  it('validates required fields on submit', async () => {
-    // Arrange
-    render(
-      <PlanForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
+    expect(screen.getByLabelText(/plan name/i)).toHaveValue('Professional')
+    expect(screen.getByLabelText(/plan name/i)).toBeDisabled()
+    expect(screen.getByLabelText(/monthly price/i)).toHaveValue(29.99)
+    expect(screen.getByLabelText(/annual price/i)).toHaveValue(299.99)
+    expect(screen.getByLabelText(/max banners/i)).toHaveValue(10)
+    expect(screen.getByRole('button', { name: 'Update Plan' })).toBeInTheDocument()
+  })
 
-    // Act
-    const submitButton = screen.getByText(/save|submit/i);
-    fireEvent.click(submitButton);
+  it('needs a name', async () => {
+    renderForm()
 
-    // Assert
-    expect(mockOnSubmit).not.toHaveBeenCalled();
-    expect(screen.getByText(/plan name is required/i)).toBeInTheDocument();
-  });
+    fireEvent.click(screen.getByRole('button', { name: 'Create Plan' }))
 
-  it('validates annual price is greater than or equal to monthly price', async () => {
-    // Arrange
-    render(
-      <PlanForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
+    expect(await screen.findByText('Plan name is required')).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
 
-    const nameInput = screen.getByLabelText(/plan name/i);
-    const monthlyInput = screen.getByLabelText(/monthly price/i);
-    const annualInput = screen.getByLabelText(/annual price/i);
+  it('needs a price', async () => {
+    renderForm()
+    await userEvent.type(screen.getByLabelText(/plan name/i), 'Free')
 
-    // Act
-    await userEvent.type(nameInput, 'Invalid Plan');
-    await userEvent.type(monthlyInput, '100');
-    await userEvent.type(annualInput, '50');  // Invalid: annual < monthly
+    fireEvent.click(screen.getByRole('button', { name: 'Create Plan' }))
 
-    const submitButton = screen.getByText(/save|submit/i);
-    fireEvent.click(submitButton);
+    expect(await screen.findByText(/at least one price/i)).toBeInTheDocument()
+  })
 
-    // Assert
-    expect(mockOnSubmit).not.toHaveBeenCalled();
-    expect(screen.getByText(/annual price must be/i)).toBeInTheDocument();
-  });
+  it('rejects an annual price below the monthly price', async () => {
+    renderForm()
+    await fill('Odd', '100', '50')
 
-  it('submits form with valid data', async () => {
-    // Arrange
-    render(
-      <PlanForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Create Plan' }))
 
-    const nameInput = screen.getByLabelText(/plan name/i);
-    const monthlyInput = screen.getByLabelText(/monthly price/i);
-    const annualInput = screen.getByLabelText(/annual price/i);
+    expect(await screen.findByText(/annual price must be at least the monthly price/i)).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
 
-    // Act
-    await userEvent.type(nameInput, 'Basic');
-    await userEvent.type(monthlyInput, '9.99');
-    await userEvent.type(annualInput, '99.99');
+  it('does not accept a cleared price as valid', async () => {
+    renderForm()
+    await userEvent.type(screen.getByLabelText(/plan name/i), 'Blank')
+    await userEvent.clear(screen.getByLabelText(/monthly price/i))
 
-    const submitButton = screen.getByText(/save|submit/i);
-    fireEvent.click(submitButton);
+    fireEvent.click(screen.getByRole('button', { name: 'Create Plan' }))
 
-    // Assert
-    await waitFor(() => {
-      expect(mockOnSubmit).toHaveBeenCalled();
-    });
-    expect(mockOnSubmit).toHaveBeenCalledWith(
+    expect(await screen.findByText(/enter both prices/i)).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('submits a valid plan with its limits', async () => {
+    renderForm()
+    await fill('Basic', '9.99', '99.99')
+    await userEvent.type(screen.getByLabelText(/description/i), 'A basic plan')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create Plan' }))
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+    expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Basic',
+        description: 'A basic plan',
         monthlyPrice: 9.99,
         annualPrice: 99.99,
+        features: expect.objectContaining({ maxBanners: 5, maxStorageGB: 1 }),
       })
-    );
-  });
+    )
+  })
 
-  it('calls onCancel when Cancel button is clicked', () => {
-    // Arrange
-    render(
-      <PlanForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
+  it('leaves the name out when updating', async () => {
+    renderForm({ plan: mockPlan })
 
-    // Act
-    const cancelButton = screen.getByText(/cancel/i);
-    fireEvent.click(cancelButton);
+    fireEvent.click(screen.getByRole('button', { name: 'Update Plan' }))
 
-    // Assert
-    expect(mockOnCancel).toHaveBeenCalled();
-    expect(mockOnSubmit).not.toHaveBeenCalled();
-  });
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('name')
+  })
 
-  it('shows loading state when loading prop is true', () => {
-    // Arrange
-    render(
-      <PlanForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-        loading={true}
-      />
-    );
+  it('lets the limits and feature switches change', async () => {
+    renderForm({ plan: mockPlan })
 
-    // Assert
-    const submitButton = screen.getByText(/save|submit/i);
-    expect(submitButton).toBeDisabled();
-  });
+    await userEvent.clear(screen.getByLabelText(/max banners/i))
+    await userEvent.type(screen.getByLabelText(/max banners/i), '25')
+    await userEvent.click(screen.getByLabelText(/api access/i))
+    fireEvent.click(screen.getByRole('button', { name: 'Update Plan' }))
 
-  it('displays error message when error prop is provided', () => {
-    // Arrange
-    const errorMessage = 'Failed to save plan';
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+    expect(onSubmit.mock.calls[0][0].features).toMatchObject({ maxBanners: 25, apiAccess: true })
+  })
 
-    render(
-      <PlanForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-        error={errorMessage}
-      />
-    );
+  it('calls onCancel', () => {
+    renderForm()
 
-    // Assert
-    expect(screen.getByText(errorMessage)).toBeInTheDocument();
-  });
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
-  it('allows adding and removing features', async () => {
-    // Arrange
-    render(
-      <PlanForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
+    expect(onCancel).toHaveBeenCalled()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
 
-    // Act
-    const addFeatureButton = screen.getByText(/add feature/i);
-    fireEvent.click(addFeatureButton);
+  it('is disabled while saving', () => {
+    renderForm({ loading: true })
 
-    // Assert
-    expect(screen.getByLabelText(/feature 1/i)).toBeInTheDocument();
-  });
+    expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+  })
 
-  it('updates monthly price calculation hint based on annual price', async () => {
-    // Arrange
-    render(
-      <PlanForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
+  it('shows an error from the parent', () => {
+    renderForm({ error: 'Failed to save plan' })
 
-    const monthlyInput = screen.getByLabelText(/monthly price/i);
-    const annualInput = screen.getByLabelText(/annual price/i);
-
-    // Act
-    await userEvent.type(monthlyInput, '29.99');
-    await userEvent.type(annualInput, '299.99');
-
-    // Assert - annual is 10x monthly (annual savings ~10%)
-    const savingsHint = screen.queryByText(/save/i);
-    expect(savingsHint).toBeInTheDocument();
-  });
-
-  it('handles description as optional field', async () => {
-    // Arrange
-    render(
-      <PlanForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    const nameInput = screen.getByLabelText(/plan name/i);
-    const monthlyInput = screen.getByLabelText(/monthly price/i);
-    const annualInput = screen.getByLabelText(/annual price/i);
-    const descriptionInput = screen.queryByLabelText(/description/i);
-
-    // Act
-    await userEvent.type(nameInput, 'Simple Plan');
-    await userEvent.type(monthlyInput, '19.99');
-    await userEvent.type(annualInput, '199.99');
-    if (descriptionInput) {
-      await userEvent.type(descriptionInput, 'A simple plan');
-    }
-
-    const submitButton = screen.getByText(/save|submit/i);
-    fireEvent.click(submitButton);
-
-    // Assert
-    await waitFor(() => {
-      expect(mockOnSubmit).toHaveBeenCalled();
-    });
-  });
-});
+    expect(screen.getByText('Failed to save plan')).toBeInTheDocument()
+  })
+})

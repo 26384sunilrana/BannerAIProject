@@ -30,7 +30,23 @@ SMOKE_SQL="Server=(localdb)\MSSQLLocalDB;Database=BannerAI_Smoke;Trusted_Connect
   `Database__MigrateOnStartup=false`.
 - **Existing databases** created from the earlier, attribute-less migrations or by `EnsureCreated` cannot take `InitialCreate`
   (tables already exist). For development, drop and recreate. For anything with data, build a baseline: create the database from
-  the new migration on a scratch server, then compare and script the differences.
+  the new migration on a scratch server, compare it with the old database (a schema-compare tool such as `sqlpackage /Action:DeployReport`),
+  apply the differences by script, and only then insert the `InitialCreate` and later migration ids into `__EFMigrationsHistory`.
+  This path has not been tried on a database with data; try it on a copy first.
+
+## Secrets
+- Nothing secret is stored in the repository: `appsettings.json` has an empty connection string and an empty `Jwt:SecretKey`,
+  and the API refuses to start without them.
+- Local development: copy `src/BannerService/appsettings.Development.example.json` to `appsettings.Development.json` (that file is git-ignored). The example points at LocalDB (`(localdb)\MSSQLLocalDB`, Windows sign-in, no password)
+  with a signing key that is only for development. To use another SQL Server, set `ConnectionStrings__DefaultConnection`
+  as an environment variable or with `dotnet user-secrets`.
+- Everywhere else the two values come from the environment: `docker-compose.yml` reads them from `.env`, and Kubernetes reads them
+  from the `banner-secrets` secret (`deploy/k8s/secret.example.yaml`).
+
+## Continuous integration
+`.github/workflows/ci.yml` runs on every push to master and every pull request: API build and the three .NET test projects,
+the same integration tests against a SQL Server container, and the web type check, Jest tests and production build.
+It has not run on GitHub yet; the commands in it were run locally.
 
 ## Configuration that must be set outside development
 | Setting | Purpose |

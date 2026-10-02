@@ -42,7 +42,7 @@ public class SubscriptionPlanRepositoryTests : IAsyncLifetime
                 Id = Guid.NewGuid(),
                 Name = "Basic",
                 Description = "Basic plan",
-                Price = 99.99m,
+                MonthlyPrice = 99.99m,
                 IsActive = true,
                 DisplayOrder = 1,
                 CreatedAt = DateTime.UtcNow
@@ -52,7 +52,7 @@ public class SubscriptionPlanRepositoryTests : IAsyncLifetime
                 Id = Guid.NewGuid(),
                 Name = "Premium",
                 Description = "Premium plan",
-                Price = 199.99m,
+                MonthlyPrice = 199.99m,
                 IsActive = true,
                 DisplayOrder = 2,
                 CreatedAt = DateTime.UtcNow
@@ -62,7 +62,7 @@ public class SubscriptionPlanRepositoryTests : IAsyncLifetime
                 Id = Guid.NewGuid(),
                 Name = "Enterprise",
                 Description = "Enterprise plan",
-                Price = 499.99m,
+                MonthlyPrice = 499.99m,
                 IsActive = false,
                 DisplayOrder = 3,
                 CreatedAt = DateTime.UtcNow
@@ -189,7 +189,7 @@ public class SubscriptionPlanRepositoryTests : IAsyncLifetime
         {
             Name = "Starter",
             Description = "Starter plan",
-            Price = 49.99m,
+            MonthlyPrice = 49.99m,
             IsActive = true,
             DisplayOrder = 1
         };
@@ -211,7 +211,7 @@ public class SubscriptionPlanRepositoryTests : IAsyncLifetime
         var newPlan = new SubscriptionPlan
         {
             Name = "NewPlan",
-            Price = 99.99m,
+            MonthlyPrice = 99.99m,
             IsActive = true
         };
 
@@ -231,14 +231,14 @@ public class SubscriptionPlanRepositoryTests : IAsyncLifetime
     {
         // Arrange
         var plan = _context.SubscriptionPlans.First(p => p.IsActive);
-        plan.Price = 149.99m;
+        plan.MonthlyPrice = 149.99m;
 
         // Act
         await _repository.UpdateAsync(plan);
 
         // Assert
         var updated = await _context.SubscriptionPlans.FindAsync(plan.Id);
-        Assert.Equal(149.99m, updated.Price);
+        Assert.Equal(149.99m, updated.MonthlyPrice);
     }
 
     #endregion

@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
+import { authFetch } from '@/api/client';
 import { ShopDto, CreateShopPayload, UpdateShopPayload, ShopsListResponse } from '@/types/shop';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:5001/api';
 
 export const useShops = () => {
   const [loading, setLoading] = useState(false);
@@ -18,8 +18,7 @@ export const useShops = () => {
         params.append('pageSize', pageSize.toString());
         if (status) params.append('status', status);
 
-        const response = await fetch(`${API_BASE_URL}/shops/my-shops?${params}`, {
-          credentials: 'include',
+        const response = await authFetch(`/shops/my-shops?${params}`, {
           headers: { 'Content-Type': 'application/json' },
         });
 
@@ -45,8 +44,7 @@ export const useShops = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/shops/${shopId}`, {
-        credentials: 'include',
+      const response = await authFetch(`/shops/${shopId}`, {
         headers: { 'Content-Type': 'application/json' },
       });
 
@@ -70,9 +68,8 @@ export const useShops = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/shops`, {
+      const response = await authFetch(`/shops`, {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -99,9 +96,8 @@ export const useShops = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${API_BASE_URL}/shops/${shopId}`, {
+        const response = await authFetch(`/shops/${shopId}`, {
           method: 'PUT',
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
@@ -129,9 +125,8 @@ export const useShops = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/shops/${shopId}/deactivate`, {
+      const response = await authFetch(`/shops/${shopId}/deactivate`, {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
 

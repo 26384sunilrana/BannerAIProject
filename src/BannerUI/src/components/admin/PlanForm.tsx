@@ -49,12 +49,20 @@ export const PlanForm: React.FC<PlanFormProps> = ({
       setValidationError('Plan name is required');
       return false;
     }
+    if (!Number.isFinite(formData.monthlyPrice) || !Number.isFinite(formData.annualPrice)) {
+      setValidationError('Enter both prices as numbers');
+      return false;
+    }
     if (formData.monthlyPrice < 0 || formData.annualPrice < 0) {
       setValidationError('Prices cannot be negative');
       return false;
     }
     if (formData.monthlyPrice === 0 && formData.annualPrice === 0) {
       setValidationError('At least one price must be greater than zero');
+      return false;
+    }
+    if (formData.monthlyPrice > 0 && formData.annualPrice > 0 && formData.annualPrice < formData.monthlyPrice) {
+      setValidationError('Annual price must be at least the monthly price');
       return false;
     }
     setValidationError(null);
@@ -102,8 +110,9 @@ export const PlanForm: React.FC<PlanFormProps> = ({
 
       {/* Plan Name */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">Plan Name *</label>
+        <label htmlFor="plan-name" className="block text-sm font-semibold text-gray-700 mb-2">Plan Name *</label>
         <input
+          id="plan-name"
           type="text"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -115,8 +124,9 @@ export const PlanForm: React.FC<PlanFormProps> = ({
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+        <label htmlFor="plan-description" className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
         <textarea
+          id="plan-description"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="Plan description"
@@ -128,10 +138,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({
       {/* Pricing */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Monthly Price ($)</label>
+          <label htmlFor="plan-monthly" className="block text-sm font-semibold text-gray-700 mb-2">Monthly Price ($)</label>
           <input
+            id="plan-monthly"
             type="number"
-            value={formData.monthlyPrice}
+            value={Number.isFinite(formData.monthlyPrice) ? formData.monthlyPrice : ''}
             onChange={(e) => setFormData({ ...formData, monthlyPrice: parseFloat(e.target.value) })}
             placeholder="0.00"
             step="0.01"
@@ -140,10 +151,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Annual Price ($)</label>
+          <label htmlFor="plan-annual" className="block text-sm font-semibold text-gray-700 mb-2">Annual Price ($)</label>
           <input
+            id="plan-annual"
             type="number"
-            value={formData.annualPrice}
+            value={Number.isFinite(formData.annualPrice) ? formData.annualPrice : ''}
             onChange={(e) => setFormData({ ...formData, annualPrice: parseFloat(e.target.value) })}
             placeholder="0.00"
             step="0.01"
@@ -165,10 +177,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             { key: 'slaPercentage', label: 'SLA Percentage', type: 'number' },
           ].map((field) => (
             <div key={field.key}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
+              <label htmlFor={`plan-${field.key}`} className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
               <input
+                id={`plan-${field.key}`}
                 type={field.type}
-                value={String(features[field.key as keyof SubscriptionFeatures])}
+                value={String(features[field.key as keyof SubscriptionFeatures]).replace('NaN', '')}
                 onChange={(e) =>
                   setFeatures({
                     ...features,
@@ -221,10 +234,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           </label>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Display Order</label>
+          <label htmlFor="plan-order" className="block text-sm font-semibold text-gray-700 mb-2">Display Order</label>
           <input
+            id="plan-order"
             type="number"
-            value={formData.displayOrder}
+            value={Number.isFinite(formData.displayOrder) ? formData.displayOrder : ''}
             onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) })}
             min="1"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"

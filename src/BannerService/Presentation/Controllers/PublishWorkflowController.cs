@@ -195,7 +195,7 @@ namespace BannerService.Presentation.Controllers
                     Workflow = MapToDto(workflow),
                     ApprovalRequests = approvals.Select(MapApprovalToDto).ToList(),
                     ApprovedCount = approvals.Count(a => a.IsApproved && a.DecisionMadeAt.HasValue),
-                    PendingCount = approvals.Count(a => !a.IsPending),
+                    PendingCount = approvals.Count(a => a.IsPending),
                     RejectedCount = approvals.Count(a => !a.IsApproved && a.DecisionMadeAt.HasValue)
                 };
 

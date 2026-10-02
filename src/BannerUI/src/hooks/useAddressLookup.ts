@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
+import { authFetch } from '@/api/client';
 import { CountryDto, StateDto, DistrictDto } from '@/types/address';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:5001/api';
 
 export const useAddressLookup = () => {
   const [loading, setLoading] = useState(false);
@@ -12,8 +12,7 @@ export const useAddressLookup = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/address/countries`, {
-        credentials: 'include',
+      const response = await authFetch(`/address/countries`, {
         headers: { 'Content-Type': 'application/json' },
       });
 
@@ -37,10 +36,9 @@ export const useAddressLookup = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/address/countries/${countryCode}/states`,
+      const response = await authFetch(
+        `/address/countries/${countryCode}/states`,
         {
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
         }
       );
@@ -65,10 +63,9 @@ export const useAddressLookup = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/address/states/${stateId}/districts`,
+      const response = await authFetch(
+        `/address/states/${stateId}/districts`,
         {
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
         }
       );
@@ -93,10 +90,9 @@ export const useAddressLookup = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/address/states/search?searchTerm=${encodeURIComponent(searchTerm)}`,
+      const response = await authFetch(
+        `/address/states/search?searchTerm=${encodeURIComponent(searchTerm)}`,
         {
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
         }
       );
@@ -121,10 +117,9 @@ export const useAddressLookup = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/address/districts/search?searchTerm=${encodeURIComponent(searchTerm)}`,
+      const response = await authFetch(
+        `/address/districts/search?searchTerm=${encodeURIComponent(searchTerm)}`,
         {
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
         }
       );

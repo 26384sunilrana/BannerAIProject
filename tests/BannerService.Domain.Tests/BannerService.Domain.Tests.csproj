@@ -29,7 +29,6 @@
   <ItemGroup>
     <Compile Remove="Entities\AdminDashboardEntityTests.cs" />
     <Compile Remove="Entities\BannerEntityTests.cs" />
-    <Compile Remove="Entities\BannerVersionEntityTests.cs" />
     <Compile Remove="Entities\ComponentEntityTests.cs" />
     <Compile Remove="Entities\MediaFileEntityTests.cs" />
     <Compile Remove="Entities\ShopOwnerDashboardEntityTests.cs" />
@@ -37,15 +36,9 @@
     <Compile Remove="Repositories\AddressRepositoryTests.cs" />
     <Compile Remove="Repositories\AdminDashboardRepositoryTests.cs" />
     <Compile Remove="Repositories\AnalyticsRepositoryTests.cs" />
-    <Compile Remove="Repositories\BannerVersionRepositoryTests.cs" />
     <Compile Remove="Repositories\CarouselRepositoryTests.cs" />
     <Compile Remove="Repositories\MediaFileRepositoryTests.cs" />
-    <Compile Remove="Repositories\PublishWorkflowRepositoryTests.cs" />
     <Compile Remove="Repositories\ShopOwnerDashboardRepositoryTests.cs" />
-    <Compile Remove="Repositories\SubscriptionPlanRepositoryTests.cs" />
     <Compile Remove="Repositories\SubscriptionRepositoryTests.cs" />
-    <Compile Remove="Repositories\UserRepositoryTests.cs" />
-    <Compile Remove="Services\EffectServiceTests.cs" />
-    <Compile Remove="Services\VersionControlServiceTests.cs" />
   </ItemGroup>
 </Project>

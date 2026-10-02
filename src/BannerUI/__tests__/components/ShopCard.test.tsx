@@ -47,7 +47,7 @@ describe('ShopCard', () => {
     expect(screen.getByText('Mumbai Central')).toBeInTheDocument();
     expect(screen.getByText('Flagship store in Mumbai')).toBeInTheDocument();
     expect(screen.getByText(/Mumbai, Maharashtra, India/i)).toBeInTheDocument();
-    expect(screen.getByText('+91-22-1234-5678')).toBeInTheDocument();
+    expect(screen.getByText(/\+91-22-1234-5678/)).toBeInTheDocument();
   });
 
   it('displays status badge correctly for Active status', () => {

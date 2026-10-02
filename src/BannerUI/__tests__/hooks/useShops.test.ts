@@ -109,14 +109,17 @@ describe('useShops', () => {
       const { result } = renderHook(() => useShops());
 
       // Act
-      const promise = act(async () => {
-        await result.current.getMyShops(1, 10);
+      let promise: Promise<unknown> = Promise.resolve();
+      act(() => {
+        promise = result.current.getMyShops(1, 10);
       });
 
       // Assert - should be loading
       expect(result.current.loading).toBe(true);
 
-      await promise;
+      await act(async () => {
+        await promise;
+      });
 
       // Assert - should not be loading after fetch
       expect(result.current.loading).toBe(false);
@@ -161,9 +164,10 @@ describe('useShops', () => {
         try {
           await result.current.getShopById('non-existent');
         } catch (err) {
-          expect(result.current.error).toBeTruthy();
+          // the hook records the failure in `error`
         }
       });
+      expect(result.current.error).toBeTruthy();
     });
   });
 
@@ -218,9 +222,10 @@ describe('useShops', () => {
         try {
           await result.current.createShop(payload);
         } catch (err) {
-          expect(result.current.error).toBeTruthy();
+          // the hook records the failure in `error`
         }
       });
+      expect(result.current.error).toBeTruthy();
     });
   });
 
@@ -275,9 +280,10 @@ describe('useShops', () => {
         try {
           await result.current.updateShop('non-existent', payload);
         } catch (err) {
-          expect(result.current.error).toBeTruthy();
+          // the hook records the failure in `error`
         }
       });
+      expect(result.current.error).toBeTruthy();
     });
   });
 
@@ -314,9 +320,10 @@ describe('useShops', () => {
         try {
           await result.current.deactivateShop('non-existent');
         } catch (err) {
-          expect(result.current.error).toBeTruthy();
+          // the hook records the failure in `error`
         }
       });
+      expect(result.current.error).toBeTruthy();
     });
 
     it('handles deactivation error for already inactive shop', async () => {
@@ -330,9 +337,10 @@ describe('useShops', () => {
         try {
           await result.current.deactivateShop('1');
         } catch (err) {
-          expect(result.current.error).toBeTruthy();
+          // the hook records the failure in `error`
         }
       });
+      expect(result.current.error).toBeTruthy();
     });
   });
 

@@ -43,13 +43,11 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 
 ## E. Quality, tests and delivery
 
-- 46 stale test files are excluded from the .NET test projects (they call APIs that no longer exist) and need rewriting [tests `.csproj` Compile Remove lists].
-- 103 older Jest tests fail (they existed before this work) [026-029].
+- 39 stale test files are still excluded from the .NET test projects (7 of the original 46 were brought back in bolt 032). They target models and APIs that were redesigned (about 500 compile errors); cover their behaviour with HTTP-level integration tests in each area's bolt instead [tests `.csproj` Compile Remove lists].
 - API-level tests are thin: the integration project runs 11 smoke tests; most controllers have no HTTP tests [017, 018].
-- Docker images were never built (daemon was not running); nothing has run on a cluster; no CI pipeline [025].
+- Docker images were never built (daemon was not running); nothing has run on a cluster; the CI workflow (`.github/workflows/ci.yml`, bolt 032) has not run on GitHub yet [025].
 - Existing databases built from the old model cannot take `InitialCreate`; a baseline is needed for any database with data [025].
 - User guides in the repo root (ADMIN, SHOP_OWNER, BANNER_CREATOR) describe the old sign-up and screens and need rewriting [018b].
-- Docker/cluster: `appsettings.json` carries a development SQL password; move to secrets [025].
 
 ## F. Not yet fully verified
 
@@ -58,3 +56,5 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 - Multi-pod behaviour (shared keys and media volumes, the lifecycle job on several pods) was reasoned about and unit tested, not run.
 
 - `GET /api/subscriptions/{shopId}` returns 404 when a shop has no subscription; noisy in the activity log [031].
+
+- **Deliberately last (bolt 044), by decision on 2026-10-02:** real payment / SMS / email providers, forgot-password and email verification, self-service renewal, Azure Blob + Key Vault + Azure SQL, after a full human review. See `roadmap.md`.

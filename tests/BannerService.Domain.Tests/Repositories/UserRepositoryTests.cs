@@ -451,7 +451,7 @@ public class UserRepositoryTests : IAsyncLifetime
         var count = await _repository.GetCountByShopAsync(_testShopId);
 
         // Assert
-        Assert.DoesNotContain(count.ToString(), c => c == "inactive@test.com");
+        Assert.Equal(2, count); // the two active users of the shop; the deactivated one and the other shop's user are not counted
     }
 
     #endregion

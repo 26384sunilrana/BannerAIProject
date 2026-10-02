@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PropertyPanel } from '@/components/PropertyPanel/PropertyPanel'
 import { BannerComponent } from '@/types/banner'
@@ -65,8 +65,7 @@ describe('PropertyPanel', () => {
     const { rerender } = render(<PropertyPanel {...defaultProps} />)
     const xInput = screen.getByLabelText('X')
 
-    await userEvent.clear(xInput)
-    await userEvent.type(xInput, '100')
+    fireEvent.change(xInput, { target: { value: '100' } })
 
     expect(defaultProps.onPropertyChange).toHaveBeenCalledWith('x', 100)
   })

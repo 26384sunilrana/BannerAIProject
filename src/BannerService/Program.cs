@@ -27,8 +27,12 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Add services
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// No connection string ships in the repository: it comes from appsettings.Development.json locally, and from
+// ConnectionStrings__DefaultConnection (a secret) everywhere else
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not set. Provide it as the ConnectionStrings__DefaultConnection environment variable or in user secrets.");
+builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
 
 builder.Services.AddScoped<IShopContextAccessor, ShopContextAccessor>();
 
@@ -134,7 +138,9 @@ builder.Services.AddCors(options =>
 });
 
 // Authentication (JWT bearer token validation)
-var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] ?? "your-secret-key-change-in-production";
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"];
+if (string.IsNullOrWhiteSpace(jwtSecretKey))
+    throw new InvalidOperationException("Jwt:SecretKey is not set. Provide it as the Jwt__SecretKey environment variable or in user secrets (32 or more characters).");
 // The shipped placeholder must never sign production tokens: supply Jwt__SecretKey from a secret store
 if (builder.Environment.IsProduction() && (jwtSecretKey.Length < 32 || jwtSecretKey.Contains("change-this") || jwtSecretKey.Contains("change-in-production")))
     throw new InvalidOperationException("Jwt:SecretKey must be set to a strong secret (at least 32 characters) in production");

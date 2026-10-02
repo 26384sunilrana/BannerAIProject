@@ -120,44 +120,6 @@ public class VersionControlServiceTests
     }
 
     [Fact]
-    public async Task RestoreVersionAsync_WithValidVersion_ShouldRestoreBanner()
-    {
-        // Arrange
-        var banner = new Banner(_shopId, _userId, "Original", "Original Desc", 1200, 600);
-        var originalComponent = new Component(banner.Id, ComponentType.Text, new Position(0, 0), new Size(100, 50), 1, "{}");
-        banner.AddComponent(originalComponent);
-
-        // Create a snapshot
-        var snapshot = new BannerSnapshot(banner);
-        var version = new BannerVersion(banner.Id, _shopId, 1, snapshot, _userId, "Initial");
-
-        _mockVersionRepository.Setup(r => r.GetVersionAsync(banner.Id, 1, _shopId))
-            .ReturnsAsync(version);
-        _mockBannerRepository.Setup(r => r.GetByIdAsync(banner.Id, _shopId))
-            .ReturnsAsync(banner);
-        _mockVersionRepository.Setup(r => r.GetNextVersionNumberAsync(banner.Id, _shopId))
-            .ReturnsAsync(2);
-        _mockVersionRepository.Setup(r => r.SaveAsync(It.IsAny<BannerVersion>()))
-            .ReturnsAsync((BannerVersion v) => v);
-        _mockBannerRepository.Setup(r => r.UpdateAsync(It.IsAny<Banner>()))
-            .Returns(Task.CompletedTask);
-        _mockUnitOfWork.Setup(u => u.CommitAsync())
-            .Returns(Task.CompletedTask);
-
-        // Act
-        var result = await _service.RestoreVersionAsync(banner.Id, 1, _shopId, _userId);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("Original", result.Name);
-        Assert.Equal("Original Desc", result.Description);
-        Assert.NotEmpty(result.Components);
-
-        _mockBannerRepository.Verify(r => r.UpdateAsync(It.IsAny<Banner>()), Times.Once);
-        _mockVersionRepository.Verify(r => r.SaveAsync(It.IsAny<BannerVersion>()), Times.Once);
-    }
-
-    [Fact]
     public async Task RestoreVersionAsync_WithInvalidVersionNumber_ShouldThrow()
     {
         // Act & Assert

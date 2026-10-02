@@ -136,9 +136,9 @@ namespace BannerService.Infrastructure.Repositories
             var term = searchTerm.ToLower();
             return await _context.Users
                 .Where(u => u.ShopId == shopId && u.IsActive &&
-                    (u.Email.Contains(term) ||
-                     u.FirstName.Contains(term) ||
-                     u.LastName.Contains(term)))
+                    (u.Email.ToLower().Contains(term) ||
+                     u.FirstName.ToLower().Contains(term) ||
+                     u.LastName.ToLower().Contains(term)))
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .ToListAsync();

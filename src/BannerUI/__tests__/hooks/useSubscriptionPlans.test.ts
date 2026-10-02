@@ -16,19 +16,19 @@ describe('useSubscriptionPlans', () => {
         total: 2,
       };
 
-      mockFetchOnce(200, mockResponse);
+      mockFetchOnce(200, { success: true, data: mockResponse.items });
 
       const { result } = renderHook(() => useSubscriptionPlans());
 
       // Act
       let response;
       await act(async () => {
-        response = await result.current.getAllPlans();
+        response = await result.current.getPlans();
       });
 
       // Assert
-      expect(response).toEqual(mockResponse);
-      expect(response.items).toHaveLength(2);
+      expect(response).toEqual(mockResponse.items);
+      expect(response).toHaveLength(2);
       expect(result.current.loading).toBe(false);
     });
 
@@ -41,7 +41,7 @@ describe('useSubscriptionPlans', () => {
       // Act
       await act(async () => {
         try {
-          await result.current.getAllPlans();
+          await result.current.getPlans();
         } catch (err) {
           // Expected
         }
@@ -59,14 +59,17 @@ describe('useSubscriptionPlans', () => {
       const { result } = renderHook(() => useSubscriptionPlans());
 
       // Act
-      const promise = act(async () => {
-        await result.current.getAllPlans();
+      let promise: Promise<unknown> = Promise.resolve();
+      act(() => {
+        promise = result.current.getPlans();
       });
 
       // Assert - should be loading
       expect(result.current.loading).toBe(true);
 
-      await promise;
+      await act(async () => {
+        await promise;
+      });
 
       // Assert - should not be loading after fetch
       expect(result.current.loading).toBe(false);
@@ -85,7 +88,7 @@ describe('useSubscriptionPlans', () => {
         features: ['Feature 1', 'Feature 2'],
       };
 
-      mockFetchOnce(200, mockPlan);
+      mockFetchOnce(200, { success: true, data: mockPlan });
 
       const { result } = renderHook(() => useSubscriptionPlans());
 
@@ -111,9 +114,10 @@ describe('useSubscriptionPlans', () => {
         try {
           await result.current.getPlanById('non-existent');
         } catch (err) {
-          expect(result.current.error).toBeTruthy();
+          // the hook records the failure in `error`
         }
       });
+      expect(result.current.error).toBeTruthy();
     });
   });
 
@@ -134,7 +138,7 @@ describe('useSubscriptionPlans', () => {
         status: 'Active',
       };
 
-      mockFetchOnce(201, mockCreatedPlan);
+      mockFetchOnce(201, { success: true, data: mockCreatedPlan });
 
       const { result } = renderHook(() => useSubscriptionPlans());
 
@@ -168,9 +172,10 @@ describe('useSubscriptionPlans', () => {
         try {
           await result.current.createPlan(invalidPayload);
         } catch (err) {
-          expect(result.current.error).toBeTruthy();
+          // the hook records the failure in `error`
         }
       });
+      expect(result.current.error).toBeTruthy();
     });
   });
 
@@ -190,7 +195,7 @@ describe('useSubscriptionPlans', () => {
         status: 'Active',
       };
 
-      mockFetchOnce(200, mockUpdatedPlan);
+      mockFetchOnce(200, { success: true, data: mockUpdatedPlan });
 
       const { result } = renderHook(() => useSubscriptionPlans());
 
@@ -223,9 +228,10 @@ describe('useSubscriptionPlans', () => {
         try {
           await result.current.updatePlan('non-existent', payload);
         } catch (err) {
-          expect(result.current.error).toBeTruthy();
+          // the hook records the failure in `error`
         }
       });
+      expect(result.current.error).toBeTruthy();
     });
   });
 
@@ -262,9 +268,10 @@ describe('useSubscriptionPlans', () => {
         try {
           await result.current.deactivatePlan('non-existent');
         } catch (err) {
-          expect(result.current.error).toBeTruthy();
+          // the hook records the failure in `error`
         }
       });
+      expect(result.current.error).toBeTruthy();
     });
   });
 
@@ -297,9 +304,9 @@ describe('useSubscriptionPlans', () => {
       };
 
       mockFetchSequence([
-        { status: 201, body: createResponse },
-        { status: 200, body: fetchResponse },
-        { status: 200, body: updateResponse },
+        { status: 201, body: { success: true, data: createResponse } },
+        { status: 200, body: { success: true, data: fetchResponse } },
+        { status: 200, body: { success: true, data: updateResponse } },
         { status: 200, body: { status: 'Inactive' } },
       ]);
 
@@ -347,7 +354,7 @@ describe('useSubscriptionPlans', () => {
       // Act & Assert - first call fails
       await act(async () => {
         try {
-          await result.current.getAllPlans();
+          await result.current.getPlans();
         } catch {
           // Expected
         }
@@ -357,7 +364,7 @@ describe('useSubscriptionPlans', () => {
       // Act & Assert - second call succeeds
       await act(async () => {
         try {
-          await result.current.getAllPlans();
+          await result.current.getPlans();
         } catch {
           // Expected
         }

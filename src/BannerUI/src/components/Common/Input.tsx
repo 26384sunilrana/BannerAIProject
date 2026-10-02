@@ -8,15 +8,19 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, className, ...props }, ref) => {
+    // a field without an id still needs its label tied to it, for screen readers and for clicking the label
+    const generatedId = React.useId()
+    const fieldId = props.id ?? generatedId
     return (
       <div className="flex flex-col gap-1 w-full">
         {label && (
-          <label htmlFor={props.id} className="text-sm font-medium text-gray-700">
+          <label htmlFor={fieldId} className="text-sm font-medium text-gray-700">
             {label}
           </label>
         )}
         <input
           ref={ref}
+          id={fieldId}
           className={`
             px-3 py-2 rounded-lg border-2
             font-base text-gray-900 placeholder-gray-400

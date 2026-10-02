@@ -112,8 +112,8 @@ describe('ConfirmDialog', () => {
       />
     )
 
-    expect(screen.getByText('Confirm')).toBeInTheDocument()
-    expect(screen.getByText('Cancel')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Confirm' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
   })
 
   it('uses custom confirm and cancel text', () => {
@@ -129,8 +129,8 @@ describe('ConfirmDialog', () => {
       />
     )
 
-    expect(screen.getByText('Delete')).toBeInTheDocument()
-    expect(screen.getByText('Keep')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Keep' })).toBeInTheDocument()
   })
 
   it('renders modal with proper styling', () => {

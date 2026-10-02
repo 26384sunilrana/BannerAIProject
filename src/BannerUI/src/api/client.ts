@@ -125,6 +125,16 @@ class ApiClient {
     return this.refreshing
   }
 
+  /** Gets a new access token from the refresh token; false when that is not possible. */
+  refreshSession(): Promise<boolean> {
+    return this.tryRefresh()
+  }
+
+  /** Ends the session and sends the person to sign in (not on a shop screen). */
+  endSession(): void {
+    if (!onShopScreen()) this.signOut()
+  }
+
   private signOut(): void {
     clearSession()
     if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
@@ -194,3 +204,28 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient()
+
+/**
+ * fetch against the API with the signed-in person's token. A 401 triggers one refresh and one retry,
+ * and a second 401 ends the session. Paths start with "/", like the ones given to apiClient.
+ */
+export async function authFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const send = () => {
+    const token = getAccessToken()
+    return fetch(`${API_URL}${path}`, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...((init.headers as Record<string, string> | undefined) ?? {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+  }
+
+  let response = await send()
+  if (response.status === 401) {
+    if (await apiClient.refreshSession()) response = await send()
+    else apiClient.endSession()
+  }
+  return response
+}

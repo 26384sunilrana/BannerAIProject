@@ -63,9 +63,10 @@ describe('useResize', () => {
 
     act(() => {
       result.current.startResize('1', 'e', 300, 100)
-      const newSize = result.current.calculateResize(400, 100)
-      expect(newSize?.width).toBeGreaterThan(200)
     })
+
+    const newSize = result.current.calculateResize(400, 100)
+    expect(newSize?.width).toBeGreaterThan(200)
   })
 
   it('calculates resize from west handle', () => {
@@ -75,10 +76,11 @@ describe('useResize', () => {
 
     act(() => {
       result.current.startResize('1', 'w', 100, 100)
-      const newSize = result.current.calculateResize(50, 100)
-      expect(newSize?.width).toBeGreaterThan(200)
-      expect(newSize?.x).toBeGreaterThan(100)
     })
+
+    const newSize = result.current.calculateResize(50, 100)
+    expect(newSize?.width).toBeGreaterThan(200)
+    expect(newSize?.x).toBe(50)
   })
 
   it('calculates resize from south handle', () => {
@@ -88,9 +90,10 @@ describe('useResize', () => {
 
     act(() => {
       result.current.startResize('1', 's', 100, 250)
-      const newSize = result.current.calculateResize(100, 350)
-      expect(newSize?.height).toBeGreaterThan(150)
     })
+
+    const newSize = result.current.calculateResize(100, 350)
+    expect(newSize?.height).toBeGreaterThan(150)
   })
 
   it('enforces minimum size limit', () => {
@@ -100,9 +103,10 @@ describe('useResize', () => {
 
     act(() => {
       result.current.startResize('1', 'e', 300, 100)
-      const newSize = result.current.calculateResize(310, 100)
-      expect(newSize?.width).toBeGreaterThanOrEqual(20)
     })
+
+    const newSize = result.current.calculateResize(310, 100)
+    expect(newSize?.width).toBeGreaterThanOrEqual(20)
   })
 
   it('respects canvas bounds', () => {
@@ -152,10 +156,13 @@ describe('useResize', () => {
 
     act(() => {
       result.current.startResize('1', 'ne', 300, 100)
-      const newSize = result.current.calculateResize(400, 50)
-      expect(newSize?.width).toBeGreaterThan(200)
-      expect(newSize?.height).toBeLessThan(150)
     })
+
+    const newSize = result.current.calculateResize(400, 50)
+    expect(newSize?.width).toBeGreaterThan(200)
+    // dragging the top edge upwards makes the component taller and moves its top edge up
+    expect(newSize?.height).toBe(200)
+    expect(newSize?.y).toBe(50)
   })
 
   it('handles corner resize (se)', () => {
@@ -165,10 +172,11 @@ describe('useResize', () => {
 
     act(() => {
       result.current.startResize('1', 'se', 300, 250)
-      const newSize = result.current.calculateResize(400, 350)
-      expect(newSize?.width).toBeGreaterThan(200)
-      expect(newSize?.height).toBeGreaterThan(150)
     })
+
+    const newSize = result.current.calculateResize(400, 350)
+    expect(newSize?.width).toBeGreaterThan(200)
+    expect(newSize?.height).toBeGreaterThan(150)
   })
 
   it('handles corner resize (sw)', () => {
@@ -178,10 +186,11 @@ describe('useResize', () => {
 
     act(() => {
       result.current.startResize('1', 'sw', 100, 250)
-      const newSize = result.current.calculateResize(50, 350)
-      expect(newSize?.width).toBeGreaterThan(200)
-      expect(newSize?.height).toBeGreaterThan(150)
     })
+
+    const newSize = result.current.calculateResize(50, 350)
+    expect(newSize?.width).toBeGreaterThan(200)
+    expect(newSize?.height).toBeGreaterThan(150)
   })
 
   it('preserves aspect ratio when configured', () => {

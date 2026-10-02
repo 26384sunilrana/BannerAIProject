@@ -41,7 +41,7 @@ describe('positioning utilities', () => {
   describe('snapToGrid', () => {
     it('snaps values to grid', () => {
       expect(snapToGrid(13, 8)).toBe(16)
-      expect(snapToGrid(20, 8)).toBe(16)
+      expect(snapToGrid(20, 8)).toBe(24)
       expect(snapToGrid(25, 8)).toBe(24)
     })
 

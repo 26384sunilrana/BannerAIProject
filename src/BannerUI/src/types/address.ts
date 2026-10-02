@@ -1,27 +1,27 @@
 export interface CountryDto {
-  ISOCode: string;
-  Name: string;
-  RegionName?: string;
-  PhoneCode?: string;
-  IsActive: boolean;
+  isoCode: string;
+  name: string;
+  regionName?: string;
+  phoneCode?: string;
+  isActive: boolean;
 }
 
 export interface StateDto {
-  Id: number;
-  CountryCode: string;
-  Code: string;
-  Name: string;
-  RegionType?: string;
-  IsActive: boolean;
+  id: number;
+  countryCode: string;
+  code: string;
+  name: string;
+  regionType?: string;
+  isActive: boolean;
 }
 
 export interface DistrictDto {
-  Id: number;
-  StateId: number;
-  Code: string;
-  Name: string;
-  RegionType?: string;
-  IsActive: boolean;
+  id: number;
+  stateId: number;
+  code: string;
+  name: string;
+  regionType?: string;
+  isActive: boolean;
 }
 
 export interface AddressData {

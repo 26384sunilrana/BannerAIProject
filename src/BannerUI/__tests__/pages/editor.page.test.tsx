@@ -1,241 +1,104 @@
 import React from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { setupFetchMockCleanup, mockFetchOnce } from '../helpers/mockFetch'
-import * as bannerService from '@/api/bannerService'
 
-// Mock next/navigation
 jest.mock('next/navigation', () => ({
-  useParams: () => ({ bannerId: '1' }),
-  useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-  }),
+  useParams: () => ({ bannerId: 'b1' }),
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+  usePathname: () => '/banners/b1/editor',
+}))
+jest.mock('@/components/auth/RequireAuth', () => ({ RequireAuth: ({ children }: { children: React.ReactNode }) => <>{children}</> }))
+jest.mock('@/api/bannerService', () => ({
+  bannerService: {
+    getBanner: jest.fn(),
+    updateBanner: jest.fn(),
+    addComponent: jest.fn(),
+    updateComponent: jest.fn(),
+    deleteComponent: jest.fn(),
+  },
+}))
+jest.mock('@/api/layerService', () => ({ layerService: { reorderComponent: jest.fn() } }))
+jest.mock('@/hooks/useMediaUpload', () => ({
+  useMediaUpload: () => ({ upload: jest.fn(), isUploading: false, progress: 0, error: null }),
 }))
 
-describe('EditorPage', () => {
-  setupFetchMockCleanup()
+import EditorPage from '@/app/banners/[bannerId]/editor/page'
+import { bannerService } from '@/api/bannerService'
 
-  const mockBanner = {
-    id: '1',
-    title: 'Test Banner',
-    description: 'Test',
-    width: 1200,
-    height: 600,
-    backgroundColor: '#fff',
-  }
+const banner = bannerService as jest.Mocked<typeof bannerService>
 
-  beforeEach(() => {
-    jest.spyOn(bannerService, 'bannerService', 'get').mockReturnValue({
-      getBanner: jest.fn().mockResolvedValue(mockBanner),
-      updateBanner: jest.fn().mockResolvedValue(mockBanner),
-      addComponent: jest.fn().mockResolvedValue({
-        id: 'comp1',
-        type: 'text',
-        x: 50,
-        y: 50,
-        width: 200,
-        height: 100,
-        zIndex: 0,
-        rotation: 0,
-        opacity: 1,
-        isVisible: true,
-        data: {},
-      }),
-      updateComponent: jest.fn(),
-      deleteComponent: jest.fn(),
-      swapComponent: jest.fn(),
-    } as any)
+const loadedBanner = {
+  id: 'b1', title: 'Summer Sale', description: 'd', width: 1200, height: 600, backgroundColor: '#ffffff', components: [],
+}
+const textComponent = {
+  id: 'c1', bannerId: 'b1', type: 'text', x: 50, y: 50, width: 200, height: 100, zIndex: 0, rotation: 0, opacity: 1,
+  isVisible: true, data: { content: 'New Text', fontSize: 24 }, effects: [],
+}
+
+beforeEach(() => {
+  jest.clearAllMocks()
+  banner.getBanner.mockResolvedValue(loadedBanner as never)
+  banner.updateBanner.mockResolvedValue(undefined as never)
+})
+
+describe('Editor page', () => {
+  it('loads the banner and shows its name, the toolbar and the property panel', async () => {
+    render(<EditorPage />)
+
+    expect(await screen.findByText('Summer Sale')).toBeInTheDocument()
+    expect(banner.getBanner).toHaveBeenCalledWith('b1')
+    expect(screen.getByRole('button', { name: /text/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /image/i })).toBeInTheDocument()
   })
 
-  it('renders editor page', () => {
-    mockFetchOnce(200, { data: mockBanner })
+  it('shows why the banner could not be loaded', async () => {
+    banner.getBanner.mockRejectedValue({ response: { status: 403 } })
+    render(<EditorPage />)
 
-    render(
-      <div>
-        <h1>Banner Editor</h1>
-        <div>Loading banner...</div>
-      </div>
-    )
-
-    expect(screen.getByText('Banner Editor')).toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent(/permission/i)
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
   })
 
-  it('shows loading state while fetching banner', () => {
-    mockFetchOnce(200, { data: mockBanner })
+  it('adds a text component on the free layer and selects it', async () => {
+    banner.addComponent.mockResolvedValue(textComponent as never)
+    render(<EditorPage />)
+    await screen.findByText('Summer Sale')
 
-    render(
-      <div>
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading banner...</p>
-          </div>
-        </div>
-      </div>
+    await userEvent.click(screen.getByRole('button', { name: /text/i }))
+
+    await waitFor(() =>
+      expect(banner.addComponent).toHaveBeenCalledWith(
+        'b1',
+        expect.objectContaining({ type: 'text', zIndex: 0, data: expect.objectContaining({ content: 'New Text' }) })
+      )
     )
-
-    expect(screen.getByText('Loading banner...')).toBeInTheDocument()
+    expect(await screen.findByText('text component added')).toBeInTheDocument()
   })
 
-  it('displays error message on load failure', () => {
-    render(
-      <div>
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <p className="text-red-600 mb-4">Error: Failed to load banner</p>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
-    )
+  it('reports a failure to add a component', async () => {
+    banner.addComponent.mockRejectedValue({ response: { status: 400, data: { message: 'Layer taken' } } })
+    render(<EditorPage />)
+    await screen.findByText('Summer Sale')
 
-    expect(screen.getByText(/Error:/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /text/i }))
+
+    expect(await screen.findByText('Layer taken')).toBeInTheDocument()
   })
 
-  it('renders header component', () => {
-    render(
-      <div>
-        <header>
-          <h1>Banner ID: 1</h1>
-          <button>Save</button>
-        </header>
-        <div>Editor Content</div>
-      </div>
+  it('saves the banner details and says so once something has changed', async () => {
+    banner.addComponent.mockResolvedValue(textComponent as never)
+    banner.updateComponent.mockResolvedValue(textComponent as never)
+    render(<EditorPage />)
+    await screen.findByText('Summer Sale')
+    expect(screen.getByRole('button', { name: /^save/i })).toBeDisabled()
+
+    await userEvent.click(screen.getByRole('button', { name: /text/i }))
+    fireEvent.change(await screen.findByLabelText('X'), { target: { value: '120' } })
+    await userEvent.click(screen.getByRole('button', { name: /^save/i }))
+
+    await waitFor(() =>
+      expect(banner.updateBanner).toHaveBeenCalledWith('b1', { title: 'Summer Sale', description: 'd', width: 1200, height: 600 })
     )
-
-    expect(screen.getByText(/Banner ID/)).toBeInTheDocument()
-    expect(screen.getByText('Save')).toBeInTheDocument()
-  })
-
-  it('renders canvas area', () => {
-    render(
-      <div>
-        <div className="flex flex-1 overflow-hidden">
-          <div>Toolbar</div>
-          <div id="canvas">Canvas Area</div>
-          <div>Property Panel</div>
-        </div>
-      </div>
-    )
-
-    expect(screen.getByText('Canvas Area')).toBeInTheDocument()
-  })
-
-  it('renders toolbar for adding components', () => {
-    render(
-      <div>
-        <div>
-          <button>Add Text</button>
-          <button>Add Image</button>
-          <button>Add Video</button>
-        </div>
-      </div>
-    )
-
-    expect(screen.getByText('Add Text')).toBeInTheDocument()
-    expect(screen.getByText('Add Image')).toBeInTheDocument()
-  })
-
-  it('renders property panel', () => {
-    render(
-      <div>
-        <aside>
-          <h2>Properties</h2>
-          <div>No component selected</div>
-        </aside>
-      </div>
-    )
-
-    expect(screen.getByText('Properties')).toBeInTheDocument()
-  })
-
-  it('renders footer with toast notifications', () => {
-    render(
-      <div>
-        <footer>
-          <div>Toast Area</div>
-        </footer>
-      </div>
-    )
-
-    expect(screen.getByText('Toast Area')).toBeInTheDocument()
-  })
-
-  it('has editor layout structure', () => {
-    const { container } = render(
-      <div className="flex flex-col h-screen bg-gray-100">
-        <header>Header</header>
-        <div className="flex flex-1 overflow-hidden">
-          <aside>Toolbar</aside>
-          <main>Canvas</main>
-          <aside>Properties</aside>
-        </div>
-      </div>
-    )
-
-    expect(container.querySelector('.flex.flex-col')).toBeInTheDocument()
-  })
-
-  it('editor is full height', () => {
-    const { container } = render(
-      <div className="flex flex-col h-screen">Editor</div>
-    )
-
-    const editor = container.querySelector('.h-screen')
-    expect(editor).toBeInTheDocument()
-  })
-
-  it('displays banner title in header', () => {
-    render(
-      <div>
-        <h1>Test Banner</h1>
-      </div>
-    )
-
-    expect(screen.getByText('Test Banner')).toBeInTheDocument()
-  })
-
-  it('has save button in header', () => {
-    render(
-      <button className="save-button">Save</button>
-    )
-
-    expect(screen.getByText('Save')).toBeInTheDocument()
-  })
-
-  it('renders editor in full viewport', () => {
-    const { container } = render(
-      <div className="w-screen h-screen">Editor</div>
-    )
-
-    const editor = container.querySelector('.w-screen.h-screen')
-    expect(editor).toBeInTheDocument()
-  })
-
-  it('provides three main sections', () => {
-    const { container } = render(
-      <div>
-        <section id="toolbar">Toolbar</section>
-        <section id="canvas">Canvas</section>
-        <section id="properties">Properties</section>
-      </div>
-    )
-
-    expect(container.querySelector('#toolbar')).toBeInTheDocument()
-    expect(container.querySelector('#canvas')).toBeInTheDocument()
-    expect(container.querySelector('#properties')).toBeInTheDocument()
-  })
-
-  it('responds to user interactions', async () => {
-    const handleSave = jest.fn()
-    render(
-      <button onClick={handleSave}>Save</button>
-    )
-
-    await userEvent.click(screen.getByText('Save'))
-    expect(handleSave).toHaveBeenCalled()
+    expect(await screen.findByText('Banner saved')).toBeInTheDocument()
   })
 })

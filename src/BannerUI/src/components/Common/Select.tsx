@@ -14,15 +14,19 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, options, helperText, className, ...props }, ref) => {
+    // a field without an id still needs its label tied to it, for screen readers and for clicking the label
+    const generatedId = React.useId()
+    const fieldId = props.id ?? generatedId
     return (
       <div className="flex flex-col gap-1 w-full">
         {label && (
-          <label htmlFor={props.id} className="text-sm font-medium text-gray-700">
+          <label htmlFor={fieldId} className="text-sm font-medium text-gray-700">
             {label}
           </label>
         )}
         <select
           ref={ref}
+          id={fieldId}
           className={`
             px-3 py-2 rounded-lg border-2
             font-base text-gray-900 bg-white

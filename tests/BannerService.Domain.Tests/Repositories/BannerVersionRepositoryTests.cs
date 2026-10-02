@@ -44,7 +44,7 @@ public class BannerVersionRepositoryTests : IAsyncLifetime
             BannerId = _bannerId,
             ShopId = _shopId,
             VersionNumber = 1,
-            VersionJson = "{\"name\": \"Banner v1\"}",
+            SnapshotJson = "{\"name\": \"Banner v1\"}",
             IsActive = true,
             CreatedAt = DateTime.UtcNow.AddDays(-5)
         };
@@ -55,7 +55,7 @@ public class BannerVersionRepositoryTests : IAsyncLifetime
             BannerId = _bannerId,
             ShopId = _shopId,
             VersionNumber = 2,
-            VersionJson = "{\"name\": \"Banner v2\"}",
+            SnapshotJson = "{\"name\": \"Banner v2\"}",
             IsActive = true,
             CreatedAt = DateTime.UtcNow.AddDays(-3)
         };
@@ -66,7 +66,7 @@ public class BannerVersionRepositoryTests : IAsyncLifetime
             BannerId = _bannerId,
             ShopId = _shopId,
             VersionNumber = 3,
-            VersionJson = "{\"name\": \"Banner v3\"}",
+            SnapshotJson = "{\"name\": \"Banner v3\"}",
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -77,7 +77,7 @@ public class BannerVersionRepositoryTests : IAsyncLifetime
             BannerId = Guid.NewGuid(),
             ShopId = _otherShopId,
             VersionNumber = 1,
-            VersionJson = "{\"name\": \"Other Banner\"}",
+            SnapshotJson = "{\"name\": \"Other Banner\"}",
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -98,7 +98,7 @@ public class BannerVersionRepositoryTests : IAsyncLifetime
             BannerId = _bannerId,
             ShopId = _shopId,
             VersionNumber = 4,
-            VersionJson = "{\"name\": \"Banner v4\"}",
+            SnapshotJson = "{\"name\": \"Banner v4\"}",
             IsActive = true
         };
 

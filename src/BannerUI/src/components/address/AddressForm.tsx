@@ -26,7 +26,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({
   onSubmit,
   includeGeo = true,
 }) => {
-  const { getCountries, getStatesByCountry, getDistrictsByState } = useAddressLookup();
+  const { error: lookupError, getCountries, getStatesByCountry, getDistrictsByState } = useAddressLookup();
 
   const [countries, setCountries] = useState<CountryDto[]>([]);
   const [states, setStates] = useState<StateDto[]>([]);
@@ -42,6 +42,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({
   );
 
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Load countries on mount
   useEffect(() => {
@@ -61,8 +62,6 @@ export const AddressForm: React.FC<AddressFormProps> = ({
       setLoading(true);
       const data = await getStatesByCountry(formData.countryCode);
       setStates(data);
-      setDistricts([]); // Clear districts
-      setFormData((prev) => ({ ...prev, stateId: undefined, districtId: undefined }));
       setLoading(false);
     };
     loadStates();
@@ -71,11 +70,13 @@ export const AddressForm: React.FC<AddressFormProps> = ({
   // Load districts when state changes
   useEffect(() => {
     const loadDistricts = async () => {
-      if (!formData.stateId) return;
+      if (!formData.stateId) {
+        setDistricts([]);
+        return;
+      }
       setLoading(true);
       const data = await getDistrictsByState(formData.stateId);
       setDistricts(data);
-      setFormData((prev) => ({ ...prev, districtId: undefined }));
       setLoading(false);
     };
     loadDistricts();
@@ -83,25 +84,50 @@ export const AddressForm: React.FC<AddressFormProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
+    const isNumber = type === 'number' || name === 'stateId' || name === 'districtId';
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        type === 'number' ? (value ? parseFloat(value) : undefined) : value || undefined,
-    }));
+    setFormData((prev) => {
+      const next = { ...prev, [name]: isNumber ? (value ? Number(value) : undefined) : value || undefined };
+      // choosing another country or state invalidates what was chosen under the old one
+      if (name === 'countryCode') {
+        next.stateId = undefined;
+        next.districtId = undefined;
+      }
+      if (name === 'stateId') next.districtId = undefined;
+      return next;
+    });
+    if (name === 'countryCode') {
+      setStates([]);
+      setDistricts([]);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.countryCode) {
+      setFormError('Choose a country');
+      return;
+    }
+    if (!formData.stateId) {
+      setFormError('Choose a state');
+      return;
+    }
+    setFormError(null);
     onSubmit(formData);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+    <form onSubmit={handleSubmit} noValidate className="space-y-4 max-w-md">
+      {(formError || lookupError) && (
+        <p role="alert" className="text-sm text-red-700">
+          {formError || lookupError}
+        </p>
+      )}
       {/* Country */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Country *</label>
+        <label htmlFor="addr-country" className="block text-sm font-medium text-gray-700 mb-1">Country *</label>
         <select
+          id="addr-country"
           name="countryCode"
           value={formData.countryCode || ''}
           onChange={handleChange}
@@ -110,8 +136,8 @@ export const AddressForm: React.FC<AddressFormProps> = ({
         >
           <option value="">Select Country</option>
           {countries.map((country) => (
-            <option key={country.ISOCode} value={country.ISOCode}>
-              {country.Name}
+            <option key={country.isoCode} value={country.isoCode}>
+              {country.name}
             </option>
           ))}
         </select>
@@ -119,8 +145,9 @@ export const AddressForm: React.FC<AddressFormProps> = ({
 
       {/* State */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">State *</label>
+        <label htmlFor="addr-state" className="block text-sm font-medium text-gray-700 mb-1">State *</label>
         <select
+          id="addr-state"
           name="stateId"
           value={formData.stateId || ''}
           onChange={handleChange}
@@ -130,8 +157,8 @@ export const AddressForm: React.FC<AddressFormProps> = ({
         >
           <option value="">Select State</option>
           {states.map((state) => (
-            <option key={state.Id} value={state.Id}>
-              {state.Name} {state.RegionType ? `(${state.RegionType})` : ''}
+            <option key={state.id} value={state.id}>
+              {state.name} {state.regionType ? `(${state.regionType})` : ''}
             </option>
           ))}
         </select>
@@ -139,8 +166,9 @@ export const AddressForm: React.FC<AddressFormProps> = ({
 
       {/* District */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">District</label>
+        <label htmlFor="addr-district" className="block text-sm font-medium text-gray-700 mb-1">District</label>
         <select
+          id="addr-district"
           name="districtId"
           value={formData.districtId || ''}
           onChange={handleChange}
@@ -149,8 +177,8 @@ export const AddressForm: React.FC<AddressFormProps> = ({
         >
           <option value="">Select District</option>
           {districts.map((district) => (
-            <option key={district.Id} value={district.Id}>
-              {district.Name}
+            <option key={district.id} value={district.id}>
+              {district.name}
             </option>
           ))}
         </select>
@@ -158,8 +186,9 @@ export const AddressForm: React.FC<AddressFormProps> = ({
 
       {/* City */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+        <label htmlFor="addr-city" className="block text-sm font-medium text-gray-700 mb-1">City</label>
         <input
+          id="addr-city"
           type="text"
           name="city"
           value={formData.city || ''}
@@ -171,8 +200,9 @@ export const AddressForm: React.FC<AddressFormProps> = ({
 
       {/* Address */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+        <label htmlFor="addr-street-address" className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
         <input
+          id="addr-street-address"
           type="text"
           name="address"
           value={formData.address || ''}
@@ -184,8 +214,9 @@ export const AddressForm: React.FC<AddressFormProps> = ({
 
       {/* Postal Code */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+        <label htmlFor="addr-postal-code" className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
         <input
+          id="addr-postal-code"
           type="text"
           name="postalCode"
           value={formData.postalCode || ''}
@@ -200,8 +231,9 @@ export const AddressForm: React.FC<AddressFormProps> = ({
         <>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
+              <label htmlFor="addr-latitude" className="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
               <input
+                id="addr-latitude"
                 type="number"
                 name="latitude"
                 value={formData.latitude || ''}
@@ -212,8 +244,9 @@ export const AddressForm: React.FC<AddressFormProps> = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
+              <label htmlFor="addr-longitude" className="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
               <input
+                id="addr-longitude"
                 type="number"
                 name="longitude"
                 value={formData.longitude || ''}

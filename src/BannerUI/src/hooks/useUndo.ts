@@ -11,57 +11,32 @@ export interface HistoryEntry<T> {
 const MAX_HISTORY = 50
 
 export function useUndo<T>(initialState: T) {
-  const [history, setHistory] = useState<HistoryEntry<T>[]>([
-    {
-      state: initialState,
-      timestamp: Date.now(),
-      description: 'Initial state',
-    },
-  ])
-  const [currentIndex, setCurrentIndex] = useState(0)
+  // entries and position live together so several changes made in one batch cannot overwrite each other
+  const [timeline, setTimeline] = useState<{ history: HistoryEntry<T>[]; currentIndex: number }>({
+    history: [{ state: initialState, timestamp: Date.now(), description: 'Initial state' }],
+    currentIndex: 0,
+  })
+  const { history, currentIndex } = timeline
 
-  const push = useCallback(
-    (newState: T, description: string = 'Change') => {
-      setHistory((prev) => {
-        // Remove any future history if we're not at the end
-        const trimmed = prev.slice(0, currentIndex + 1)
-
-        // Add new entry
-        const updated = [
-          ...trimmed,
-          {
-            state: newState,
-            timestamp: Date.now(),
-            description,
-          },
-        ]
-
-        // Limit history size
-        if (updated.length > MAX_HISTORY) {
-          updated.shift()
-        }
-
-        return updated
-      })
-
-      setCurrentIndex((prev) => Math.min(prev + 1, history.length))
-    },
-    [currentIndex, history.length]
-  )
-
-  const undo = useCallback(() => {
-    setCurrentIndex((prev) => {
-      const newIndex = Math.max(0, prev - 1)
-      return newIndex
+  const push = useCallback((newState: T, description: string = 'Change') => {
+    setTimeline((prev) => {
+      // anything after the current position is dropped, then the new entry is added
+      let updated = [
+        ...prev.history.slice(0, prev.currentIndex + 1),
+        { state: newState, timestamp: Date.now(), description },
+      ]
+      if (updated.length > MAX_HISTORY) updated = updated.slice(updated.length - MAX_HISTORY)
+      return { history: updated, currentIndex: updated.length - 1 }
     })
   }, [])
 
+  const undo = useCallback(() => {
+    setTimeline((prev) => ({ ...prev, currentIndex: Math.max(0, prev.currentIndex - 1) }))
+  }, [])
+
   const redo = useCallback(() => {
-    setCurrentIndex((prev) => {
-      const newIndex = Math.min(prev + 1, history.length - 1)
-      return newIndex
-    })
-  }, [history.length])
+    setTimeline((prev) => ({ ...prev, currentIndex: Math.min(prev.currentIndex + 1, prev.history.length - 1) }))
+  }, [])
 
   const canUndo = currentIndex > 0
   const canRedo = currentIndex < history.length - 1
@@ -71,14 +46,7 @@ export function useUndo<T>(initialState: T) {
   }, [history, currentIndex, initialState])
 
   const clear = useCallback(() => {
-    setHistory([
-      {
-        state: initialState,
-        timestamp: Date.now(),
-        description: 'Initial state',
-      },
-    ])
-    setCurrentIndex(0)
+    setTimeline({ history: [{ state: initialState, timestamp: Date.now(), description: 'Initial state' }], currentIndex: 0 })
   }, [initialState])
 
   const getHistory = useCallback(() => {

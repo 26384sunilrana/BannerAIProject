@@ -22,7 +22,7 @@ describe('useAddressLookup', () => {
 
   describe('getCountries', () => {
     it('fetches all countries', async () => {
-      mockFetchOnce(200, mockCountries);
+      mockFetchOnce(200, { data: mockCountries });
       const { result } = renderHook(() => useAddressLookup());
 
       let countries;
@@ -53,7 +53,7 @@ describe('useAddressLookup', () => {
 
   describe('getStatesByCountry', () => {
     it('fetches states for given country', async () => {
-      mockFetchOnce(200, mockStates);
+      mockFetchOnce(200, { data: mockStates });
       const { result } = renderHook(() => useAddressLookup());
 
       let states;
@@ -74,13 +74,15 @@ describe('useAddressLookup', () => {
         try {
           await result.current.getStatesByCountry('INVALID');
         } catch (err) {
-          expect(result.current.error).toBeTruthy();
+          // the hook records the failure in `error`
         }
       });
+
+      expect(result.current.error).toBeTruthy();
     });
 
     it('maintains country code in returned states', async () => {
-      mockFetchOnce(200, mockStates);
+      mockFetchOnce(200, { data: mockStates });
       const { result } = renderHook(() => useAddressLookup());
 
       let states;
@@ -95,7 +97,7 @@ describe('useAddressLookup', () => {
 
   describe('getDistrictsByState', () => {
     it('fetches districts for given state', async () => {
-      mockFetchOnce(200, mockDistricts);
+      mockFetchOnce(200, { data: mockDistricts });
       const { result } = renderHook(() => useAddressLookup());
 
       let districts;
@@ -116,13 +118,15 @@ describe('useAddressLookup', () => {
         try {
           await result.current.getDistrictsByState(99999);
         } catch (err) {
-          expect(result.current.error).toBeTruthy();
+          // the hook records the failure in `error`
         }
       });
+
+      expect(result.current.error).toBeTruthy();
     });
 
     it('maintains state ID in returned districts', async () => {
-      mockFetchOnce(200, mockDistricts);
+      mockFetchOnce(200, { data: mockDistricts });
       const { result } = renderHook(() => useAddressLookup());
 
       let districts;
@@ -138,9 +142,9 @@ describe('useAddressLookup', () => {
   describe('cascading lookup', () => {
     it('cascades from country to state to district', async () => {
       mockFetchSequence([
-        { status: 200, body: mockCountries },
-        { status: 200, body: mockStates },
-        { status: 200, body: mockDistricts },
+        { status: 200, body: { data: mockCountries } },
+        { status: 200, body: { data: mockStates } },
+        { status: 200, body: { data: mockDistricts } },
       ]);
       const { result } = renderHook(() => useAddressLookup());
 
@@ -159,46 +163,20 @@ describe('useAddressLookup', () => {
     });
   });
 
-  describe('getCountryByCode', () => {
-    it('fetches single country by code', async () => {
-      const mockCountry = { code: 'IN', name: 'India' };
-      mockFetchOnce(200, mockCountry);
-      const { result } = renderHook(() => useAddressLookup());
-
-      let country;
-      await act(async () => {
-        country = await result.current.getCountryByCode('IN');
-      });
-
-      expect(country).toEqual(mockCountry);
-      expect(country.code).toBe('IN');
-    });
-
-    it('returns null for invalid country code', async () => {
-      mockFetchOnce(404, null);
-      const { result } = renderHook(() => useAddressLookup());
-
-      await act(async () => {
-        try {
-          await result.current.getCountryByCode('INVALID');
-        } catch (err) {
-          expect(result.current.error).toBeTruthy();
-        }
-      });
-    });
-  });
-
   describe('loading state', () => {
     it('shows loading state during fetch', async () => {
-      mockFetchOnce(200, mockCountries, 100);
+      mockFetchOnce(200, { data: mockCountries }, 100);
       const { result } = renderHook(() => useAddressLookup());
 
-      const promise = act(async () => {
-        await result.current.getCountries();
+      let promise: Promise<unknown> = Promise.resolve();
+      act(() => {
+        promise = result.current.getCountries();
       });
 
       expect(result.current.loading).toBe(true);
-      await promise;
+      await act(async () => {
+        await promise;
+      });
       expect(result.current.loading).toBe(false);
     });
   });
@@ -207,7 +185,7 @@ describe('useAddressLookup', () => {
     it('clears error on successful call after failure', async () => {
       mockFetchSequence([
         { status: 500, body: {} },
-        { status: 200, body: mockCountries },
+        { status: 200, body: { data: mockCountries } },
       ]);
       const { result } = renderHook(() => useAddressLookup());
 

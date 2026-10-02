@@ -1,257 +1,115 @@
-import { renderHook, act } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { useSave } from '@/hooks/useSave'
-import { setupFetchMockCleanup, mockFetchOnce } from '../helpers/mockFetch'
+import { bannerService } from '@/api/bannerService'
 import { Banner, BannerComponent } from '@/types/banner'
-import * as bannerService from '@/api/bannerService'
+
+jest.mock('@/api/bannerService', () => ({
+  bannerService: { updateBanner: jest.fn(), updateComponent: jest.fn() },
+}))
+
+const banner = { id: '1', title: 'Test Banner', description: 'Test', width: 1200, height: 600 } as Banner
+const components = [{ id: 'c1', type: 'text', x: 50, y: 50, width: 200, height: 100, zIndex: 0, data: {} }] as unknown as BannerComponent[]
+const mocked = bannerService as jest.Mocked<typeof bannerService>
+
+beforeEach(() => {
+  jest.clearAllMocks()
+  jest.useRealTimers()
+  mocked.updateBanner.mockResolvedValue(undefined)
+  mocked.updateComponent.mockResolvedValue({} as BannerComponent)
+})
 
 describe('useSave', () => {
-  setupFetchMockCleanup()
+  it('starts clean', () => {
+    const { result } = renderHook(() => useSave('1', components, banner))
 
-  const mockBanner: Banner = {
-    id: '1',
-    title: 'Test Banner',
-    description: 'Test Description',
-    width: 1200,
-    height: 600,
-    backgroundColor: '#fff',
-  }
-
-  const mockComponents: BannerComponent[] = [
-    {
-      id: 'comp1',
-      type: 'text',
-      x: 50,
-      y: 50,
-      width: 200,
-      height: 100,
-      zIndex: 0,
-      rotation: 0,
-      opacity: 1,
-      isVisible: true,
-      data: { content: 'Test' },
-    },
-  ]
-
-  beforeEach(() => {
-    jest.spyOn(bannerService, 'bannerService', 'get').mockReturnValue({
-      getBanner: jest.fn(),
-      updateBanner: jest.fn().mockResolvedValue(mockBanner),
-      addComponent: jest.fn(),
-      updateComponent: jest.fn().mockResolvedValue(mockComponents[0]),
-      deleteComponent: jest.fn(),
-      swapComponent: jest.fn(),
-    } as any)
+    expect(result.current).toMatchObject({ isSaving: false, isDirty: false, lastSavedAt: null, error: null })
   })
 
-  it('initializes with correct save state', () => {
-    const { result } = renderHook(() =>
-      useSave('1', mockComponents, mockBanner)
-    )
+  it('marks the banner as having unsaved changes', () => {
+    const { result } = renderHook(() => useSave('1', components, banner))
 
-    expect(result.current.isSaving).toBe(false)
-    expect(result.current.isDirty).toBe(false)
-    expect(result.current.lastSavedAt).toBeNull()
-    expect(result.current.error).toBeNull()
-  })
-
-  it('marks banner as dirty', () => {
-    const { result } = renderHook(() =>
-      useSave('1', mockComponents, mockBanner)
-    )
-
-    act(() => {
-      result.current.markDirty()
-    })
+    act(() => result.current.markDirty())
 
     expect(result.current.isDirty).toBe(true)
   })
 
-  it('saves banner successfully', async () => {
-    const { result } = renderHook(() =>
-      useSave('1', mockComponents, mockBanner)
-    )
-
-    mockFetchOnce(200, { data: mockBanner })
+  it('records when it last saved and clears the unsaved flag', async () => {
+    const { result } = renderHook(() => useSave('1', components, banner))
+    act(() => result.current.markDirty())
 
     await act(async () => {
       await result.current.save()
     })
 
     expect(result.current.isSaving).toBe(false)
+    expect(result.current.isDirty).toBe(false)
     expect(result.current.lastSavedAt).not.toBeNull()
   })
 
-  it('sets isDirty to false after save', async () => {
-    const { result } = renderHook(() =>
-      useSave('1', mockComponents, mockBanner)
-    )
+  it('shows that it is saving while the request is open', async () => {
+    let finish: () => void = () => undefined
+    mocked.updateBanner.mockReturnValue(new Promise<void>((resolve) => (finish = resolve)))
+    const { result } = renderHook(() => useSave('1', components, banner))
 
+    let pending: Promise<void> = Promise.resolve()
     act(() => {
-      result.current.markDirty()
+      pending = result.current.save() as Promise<void>
     })
-
-    expect(result.current.isDirty).toBe(true)
-
-    mockFetchOnce(200, { data: mockBanner })
+    expect(result.current.isSaving).toBe(true)
 
     await act(async () => {
-      await result.current.save()
+      finish()
+      await pending
     })
-
-    expect(result.current.isDirty).toBe(false)
-  })
-
-  it('handles save errors', async () => {
-    const { result } = renderHook(() =>
-      useSave('1', mockComponents, mockBanner)
-    )
-
-    mockFetchOnce(500, { error: 'Server error' })
-
-    await act(async () => {
-      await result.current.save()
-    })
-
-    expect(result.current.error).toBeTruthy()
     expect(result.current.isSaving).toBe(false)
   })
 
-  it('does nothing when banner is null', async () => {
-    const { result } = renderHook(() =>
-      useSave('1', mockComponents, null)
-    )
+  it('saves a banner that has no components', async () => {
+    const { result } = renderHook(() => useSave('1', [], banner))
 
     await act(async () => {
       await result.current.save()
     })
 
-    expect(result.current.isSaving).toBe(false)
+    expect(mocked.updateBanner).toHaveBeenCalledTimes(1)
+    expect(mocked.updateComponent).not.toHaveBeenCalled()
   })
 
-  it('tracks save state during save operation', async () => {
-    const { result } = renderHook(() =>
-      useSave('1', mockComponents, mockBanner)
-    )
-
-    mockFetchOnce(200, { data: mockBanner })
-
-    act(() => {
-      result.current.markDirty()
-    })
-
-    let savingStateChanged = false
-
-    act(async () => {
-      const savePromise = result.current.save()
-      if (result.current.isSaving) {
-        savingStateChanged = true
-      }
-      await savePromise
-    })
-
-    expect(savingStateChanged).toBe(true)
-    expect(result.current.isSaving).toBe(false)
-  })
-
-  it('saves all components', async () => {
-    const multipleComponents: BannerComponent[] = [
-      mockComponents[0],
-      {
-        ...mockComponents[0],
-        id: 'comp2',
-        x: 300,
-      },
-    ]
-
-    const { result } = renderHook(() =>
-      useSave('1', multipleComponents, mockBanner)
-    )
-
-    mockFetchOnce(200, { data: mockBanner })
+  it('does nothing before the banner has loaded', async () => {
+    const { result } = renderHook(() => useSave('1', components, null))
 
     await act(async () => {
       await result.current.save()
     })
 
+    expect(mocked.updateBanner).not.toHaveBeenCalled()
+    expect(result.current.lastSavedAt).toBeNull()
+  })
+
+  it('clears an earlier error when the next save works', async () => {
+    mocked.updateBanner.mockRejectedValueOnce({ response: { status: 500 } })
+    const { result } = renderHook(() => useSave('1', components, banner))
+
+    await act(async () => {
+      await expect(result.current.save()).rejects.toThrow()
+    })
+    expect(result.current.error).not.toBeNull()
+
+    await act(async () => {
+      await result.current.save()
+    })
     expect(result.current.error).toBeNull()
   })
 
-  it('records timestamp on successful save', async () => {
-    const { result } = renderHook(() =>
-      useSave('1', mockComponents, mockBanner)
-    )
+  it('saves by itself some time after a change', async () => {
+    jest.useFakeTimers()
+    const { result } = renderHook(() => useSave('1', components, banner))
 
-    mockFetchOnce(200, { data: mockBanner })
-
-    const beforeSave = Date.now()
-
+    act(() => result.current.markDirty())
     await act(async () => {
-      await result.current.save()
+      jest.advanceTimersByTime(30000)
     })
 
-    const afterSave = Date.now()
-
-    expect(result.current.lastSavedAt).toBeTruthy()
-    if (result.current.lastSavedAt) {
-      expect(result.current.lastSavedAt).toBeGreaterThanOrEqual(beforeSave)
-      expect(result.current.lastSavedAt).toBeLessThanOrEqual(afterSave)
-    }
-  })
-
-  it('clears error on successful save', async () => {
-    const { result } = renderHook(() =>
-      useSave('1', mockComponents, mockBanner)
-    )
-
-    // First fail
-    mockFetchOnce(500, { error: 'Error' })
-
-    await act(async () => {
-      await result.current.save()
-    })
-
-    expect(result.current.error).toBeTruthy()
-
-    // Then succeed
-    mockFetchOnce(200, { data: mockBanner })
-
-    await act(async () => {
-      await result.current.save()
-    })
-
-    expect(result.current.error).toBeNull()
-  })
-
-  it('handles banner with no components', async () => {
-    const { result } = renderHook(() =>
-      useSave('1', [], mockBanner)
-    )
-
-    mockFetchOnce(200, { data: mockBanner })
-
-    await act(async () => {
-      await result.current.save()
-    })
-
-    expect(result.current.error).toBeNull()
-  })
-
-  it('updates components individually', async () => {
-    const components = [
-      { ...mockComponents[0], id: 'comp1' },
-      { ...mockComponents[0], id: 'comp2' },
-    ]
-
-    const { result } = renderHook(() =>
-      useSave('1', components, mockBanner)
-    )
-
-    mockFetchOnce(200, { data: mockBanner })
-
-    await act(async () => {
-      await result.current.save()
-    })
-
-    expect(result.current.error).toBeNull()
+    expect(mocked.updateBanner).toHaveBeenCalledTimes(1)
   })
 })

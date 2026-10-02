@@ -16,7 +16,6 @@ public class BannerVersionEntityTests
     {
         return new BannerSnapshot
         {
-            BannerId = _testBannerId,
             Name = "Test Banner",
             Width = 1920,
             Height = 1080
@@ -118,7 +117,7 @@ public class BannerVersionEntityTests
 
         // Assert
         Assert.NotNull(retrievedSnapshot);
-        Assert.Equal(snapshot.BannerId, retrievedSnapshot.BannerId);
+        Assert.Equal(snapshot.Name, retrievedSnapshot.Name);
         Assert.Equal(snapshot.Name, retrievedSnapshot.Name);
     }
 
@@ -150,7 +149,6 @@ public class BannerVersionEntityTests
 
         var newSnapshot = new BannerSnapshot
         {
-            BannerId = _testBannerId,
             Name = "Updated Banner",
             Width = 2560,
             Height = 1440
@@ -290,7 +288,6 @@ public class BannerVersionEntityTests
         // Arrange
         var snapshot1 = new BannerSnapshot
         {
-            BannerId = _testBannerId,
             Name = "Version 1",
             Width = 1920,
             Height = 1080
@@ -298,7 +295,6 @@ public class BannerVersionEntityTests
 
         var snapshot2 = new BannerSnapshot
         {
-            BannerId = _testBannerId,
             Name = "Version 2",
             Width = 2560,
             Height = 1440

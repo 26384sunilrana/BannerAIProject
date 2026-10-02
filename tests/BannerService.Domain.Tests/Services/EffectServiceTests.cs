@@ -34,7 +34,7 @@ public class EffectServiceTests
         _mockBannerRepository.Setup(r => r.GetByIdAsync(banner.Id, _shopId))
             .ReturnsAsync(banner);
         _mockBannerRepository.Setup(r => r.UpdateAsync(It.IsAny<Banner>()))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync((Banner b) => b);
         _mockUnitOfWork.Setup(u => u.CommitAsync())
             .Returns(Task.CompletedTask);
 
@@ -91,7 +91,7 @@ public class EffectServiceTests
         _mockBannerRepository.Setup(r => r.GetByIdAsync(banner.Id, _shopId))
             .ReturnsAsync(banner);
         _mockBannerRepository.Setup(r => r.UpdateAsync(It.IsAny<Banner>()))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync((Banner b) => b);
         _mockUnitOfWork.Setup(u => u.CommitAsync())
             .Returns(Task.CompletedTask);
 
@@ -142,7 +142,7 @@ public class EffectServiceTests
         _mockBannerRepository.Setup(r => r.GetByIdAsync(banner.Id, _shopId))
             .ReturnsAsync(banner);
         _mockBannerRepository.Setup(r => r.UpdateAsync(It.IsAny<Banner>()))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync((Banner b) => b);
         _mockUnitOfWork.Setup(u => u.CommitAsync())
             .Returns(Task.CompletedTask);
 
@@ -194,7 +194,7 @@ public class EffectServiceTests
         _mockBannerRepository.Setup(r => r.GetByIdAsync(banner.Id, _shopId))
             .ReturnsAsync(banner);
         _mockBannerRepository.Setup(r => r.UpdateAsync(It.IsAny<Banner>()))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync((Banner b) => b);
         _mockUnitOfWork.Setup(u => u.CommitAsync())
             .Returns(Task.CompletedTask);
 

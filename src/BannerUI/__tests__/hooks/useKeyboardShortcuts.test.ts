@@ -2,8 +2,14 @@ import { renderHook } from '@testing-library/react'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 
 describe('useKeyboardShortcuts', () => {
+  const originalPlatform = navigator.platform
+
   beforeEach(() => {
     jest.clearAllMocks()
+  })
+
+  afterEach(() => {
+    Object.defineProperty(navigator, 'platform', { value: originalPlatform, configurable: true })
   })
 
   it('registers keyboard shortcuts on mount', () => {
@@ -208,12 +214,7 @@ describe('useKeyboardShortcuts', () => {
     document.body.appendChild(input)
     input.focus()
 
-    const event = new KeyboardEvent('keydown', {
-      key: 's',
-      ctrlKey: true,
-      target: input as any,
-    })
-    window.dispatchEvent(event)
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true }))
 
     expect(onSave).not.toHaveBeenCalled()
     document.body.removeChild(input)
@@ -227,11 +228,7 @@ describe('useKeyboardShortcuts', () => {
     document.body.appendChild(textarea)
     textarea.focus()
 
-    const event = new KeyboardEvent('keydown', {
-      key: 'Delete',
-      target: textarea as any,
-    })
-    window.dispatchEvent(event)
+    textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
 
     expect(onDelete).not.toHaveBeenCalled()
     document.body.removeChild(textarea)

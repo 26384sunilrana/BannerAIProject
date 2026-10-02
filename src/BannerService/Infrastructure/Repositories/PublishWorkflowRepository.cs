@@ -109,7 +109,7 @@ namespace BannerService.Infrastructure.Repositories
         public async Task<List<ApprovalRequest>> GetPendingApprovalsForReviewerAsync(Guid reviewerId)
         {
             return await _context.Set<ApprovalRequest>()
-                .Where(r => r.ReviewerId == reviewerId && r.IsPending)
+                .Where(r => r.ReviewerId == reviewerId && r.DecisionMadeAt == null)
                 .OrderByDescending(r => r.RequestedAt)
                 .ToListAsync();
         }

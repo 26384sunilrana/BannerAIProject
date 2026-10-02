@@ -1,494 +1,138 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { AddressForm } from '@/components/address/AddressForm';
-import { mockFetchSequence, mockFetchOnce, restoreFetch, setupFetchMockCleanup } from '../helpers/mockFetch';
+import React from 'react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { AddressForm } from '@/components/address/AddressForm'
+
+const countries = [
+  { isoCode: 'IN', name: 'India', isActive: true },
+  { isoCode: 'US', name: 'United States', isActive: true },
+]
+const states = [
+  { id: 1, countryCode: 'IN', code: 'MH', name: 'Maharashtra', regionType: 'State', isActive: true },
+  { id: 2, countryCode: 'IN', code: 'DL', name: 'Delhi', isActive: true },
+]
+const districts = [
+  { id: 10, stateId: 1, code: 'MUM', name: 'Mumbai', isActive: true },
+  { id: 11, stateId: 1, code: 'THN', name: 'Thane', isActive: true },
+]
+
+/** Answers each address lookup the way the API does, and records what was asked. */
+function mockApi(overrides: Record<string, number> = {}) {
+  const asked: string[] = []
+  global.fetch = jest.fn(async (url: string) => {
+    asked.push(url.replace(/^.*\/api/, ''))
+    const status = Object.entries(overrides).find(([part]) => url.includes(part))?.[1] ?? 200
+    const body = url.endsWith('/address/countries')
+      ? { data: countries }
+      : /\/countries\/\w+\/states$/.test(url)
+        ? { data: states }
+        : /\/states\/\d+\/districts$/.test(url)
+          ? { data: districts }
+          : { data: [] }
+    return { ok: status < 400, status, statusText: 'x', json: async () => body }
+  }) as unknown as typeof fetch
+  return asked
+}
 
 describe('AddressForm', () => {
-  setupFetchMockCleanup();
-
-  const mockCountries = [
-    { code: 'IN', name: 'India' },
-    { code: 'US', name: 'United States' },
-  ];
-
-  const mockStates = [
-    { id: 1, name: 'Maharashtra', countryCode: 'IN' },
-    { id: 2, name: 'Delhi', countryCode: 'IN' },
-  ];
-
-  const mockDistricts = [
-    { id: 1, name: 'Mumbai', stateId: 1 },
-    { id: 2, name: 'Thane', stateId: 1 },
-  ];
-
-  const mockOnSubmit = jest.fn();
-  const mockOnCancel = jest.fn();
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('renders form with country dropdown', async () => {
-    // Arrange
-    mockFetchOnce(200, mockCountries);
-
-    render(
-      <AddressForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    // Assert
-    await waitFor(() => {
-      expect(screen.getByLabelText(/country/i)).toBeInTheDocument();
-    });
-  });
-
-  it('loads countries on component mount', async () => {
-    // Arrange
-    mockFetchOnce(200, mockCountries);
-
-    render(
-      <AddressForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    // Assert
-    await waitFor(() => {
-      const countrySelect = screen.getByLabelText(/country/i);
-      expect(countrySelect).toBeInTheDocument();
-    });
-  });
-
-  it('fetches states when country is selected', async () => {
-    // Arrange
-    mockFetchSequence([
-      { status: 200, body: mockCountries },
-      { status: 200, body: mockStates },
-    ]);
-
-    render(
-      <AddressForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    // Act
-    await waitFor(() => {
-      const countrySelect = screen.getByLabelText(/country/i);
-      expect(countrySelect).toBeInTheDocument();
-    });
-
-    const countrySelect = screen.getByLabelText(/country/i) as HTMLSelectElement;
-    fireEvent.change(countrySelect, { target: { value: 'IN' } });
-
-    // Assert
-    await waitFor(() => {
-      const stateSelect = screen.getByLabelText(/state/i);
-      expect(stateSelect).toBeInTheDocument();
-    });
-  });
-
-  it('fetches districts when state is selected', async () => {
-    // Arrange
-    mockFetchSequence([
-      { status: 200, body: mockCountries },
-      { status: 200, body: mockStates },
-      { status: 200, body: mockDistricts },
-    ]);
-
-    render(
-      <AddressForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    // Act - Select country
-    await waitFor(() => {
-      const countrySelect = screen.getByLabelText(/country/i);
-      expect(countrySelect).toBeInTheDocument();
-    });
-
-    const countrySelect = screen.getByLabelText(/country/i) as HTMLSelectElement;
-    fireEvent.change(countrySelect, { target: { value: 'IN' } });
-
-    // Assert - State select appears
-    await waitFor(() => {
-      const stateSelect = screen.getByLabelText(/state/i);
-      expect(stateSelect).toBeInTheDocument();
-    });
-
-    // Act - Select state
-    const stateSelect = screen.getByLabelText(/state/i) as HTMLSelectElement;
-    fireEvent.change(stateSelect, { target: { value: '1' } });
-
-    // Assert - District select appears
-    await waitFor(() => {
-      const districtSelect = screen.getByLabelText(/district/i);
-      expect(districtSelect).toBeInTheDocument();
-    });
-  });
-
-  it('disables state dropdown until country is selected', async () => {
-    // Arrange
-    mockFetchOnce(200, mockCountries);
-
-    render(
-      <AddressForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    // Assert
-    await waitFor(() => {
-      const stateSelect = screen.queryByLabelText(/state/i);
-      if (stateSelect) {
-        expect(stateSelect).toBeDisabled();
-      }
-    });
-  });
-
-  it('disables district dropdown until state is selected', async () => {
-    // Arrange
-    mockFetchSequence([
-      { status: 200, body: mockCountries },
-      { status: 200, body: mockStates },
-    ]);
-
-    render(
-      <AddressForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    // Act - Select country
-    await waitFor(() => {
-      const countrySelect = screen.getByLabelText(/country/i);
-      expect(countrySelect).toBeInTheDocument();
-    });
-
-    const countrySelect = screen.getByLabelText(/country/i) as HTMLSelectElement;
-    fireEvent.change(countrySelect, { target: { value: 'IN' } });
-
-    // Assert
-    await waitFor(() => {
-      const districtSelect = screen.queryByLabelText(/district/i);
-      if (districtSelect) {
-        expect(districtSelect).toBeDisabled();
-      }
-    });
-  });
-
-  it('clears state and district when country changes', async () => {
-    // Arrange
-    mockFetchSequence([
-      { status: 200, body: mockCountries },
-      { status: 200, body: mockStates },
-      { status: 200, body: mockDistricts },
-      { status: 200, body: mockStates },
-    ]);
-
-    render(
-      <AddressForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    // Act - Select country
-    await waitFor(() => {
-      const countrySelect = screen.getByLabelText(/country/i);
-      expect(countrySelect).toBeInTheDocument();
-    });
-
-    const countrySelect = screen.getByLabelText(/country/i) as HTMLSelectElement;
-    fireEvent.change(countrySelect, { target: { value: 'IN' } });
-
-    // Assert - State appears
-    await waitFor(() => {
-      const stateSelect = screen.getByLabelText(/state/i);
-      expect(stateSelect).toBeInTheDocument();
-    });
-
-    // Act - Select state
-    const stateSelect = screen.getByLabelText(/state/i) as HTMLSelectElement;
-    fireEvent.change(stateSelect, { target: { value: '1' } });
-
-    // Assert - District appears
-    await waitFor(() => {
-      const districtSelect = screen.getByLabelText(/district/i);
-      expect(districtSelect).toBeInTheDocument();
-    });
-
-    // Act - Change country again
-    fireEvent.change(countrySelect, { target: { value: 'US' } });
-
-    // Assert - Dependent dropdowns should reset
-    await waitFor(() => {
-      const stateSelectAfter = screen.getByLabelText(/state/i) as HTMLSelectElement;
-      expect(stateSelectAfter.value).toBe('');
-    });
-  });
-
-  it('validates required fields on submit', async () => {
-    // Arrange
-    mockFetchOnce(200, mockCountries);
-
-    render(
-      <AddressForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    // Act
-    const submitButton = screen.getByText(/save|submit/i);
-    fireEvent.click(submitButton);
-
-    // Assert
-    expect(mockOnSubmit).not.toHaveBeenCalled();
-    expect(screen.getByText(/required/i)).toBeInTheDocument();
-  });
-
-  it('allows postal code as optional field', async () => {
-    // Arrange
-    mockFetchSequence([
-      { status: 200, body: mockCountries },
-      { status: 200, body: mockStates },
-      { status: 200, body: mockDistricts },
-    ]);
-
-    render(
-      <AddressForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    // Act - Select address fields
-    await waitFor(() => {
-      const countrySelect = screen.getByLabelText(/country/i);
-      expect(countrySelect).toBeInTheDocument();
-    });
-
-    const countrySelect = screen.getByLabelText(/country/i) as HTMLSelectElement;
-    fireEvent.change(countrySelect, { target: { value: 'IN' } });
-
-    await waitFor(() => {
-      const stateSelect = screen.getByLabelText(/state/i);
-      expect(stateSelect).toBeInTheDocument();
-    });
-
-    const stateSelect = screen.getByLabelText(/state/i) as HTMLSelectElement;
-    fireEvent.change(stateSelect, { target: { value: '1' } });
-
-    await waitFor(() => {
-      const districtSelect = screen.getByLabelText(/district/i);
-      expect(districtSelect).toBeInTheDocument();
-    });
-
-    const districtSelect = screen.getByLabelText(/district/i) as HTMLSelectElement;
-    fireEvent.change(districtSelect, { target: { value: '1' } });
-
-    // Assert - Postal code input should exist
-    const postalInput = screen.queryByLabelText(/postal|zip/i);
-    if (postalInput) {
-      expect(postalInput).toBeInTheDocument();
-    }
-  });
-
-  it('handles optional latitude/longitude geo fields', async () => {
-    // Arrange
-    mockFetchSequence([
-      { status: 200, body: mockCountries },
-      { status: 200, body: mockStates },
-      { status: 200, body: mockDistricts },
-    ]);
-
-    render(
-      <AddressForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    // Act - Complete cascading selection
-    await waitFor(() => {
-      const countrySelect = screen.getByLabelText(/country/i);
-      expect(countrySelect).toBeInTheDocument();
-    });
-
-    const countrySelect = screen.getByLabelText(/country/i) as HTMLSelectElement;
-    fireEvent.change(countrySelect, { target: { value: 'IN' } });
-
-    await waitFor(() => {
-      const stateSelect = screen.getByLabelText(/state/i);
-      expect(stateSelect).toBeInTheDocument();
-    });
-
-    const stateSelect = screen.getByLabelText(/state/i) as HTMLSelectElement;
-    fireEvent.change(stateSelect, { target: { value: '1' } });
-
-    await waitFor(() => {
-      const districtSelect = screen.getByLabelText(/district/i);
-      expect(districtSelect).toBeInTheDocument();
-    });
-
-    // Assert - Geo fields are optional
-    const latInput = screen.queryByLabelText(/latitude/i);
-    const lonInput = screen.queryByLabelText(/longitude/i);
-    expect(latInput).toBeInTheDocument();
-    expect(lonInput).toBeInTheDocument();
-  });
-
-  it('submits form with valid cascading selection', async () => {
-    // Arrange
-    mockFetchSequence([
-      { status: 200, body: mockCountries },
-      { status: 200, body: mockStates },
-      { status: 200, body: mockDistricts },
-    ]);
-
-    render(
-      <AddressForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    // Act - Complete cascading selection
-    await waitFor(() => {
-      const countrySelect = screen.getByLabelText(/country/i);
-      expect(countrySelect).toBeInTheDocument();
-    });
-
-    const countrySelect = screen.getByLabelText(/country/i) as HTMLSelectElement;
-    fireEvent.change(countrySelect, { target: { value: 'IN' } });
-
-    await waitFor(() => {
-      const stateSelect = screen.getByLabelText(/state/i);
-      expect(stateSelect).toBeInTheDocument();
-    });
-
-    const stateSelect = screen.getByLabelText(/state/i) as HTMLSelectElement;
-    fireEvent.change(stateSelect, { target: { value: '1' } });
-
-    await waitFor(() => {
-      const districtSelect = screen.getByLabelText(/district/i);
-      expect(districtSelect).toBeInTheDocument();
-    });
-
-    const districtSelect = screen.getByLabelText(/district/i) as HTMLSelectElement;
-    fireEvent.change(districtSelect, { target: { value: '1' } });
-
-    const submitButton = screen.getByText(/save|submit/i);
-    fireEvent.click(submitButton);
-
-    // Assert
-    await waitFor(() => {
-      expect(mockOnSubmit).toHaveBeenCalled();
-    });
-    expect(mockOnSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        countryCode: 'IN',
-        stateId: 1,
-        districtId: 1,
-      })
-    );
-  });
-
-  it('calls onCancel when Cancel button is clicked', async () => {
-    // Arrange
-    mockFetchOnce(200, mockCountries);
-
-    render(
-      <AddressForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    // Act
-    await waitFor(() => {
-      const cancelButton = screen.getByText(/cancel/i);
-      expect(cancelButton).toBeInTheDocument();
-    });
-
-    const cancelButton = screen.getByText(/cancel/i);
-    fireEvent.click(cancelButton);
-
-    // Assert
-    expect(mockOnCancel).toHaveBeenCalled();
-    expect(mockOnSubmit).not.toHaveBeenCalled();
-  });
-
-  it('handles API errors gracefully', async () => {
-    // Arrange
-    mockFetchOnce(500);
-
-    render(
-      <AddressForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    // Assert
-    await waitFor(() => {
-      expect(screen.getByText(/error|failed/i)).toBeInTheDocument();
-    });
-  });
-
-  it('pre-fills address form when provided existing data', async () => {
-    // Arrange
-    const existingAddress = {
-      countryCode: 'IN',
-      stateId: 1,
-      districtId: 1,
-      postalCode: '400001',
-    };
-
-    mockFetchSequence([
-      { status: 200, body: mockCountries },
-      { status: 200, body: mockStates },
-      { status: 200, body: mockDistricts },
-    ]);
-
-    render(
-      <AddressForm
-        address={existingAddress}
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    // Assert
-    await waitFor(() => {
-      const countrySelect = screen.getByLabelText(/country/i) as HTMLSelectElement;
-      expect(countrySelect.value).toBe('IN');
-    });
-  });
-
-  it('shows loading state while fetching data', async () => {
-    // Arrange
-    mockFetchOnce(200, mockCountries, 100);  // 100ms delay
-
-    render(
-      <AddressForm
-        onSubmit={mockOnSubmit}
-        onCancel={mockOnCancel}
-      />
-    );
-
-    // Assert - should show loading initially
-    expect(screen.getByText(/loading/i) || screen.getByRole('progressbar')).toBeInTheDocument();
-  });
-});
+  const onSubmit = jest.fn()
+  const originalFetch = global.fetch
+
+  beforeEach(() => jest.clearAllMocks())
+  afterEach(() => {
+    global.fetch = originalFetch
+  })
+
+  it('loads countries and then the states of the chosen country', async () => {
+    const asked = mockApi()
+    render(<AddressForm onSubmit={onSubmit} />)
+
+    expect(await screen.findByRole('option', { name: 'India' })).toBeInTheDocument()
+    expect(asked).toContain('/address/countries')
+    // India is the default, so its states load straight away
+    expect(await screen.findByRole('option', { name: /Maharashtra/ })).toBeInTheDocument()
+    expect(asked).toContain('/address/countries/IN/states')
+  })
+
+  it('loads districts when a state is chosen, and clears them when the country changes', async () => {
+    mockApi()
+    render(<AddressForm onSubmit={onSubmit} />)
+    await screen.findByRole('option', { name: /Maharashtra/ })
+
+    expect(screen.getByLabelText(/district/i)).toBeDisabled()
+    fireEvent.change(screen.getByLabelText(/state/i), { target: { value: '1' } })
+    expect(await screen.findByRole('option', { name: 'Mumbai' })).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText(/country/i), { target: { value: 'US' } })
+    await waitFor(() => expect(screen.queryByRole('option', { name: 'Mumbai' })).toBeNull())
+    expect(screen.getByLabelText(/state/i)).toHaveValue('')
+  })
+
+  it('keeps the saved state and district when editing', async () => {
+    mockApi()
+    render(<AddressForm initialData={{ countryCode: 'IN', stateId: 1, districtId: 11, city: 'Thane', address: '1 Main Road' }} onSubmit={onSubmit} />)
+
+    await screen.findByRole('option', { name: 'Thane' })
+    await waitFor(() => expect(screen.getByLabelText(/state/i)).toHaveValue('1'))
+    expect(screen.getByLabelText(/district/i)).toHaveValue('11')
+    expect(screen.getByLabelText(/^city/i)).toHaveValue('Thane')
+  })
+
+  it('asks for a state before submitting', async () => {
+    mockApi()
+    render(<AddressForm onSubmit={onSubmit} />)
+    await screen.findByRole('option', { name: /Maharashtra/ })
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Save Address' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Choose a state')
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('submits ids as numbers', async () => {
+    mockApi()
+    render(<AddressForm onSubmit={onSubmit} />)
+    await screen.findByRole('option', { name: /Maharashtra/ })
+
+    fireEvent.change(screen.getByLabelText(/state/i), { target: { value: '1' } })
+    await screen.findByRole('option', { name: 'Mumbai' })
+    fireEvent.change(screen.getByLabelText(/district/i), { target: { value: '10' } })
+    await userEvent.type(screen.getByLabelText(/^city/i), 'Mumbai')
+    await userEvent.type(screen.getByLabelText(/postal code/i), '400001')
+    fireEvent.click(await screen.findByRole('button', { name: 'Save Address' }))
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ countryCode: 'IN', stateId: 1, districtId: 10, city: 'Mumbai', postalCode: '400001' })
+    )
+  })
+
+  it('leaves the postal code optional', async () => {
+    mockApi()
+    render(<AddressForm onSubmit={onSubmit} />)
+    await screen.findByRole('option', { name: /Maharashtra/ })
+
+    fireEvent.change(screen.getByLabelText(/state/i), { target: { value: '2' } })
+    fireEvent.click(await screen.findByRole('button', { name: 'Save Address' }))
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+    expect(onSubmit.mock.calls[0][0].postalCode || undefined).toBeUndefined()
+  })
+
+  it('shows geo fields only when asked for', async () => {
+    mockApi()
+    const { unmount } = render(<AddressForm onSubmit={onSubmit} />)
+    expect(screen.getByLabelText(/latitude/i)).toBeInTheDocument()
+    unmount()
+
+    render(<AddressForm onSubmit={onSubmit} includeGeo={false} />)
+    expect(screen.queryByLabelText(/latitude/i)).toBeNull()
+  })
+
+  it('says so when the lookups fail', async () => {
+    mockApi({ '/address/countries': 500 })
+    render(<AddressForm onSubmit={onSubmit} />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/failed to fetch/i)
+  })
+})

@@ -22,29 +22,26 @@ export function useSelection() {
       return
     }
 
-    const newSet = new Set(multiSelectIds)
-    if (newSet.has(id)) {
-      newSet.delete(id)
-    } else {
-      newSet.add(id)
-    }
-    setMultiSelectIds(newSet)
+    setMultiSelectIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
     setSelectedComponentId(id)
-  }, [multiSelectIds, selectComponent])
+  }, [selectComponent])
 
   const addToMultiSelect = useCallback((id: string) => {
-    const newSet = new Set(multiSelectIds)
-    newSet.add(id)
-    setMultiSelectIds(newSet)
-    if (!selectedComponentId) {
-      setSelectedComponentId(id)
-    }
-  }, [multiSelectIds, selectedComponentId])
+    setMultiSelectIds((prev) => new Set(prev).add(id))
+    setSelectedComponentId((current) => current ?? id)
+  }, [])
 
   const removeFromMultiSelect = useCallback((id: string) => {
-    const newSet = new Set(multiSelectIds)
-    newSet.delete(id)
-    setMultiSelectIds(newSet)
+    setMultiSelectIds((prev) => {
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
   }, [])
 
   const isSelected = useCallback((id: string) => {

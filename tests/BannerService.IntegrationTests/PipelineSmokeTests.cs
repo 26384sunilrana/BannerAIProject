@@ -31,6 +31,9 @@ public class SmokeFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
         builder.UseSetting("MediaService:LocalStoragePath", _mediaFolder);
         builder.UseSetting("Subscriptions:LifecycleEnabled", "false");   // the tests run the lifecycle themselves
+        // nothing secret ships in appsettings.json, so the tests bring their own placeholders (the real database is replaced below)
+        builder.UseSetting("ConnectionStrings:DefaultConnection", "Server=unused;Database=unused");
+        builder.UseSetting("Jwt:SecretKey", "integration-test-signing-key-0123456789-abcdefghij");
 
         if (!string.IsNullOrEmpty(SqlConnection))
         {

@@ -44,8 +44,7 @@ public class PublishWorkflowRepositoryTests : IAsyncLifetime
             BannerId = _testBannerId,
             ShopId = _testShopId,
             SubmittedByUserId = _testUserId,
-            Status = PublishStatus.PendingApproval,
-            Title = "Workflow 1"
+            Status = PublishStatus.PendingApproval
         };
 
         var workflow2 = new PublishWorkflow
@@ -54,8 +53,7 @@ public class PublishWorkflowRepositoryTests : IAsyncLifetime
             BannerId = Guid.NewGuid(),
             ShopId = _testShopId,
             SubmittedByUserId = _testUserId,
-            Status = PublishStatus.Approved,
-            Title = "Workflow 2"
+            Status = PublishStatus.Approved
         };
 
         _context.Set<PublishWorkflow>().AddRange(workflow1, workflow2);
@@ -247,8 +245,7 @@ public class PublishWorkflowRepositoryTests : IAsyncLifetime
             BannerId = Guid.NewGuid(),
             ShopId = _testShopId,
             SubmittedByUserId = _testUserId,
-            Status = PublishStatus.Draft,
-            Title = "New Workflow"
+            Status = PublishStatus.Draft
         };
 
         // Act
@@ -388,7 +385,7 @@ public class PublishWorkflowRepositoryTests : IAsyncLifetime
     {
         // Arrange
         var request = _context.Set<ApprovalRequest>().First();
-        request.IsPending = false;
+        request.DecisionMadeAt = DateTime.UtcNow;
 
         // Act
         await _repository.UpdateApprovalRequestAsync(request);

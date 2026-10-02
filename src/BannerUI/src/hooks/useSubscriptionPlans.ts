@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { authFetch } from '@/api/client';
 import {
   SubscriptionPlan,
   PlansListResponse,
@@ -9,7 +10,6 @@ import {
   PlanSubscription,
 } from '@/types/subscription';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:5001/api';
 
 export const useSubscriptionPlans = () => {
   const [loading, setLoading] = useState(false);
@@ -20,10 +20,9 @@ export const useSubscriptionPlans = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/admin/subscription-plans?includeInactive=${includeInactive}`,
+      const response = await authFetch(
+        `/admin/subscription-plans?includeInactive=${includeInactive}`,
         {
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
         }
       );
@@ -48,8 +47,7 @@ export const useSubscriptionPlans = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/subscription-plans/${planId}`, {
-        credentials: 'include',
+      const response = await authFetch(`/admin/subscription-plans/${planId}`, {
         headers: { 'Content-Type': 'application/json' },
       });
 
@@ -73,9 +71,8 @@ export const useSubscriptionPlans = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/subscription-plans`, {
+      const response = await authFetch(`/admin/subscription-plans`, {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -102,9 +99,8 @@ export const useSubscriptionPlans = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${API_BASE_URL}/admin/subscription-plans/${planId}`, {
+        const response = await authFetch(`/admin/subscription-plans/${planId}`, {
           method: 'PUT',
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
@@ -132,9 +128,8 @@ export const useSubscriptionPlans = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/subscription-plans/${planId}/deactivate`, {
+      const response = await authFetch(`/admin/subscription-plans/${planId}/deactivate`, {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
 
@@ -157,10 +152,9 @@ export const useSubscriptionPlans = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/admin/subscription-plans/${planId}/subscriptions?status=${status}`,
+        const response = await authFetch(
+          `/admin/subscription-plans/${planId}/subscriptions?status=${status}`,
           {
-            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
           }
         );
