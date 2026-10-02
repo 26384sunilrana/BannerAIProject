@@ -23,13 +23,13 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 
 ## C. Accounts and security
 
-- Forgot-password, email verification (not enforced at login), account settings screens [018b, 026].
-- Tokens kept in browser local storage; a cookie-based session is safer against script injection [026].
+- Forgot-password, email verification (not enforced at login) and password-reset by email wait for the email provider (bolt 044). The old `verify-email`, `reset-password` endpoints read the signed-in user, so they cannot work for the people who need them; rebuild them with the email work [018b, 026, 036].
+- [036 done] Tokens are no longer in local storage: the access token is in memory and the refresh token is an HttpOnly cookie. Left: the access token is still readable by a script running on the page while the page is open (a page-script attack can use the session but cannot copy it away); no per-device list of sessions; no "remember me" choice (always 7 days).
 - Shop screen needs one sign-in on its machine; no pairing code or device token; long-offline behaviour untested [030].
 - A locked-out owner cannot renew; an admin must reactivate; the admin screen now exists (bolt 031) but there is no self-service path [030].
 - No bulk re-encryption of older plain data; audit-log retention and export missing [024].
 - `Jwt:SecretKey` in `appsettings.json` is a development placeholder; real secrets must come from a secret store [024].
-- Self-registered users cannot be moved to another shop or have an owner transferred; no owner change flow [018].
+- [036 done] Owner hand-over (owner with password, or administrator) and moving a sales executive between shops. Left: moving a shop owner or an owner-less shop's users; a hand-over request that the new owner must accept; an access token issued before a hand-over or move keeps its old role/shop claim for up to 15 minutes (server checks use the database for ownership, but role-only checks use the token).
 
 ## D. Editor and media
 
@@ -58,3 +58,6 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 - `GET /api/subscriptions/{shopId}` returns 404 when a shop has no subscription; noisy in the activity log [031].
 
 - **Deliberately last (bolt 044), by decision on 2026-10-02:** real payment / SMS / email providers, forgot-password and email verification, self-service renewal, Azure Blob + Key Vault + Azure SQL, after a full human review. See `roadmap.md`.
+
+- Password storage uses PBKDF2-SHA256 with 10 000 rounds, far below today's guidance (600 000). Raise it with a versioned hash format so existing passwords are upgraded when people next sign in [036].
+- Several people share a Sales Executive login in practice? Nothing stops two devices using one login; there is no limit on sessions per login [036].

@@ -1,10 +1,15 @@
 import {
+  SESSION_SIGNAL_KEY,
   clearSession,
   decodeToken,
+  getAccessToken,
   getSessionUser,
   hasRole,
   isExpired,
+  mayHaveSession,
+  purgeLegacyTokens,
   saveTokens,
+  signalSessionChange,
 } from '@/lib/session'
 import { safeReturnUrl } from '@/lib/redirect'
 import { BillingPeriod, formatMoney, priceFor } from '@/lib/pricing'
@@ -60,11 +65,14 @@ describe('decodeToken', () => {
   })
 })
 
-describe('session storage', () => {
-  beforeEach(() => localStorage.clear())
+describe('session (in memory)', () => {
+  beforeEach(() => {
+    clearSession()
+    localStorage.clear()
+  })
 
-  it('returns the signed-in user from a valid token', () => {
-    saveTokens({ accessToken: makeToken(apiPayload()), refreshToken: 'r' })
+  it('returns the signed-in user from the token', () => {
+    saveTokens({ accessToken: makeToken(apiPayload()) })
 
     const user = getSessionUser()
 
@@ -73,24 +81,59 @@ describe('session storage', () => {
     expect(hasRole(user, 'Admin')).toBe(false)
   })
 
-  it('keeps an expired access token while a refresh token exists, drops it otherwise', () => {
-    const expired = makeToken(apiPayload({ exp: Math.floor(Date.now() / 1000) - 60 }))
+  it('keeps no token in browser storage, where scripts could read it', () => {
+    saveTokens({ accessToken: makeToken(apiPayload()), refreshToken: 'ignored' })
 
-    saveTokens({ accessToken: expired, refreshToken: 'r' })
+    expect(getAccessToken()).not.toBeNull()
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)!
+      expect(localStorage.getItem(key)).not.toContain('signature')
+      expect(localStorage.getItem(key)).not.toBe('ignored')
+    }
+    expect(localStorage.getItem('auth_token')).toBeNull()
+    expect(localStorage.getItem('refresh_token')).toBeNull()
+  })
+
+  it('still counts an expired token as a session: the API decides, and the cookie gets a new one', () => {
+    saveTokens({ accessToken: makeToken(apiPayload({ exp: Math.floor(Date.now() / 1000) - 60 })) })
+
     expect(getSessionUser()).not.toBeNull()
+  })
 
-    localStorage.removeItem('refresh_token')
+  it('has no user without a token, or with one that cannot be read', () => {
+    expect(getSessionUser()).toBeNull()
+    saveTokens({ accessToken: 'garbage' })
     expect(getSessionUser()).toBeNull()
   })
 
-  it('clears both tokens', () => {
-    saveTokens({ accessToken: makeToken(apiPayload()), refreshToken: 'r' })
+  it('remembers that this browser signed in, so a visitor who never did makes no refresh call', () => {
+    expect(mayHaveSession()).toBe(false)
+
+    saveTokens({ accessToken: makeToken(apiPayload()) })
+    expect(mayHaveSession()).toBe(true)
 
     clearSession()
+    expect(mayHaveSession()).toBe(false)
+    expect(getSessionUser()).toBeNull()
+  })
+
+  it('removes the tokens that older versions left in storage', () => {
+    localStorage.setItem('auth_token', 'old-access')
+    localStorage.setItem('refresh_token', 'old-refresh')
+    localStorage.setItem('display_cache', '{}')
+
+    purgeLegacyTokens()
 
     expect(localStorage.getItem('auth_token')).toBeNull()
     expect(localStorage.getItem('refresh_token')).toBeNull()
-    expect(getSessionUser()).toBeNull()
+    expect(localStorage.getItem('display_cache')).toBe('{}')
+  })
+
+  it('tells other tabs about a change without putting anything secret in storage', () => {
+    signalSessionChange()
+
+    const value = localStorage.getItem(SESSION_SIGNAL_KEY)
+    expect(value).toMatch(/^\d+$/)
   })
 
   it('isExpired honours a skew', () => {

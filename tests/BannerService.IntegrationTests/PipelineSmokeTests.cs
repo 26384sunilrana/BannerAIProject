@@ -57,7 +57,23 @@ public class SmokeFactory : WebApplicationFactory<Program>
         });
     }
 
+    // Several test classes share one real database when SMOKE_SQL is set, and each starts its own application: seed one at a time
+    private static readonly SemaphoreSlim SeedLock = new(1, 1);
+
     public async Task SeedAsync()
+    {
+        await SeedLock.WaitAsync();
+        try
+        {
+            await SeedCoreAsync();
+        }
+        finally
+        {
+            SeedLock.Release();
+        }
+    }
+
+    private async Task SeedCoreAsync()
     {
         using var scope = Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();

@@ -34,6 +34,23 @@ SMOKE_SQL="Server=(localdb)\MSSQLLocalDB;Database=BannerAI_Smoke;Trusted_Connect
   apply the differences by script, and only then insert the `InitialCreate` and later migration ids into `__EFMigrationsHistory`.
   This path has not been tried on a database with data; try it on a copy first.
 
+## Sign-in session (cookie)
+- The web app keeps the short-lived access token (15 minutes) in the page's memory only. The long-lived refresh token (7 days) is an
+  **HttpOnly cookie** (`banner_refresh`, path `/api/authentication`) that scripts cannot read. A page reload or a new tab gets a new
+  access token by sending that cookie; signing out clears it and ends the session on the server.
+- Forgery protection: calls that rely on the cookie (refresh, sign-out) must carry an `X-Requested-With` header, and the cookie is
+  `SameSite=Lax`. Cross-origin access with credentials is granted only to the origins in `Cors__AllowedOrigins__n`
+  (development with no list allows localhost on any port; production allows none).
+- Settings (`Auth:Cookie:*`): `Enabled` (default true; false returns the refresh token in the response body for non-browser clients),
+  `Name`, `SameSite` (Lax, Strict, None), `Secure` (default: on in Production, off otherwise), `Domain`.
+- The web app and the API must be on the **same site** (same registrable domain; ports and sub-domains may differ). Through the Kubernetes
+  ingress they share one host. If they are on different sites, set `Auth__Cookie__SameSite=None` (needs `Secure=true`, so HTTPS).
+- Running Production mode over plain HTTP (for example a local compose stack): set `Auth__Cookie__Secure=false`, or browsers drop the cookie.
+- Two tabs that refresh at the same moment both succeed: a refresh token that was just replaced is accepted again for 30 seconds
+  and returns the same replacement.
+- Ending sessions: signing out, changing the password, signing out everywhere, deactivating a user, moving a user or handing a shop over
+  all revoke refresh tokens. An access token already issued stays valid until it runs out (at most 15 minutes).
+
 ## Media
 - Files are stored on local disk under `MediaService__LocalStoragePath` (a shared, persistent volume when more than one pod runs). Azure Blob comes last.
 - Picture size and video length are read from the file headers; no outside tool is needed.

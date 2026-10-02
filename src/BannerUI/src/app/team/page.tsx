@@ -24,7 +24,7 @@ export default function TeamPage() {
 const EMPTY_FORM = { firstName: '', lastName: '', email: '', password: '' }
 
 function TeamManager() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const shopId = user?.shopId ?? null
   const toast = useToast()
 
@@ -37,6 +37,10 @@ function TeamManager() {
   const [adding, setAdding] = useState(false)
   const [toRemove, setToRemove] = useState<TeamMember | null>(null)
   const [removing, setRemoving] = useState(false)
+  const [toHandOver, setToHandOver] = useState<TeamMember | null>(null)
+  const [handoverPassword, setHandoverPassword] = useState('')
+  const [handoverError, setHandoverError] = useState<string | null>(null)
+  const [handingOver, setHandingOver] = useState(false)
 
   // Approver choices being edited, kept apart from the saved ones until the owner saves
   const [ownerApproves, setOwnerApproves] = useState(true)
@@ -130,6 +134,32 @@ function TeamManager() {
     }
   }
 
+  const closeHandover = () => {
+    setToHandOver(null)
+    setHandoverPassword('')
+    setHandoverError(null)
+  }
+
+  const confirmHandover = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!toHandOver) return
+    if (!handoverPassword) {
+      setHandoverError('Enter your password to confirm.')
+      return
+    }
+
+    setHandingOver(true)
+    setHandoverError(null)
+    try {
+      await teamService.transferOwnership(shopId, toHandOver.userId, handoverPassword)
+      // both people are signed out by the hand-over; the sign-in page explains the rest
+      await logout('/login?handover=1')
+    } catch (err) {
+      setHandoverError(getErrorMessage(err, 'The shop could not be handed over.'))
+      setHandingOver(false)
+    }
+  }
+
   const saveApprovers = async () => {
     setSavingApprovers(true)
     try {
@@ -175,6 +205,9 @@ function TeamManager() {
                   {member.isApprover && (
                     <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Approver</span>
                   )}
+                  <Button variant="secondary" size="sm" onClick={() => setToHandOver(member)}>
+                    Hand the shop over
+                  </Button>
                   <Button variant="danger" size="sm" onClick={() => setToRemove(member)}>
                     Remove
                   </Button>
@@ -263,6 +296,39 @@ function TeamManager() {
           </Button>
         </fieldset>
       </section>
+
+      {toHandOver && (
+        <div role="dialog" aria-modal="true" aria-label="Hand the shop over" className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <form onSubmit={confirmHandover} noValidate className="w-full max-w-md space-y-4 rounded-lg bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-bold text-gray-900">Hand the shop over?</h2>
+            <p className="text-gray-600">
+              {toHandOver.fullName || toHandOver.email} becomes the owner of this shop and you become a sales executive. You can no longer manage
+              the team or the subscription. Both of you are signed out and sign in again.
+            </p>
+            {handoverError && (
+              <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                {handoverError}
+              </div>
+            )}
+            <Input
+              id="handover-password"
+              type="password"
+              label="Your password"
+              autoComplete="current-password"
+              value={handoverPassword}
+              onChange={(e) => setHandoverPassword(e.target.value)}
+            />
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="secondary" onClick={closeHandover} disabled={handingOver}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="danger" isLoading={handingOver}>
+                Hand the shop over
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <ConfirmDialog
         isOpen={toRemove !== null}

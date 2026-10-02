@@ -2,6 +2,7 @@ namespace BannerService.Presentation.Controllers
 {
     using Application.DTOs;
     using Application.Services;
+    using Infrastructure.Security;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using System.Security.Claims;
@@ -10,15 +11,58 @@ namespace BannerService.Presentation.Controllers
     [Route("api/[controller]")]
     public class AuthenticationController : ControllerBase
     {
+        /// <summary>
+        /// Sent by the web app on calls that rely on the refresh cookie. A page on another site cannot add a custom header
+        /// without a CORS pre-flight, which the API only grants to its own web app - this is the protection against forged requests.
+        /// </summary>
+        public const string CsrfHeader = "X-Requested-With";
+
         private readonly IAuthenticationService _authenticationService;
+        private readonly IRefreshCookie _cookie;
         private readonly ILogger<AuthenticationController> _logger;
 
         public AuthenticationController(
             IAuthenticationService authenticationService,
+            IRefreshCookie cookie,
             ILogger<AuthenticationController> logger)
         {
             _authenticationService = authenticationService;
+            _cookie = cookie;
             _logger = logger;
+        }
+
+        /// <summary>Answers with the tokens. With cookies on, the refresh token goes into the cookie and is left out of the body.</summary>
+        private IActionResult Issue(string message, AuthTokenDto tokens)
+        {
+            if (!_cookie.Enabled)
+                return Ok(new { message, tokens });
+
+            _cookie.Write(Response, tokens.RefreshToken, tokens.RefreshTokenExpiresAt);
+            return Ok(new
+            {
+                message,
+                tokens = new AuthTokenDto
+                {
+                    AccessToken = tokens.AccessToken,
+                    RefreshToken = string.Empty,
+                    ExpiresIn = tokens.ExpiresIn,
+                    RefreshTokenExpiresAt = tokens.RefreshTokenExpiresAt,
+                    TokenType = tokens.TokenType,
+                }
+            });
+        }
+
+        /// <summary>The refresh token from the request body, or else from the cookie (which also needs the forgery-protection header).</summary>
+        private (string? token, bool fromCookie, bool forbidden) ReadRefreshToken(RefreshTokenDto? body)
+        {
+            if (!string.IsNullOrWhiteSpace(body?.RefreshToken))
+                return (body.RefreshToken, false, false);
+
+            var fromCookie = _cookie.Read(Request);
+            if (fromCookie == null)
+                return (null, false, false);
+
+            return Request.Headers.ContainsKey(CsrfHeader) ? (fromCookie, true, false) : (null, true, true);
         }
 
         [HttpPost("register")]
@@ -36,7 +80,7 @@ namespace BannerService.Presentation.Controllers
             if (!success)
                 return BadRequest(new { message });
 
-            return Ok(new { message, tokens });
+            return Issue(message, tokens!);
         }
 
         [HttpPost("login")]
@@ -54,42 +98,50 @@ namespace BannerService.Presentation.Controllers
             if (!success)
                 return Unauthorized(new { message });
 
-            return Ok(new { message, tokens });
+            return Issue(message, tokens!);
         }
 
+        /// <summary>Gets a new access token. The refresh token comes from the body, or from the cookie when the body has none.</summary>
         [HttpPost("refresh-token")]
         [AllowAnonymous]
-        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenDto request)
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenDto? request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            var (token, fromCookie, forbidden) = ReadRefreshToken(request);
+            if (forbidden)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = $"The {CsrfHeader} header is required" });
+            if (token == null)
+                return Unauthorized(new { message = "Refresh token is required" });
 
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-
-            var (success, message, tokens) = await _authenticationService.RefreshTokenAsync(
-                request.RefreshToken,
-                userId
-            );
+            var (success, message, tokens) = await _authenticationService.RefreshTokenAsync(token, userId);
 
             if (!success)
+            {
+                // a cookie that no longer works is removed so the browser stops sending it
+                if (fromCookie) _cookie.Clear(Response);
                 return Unauthorized(new { message });
+            }
 
-            return Ok(new { message, tokens });
+            return Issue(message, tokens!);
         }
 
+        /// <summary>
+        /// Ends this session. Open to anyone holding the refresh token (the access token has often expired by now), and the cookie
+        /// is cleared whatever the outcome, so the browser is signed out in every case.
+        /// </summary>
         [HttpPost("logout")]
-        [Authorize]
-        public async Task<IActionResult> Logout([FromBody] RefreshTokenDto request)
+        [AllowAnonymous]
+        public async Task<IActionResult> Logout([FromBody] RefreshTokenDto? request)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var (token, _, forbidden) = ReadRefreshToken(request);
+            if (forbidden)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = $"The {CsrfHeader} header is required" });
 
-            if (string.IsNullOrEmpty(userId))
-                return BadRequest(new { message = "User ID not found in token" });
+            if (token != null)
+                await _authenticationService.RevokeTokenAsync(token);
 
-            var success = await _authenticationService.RevokeTokenAsync(userId, request.RefreshToken);
-
-            if (!success)
-                return BadRequest(new { message = "Failed to revoke token" });
+            if (_cookie.Enabled)
+                _cookie.Clear(Response);
 
             return Ok(new { message = "Logged out successfully" });
         }
@@ -101,7 +153,7 @@ namespace BannerService.Presentation.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
             var name = User.FindFirst(ClaimTypes.Name)?.Value;
-            var shopId = User.FindFirst("ShopId")?.Value;
+            var shopId = User.FindFirst("shop_id")?.Value;
             var roles = User.FindAll(ClaimTypes.Role);
 
             return Ok(new

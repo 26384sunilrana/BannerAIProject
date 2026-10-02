@@ -33,6 +33,8 @@ namespace BannerService.Application.DTOs
         public string AccessToken { get; set; } = string.Empty;
         public string RefreshToken { get; set; } = string.Empty;
         public int ExpiresIn { get; set; } // in seconds
+        /// <summary>When the refresh token stops working; used for the cookie lifetime.</summary>
+        public DateTime RefreshTokenExpiresAt { get; set; }
         public string TokenType { get; set; } = "Bearer";
     }
 

@@ -3,15 +3,27 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { authService } from '@/api/authService'
 import { LoginRequest, RegisterRequest } from '@/types/auth'
-import { SessionUser, getSessionUser, hasRole as userHasRole } from '@/lib/session'
+import {
+  SESSION_SIGNAL_KEY,
+  SessionUser,
+  clearSession,
+  getSessionUser,
+  hasRole as userHasRole,
+  purgeLegacyTokens,
+} from '@/lib/session'
 
 interface AuthContextValue {
   user: SessionUser | null
-  /** False until the stored session has been read (the server renders without it). */
+  /** False until the session has been looked up (the server renders without it, and the cookie is exchanged after load). */
   ready: boolean
   login: (request: LoginRequest) => Promise<void>
   register: (request: RegisterRequest) => Promise<void>
-  logout: () => Promise<void>
+  /** Signs out. Pages that need a session then send the person to redirectTo (default: the sign-in page, remembering where they were). */
+  logout: (redirectTo?: string) => Promise<void>
+  /** Where to send the person after a sign-out that said so; null for the usual sign-in page. */
+  signedOutRedirect: string | null
+  /** Looks for a session again (for example a shop screen that started offline). Returns whether there is one. */
+  refresh: () => Promise<boolean>
   hasRole: (role: string) => boolean
 }
 
@@ -20,19 +32,44 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null)
   const [ready, setReady] = useState(false)
+  const [signedOutRedirect, setSignedOutRedirect] = useState<string | null>(null)
+
+  const refresh = useCallback(async () => {
+    const ok = await authService.restore()
+    setUser(ok ? getSessionUser() : null)
+    return ok
+  }, [])
 
   useEffect(() => {
-    setUser(getSessionUser())
-    setReady(true)
+    purgeLegacyTokens()
+    let alive = true
 
-    // Another tab signed in or out
-    const onStorage = () => setUser(getSessionUser())
+    ;(async () => {
+      // already signed in during this page's life (a client-side move), otherwise exchange the cookie for a token
+      if (getSessionUser()) setUser(getSessionUser())
+      else await refresh()
+      if (alive) setReady(true)
+    })()
+
+    // Another tab signed in or out: look again. A tab that is signed in keeps its own token until the next call says otherwise.
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== SESSION_SIGNAL_KEY) return
+      authService.restore().then((ok) => {
+        if (!alive) return
+        if (!ok) clearSession()
+        setUser(ok ? getSessionUser() : null)
+      })
+    }
     window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [])
+    return () => {
+      alive = false
+      window.removeEventListener('storage', onStorage)
+    }
+  }, [refresh])
 
   const login = useCallback(async (request: LoginRequest) => {
     await authService.login(request)
+    setSignedOutRedirect(null)
     setUser(getSessionUser())
   }, [])
 
@@ -41,14 +78,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(getSessionUser())
   }, [])
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(async (redirectTo?: string) => {
     await authService.logout()
+    setSignedOutRedirect(redirectTo ?? null)
     setUser(null)
   }, [])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, ready, login, register, logout, hasRole: (role) => userHasRole(user, role) }),
-    [user, ready, login, register, logout]
+    () => ({ user, ready, login, register, logout, refresh, signedOutRedirect, hasRole: (role) => userHasRole(user, role) }),
+    [user, ready, login, register, logout, refresh, signedOutRedirect]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

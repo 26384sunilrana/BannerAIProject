@@ -11,6 +11,8 @@ namespace BannerService.Application.Services
         Task<(bool success, string message, AuthTokenDto? tokens)> LoginAsync(LoginDto request);
         Task<(bool success, string message, AuthTokenDto? tokens)> RefreshTokenAsync(string refreshToken, string userId);
         Task<bool> RevokeTokenAsync(string userId, string refreshToken);
+        /// <summary>Ends the session that holds this refresh token. False when the token is not known.</summary>
+        Task<bool> RevokeTokenAsync(string refreshToken);
         Task<(bool success, string message)> VerifyEmailAsync(string userId, string token);
         Task<(bool success, string message)> RequestPasswordResetAsync(string email);
         Task<(bool success, string message)> ResetPasswordAsync(string userId, string token, string newPassword);
@@ -25,6 +27,16 @@ namespace BannerService.Application.Services
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IShopRepository _shopRepository;
         private readonly ISubscriptionRepository _subscriptionRepository;
+
+        /// <summary>How long a refresh token lasts (a signed-in person is asked to sign in again after this long without a visit).</summary>
+        public static readonly TimeSpan RefreshLifetime = TimeSpan.FromDays(7);
+        private static DateTime RefreshLifetimeEnd => DateTime.UtcNow.Add(RefreshLifetime);
+
+        /// <summary>
+        /// A refresh token that was just replaced still works for this long, and then returns the replacement. Two tabs opened at the
+        /// same moment both present the same cookie; without this the second one would be signed out.
+        /// </summary>
+        public static readonly TimeSpan RotationGrace = TimeSpan.FromSeconds(30);
 
         public const string SubscriptionEndedMessage =
             "Your subscription has ended, so logins are switched off. Contact support to reactivate your account.";
@@ -128,7 +140,7 @@ namespace BannerService.Application.Services
                 UserId = createdUser.Id,
                 Token = refreshToken,
                 JwtId = jwtId,
-                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                ExpiresAt = RefreshLifetimeEnd,
                 IpAddress = request.IpAddress ?? string.Empty,
                 UserAgent = request.UserAgent ?? string.Empty
             };
@@ -140,6 +152,7 @@ namespace BannerService.Application.Services
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
                 ExpiresIn = 900, // 15 minutes
+                RefreshTokenExpiresAt = RefreshLifetimeEnd,
                 TokenType = "Bearer"
             };
 
@@ -183,7 +196,7 @@ namespace BannerService.Application.Services
                 UserId = user.Id,
                 Token = refreshToken,
                 JwtId = jwtId,
-                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                ExpiresAt = RefreshLifetimeEnd,
                 IpAddress = request.IpAddress ?? string.Empty,
                 UserAgent = request.UserAgent ?? string.Empty
             };
@@ -195,6 +208,7 @@ namespace BannerService.Application.Services
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
                 ExpiresIn = 900, // 15 minutes
+                RefreshTokenExpiresAt = RefreshLifetimeEnd,
                 TokenType = "Bearer"
             };
 
@@ -207,6 +221,27 @@ namespace BannerService.Application.Services
                 return (false, "Refresh token is required", null);
 
             var storedRefreshToken = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
+
+            // Just replaced by a request that arrived a moment earlier (another tab): hand out the replacement again
+            if (storedRefreshToken is { IsRevoked: true, ReplacedByToken: not null, RevokedAt: not null }
+                && DateTime.UtcNow - storedRefreshToken.RevokedAt.Value < RotationGrace
+                && (string.IsNullOrWhiteSpace(userId) || storedRefreshToken.UserId == userId))
+            {
+                var replacement = await _refreshTokenRepository.GetByTokenAsync(storedRefreshToken.ReplacedByToken);
+                var owner = replacement is { IsActive: true } ? await _userRepository.GetByIdAsync(replacement.UserId) : null;
+                if (owner is { IsActive: true } && !await IsLockedBySubscriptionAsync(owner))
+                {
+                    var (access, _) = _jwtTokenService.GenerateAccessToken(owner);
+                    return (true, "Token refreshed successfully", new AuthTokenDto
+                    {
+                        AccessToken = access,
+                        RefreshToken = replacement!.Token,
+                        ExpiresIn = 900,
+                        RefreshTokenExpiresAt = replacement.ExpiresAt,
+                        TokenType = "Bearer"
+                    });
+                }
+            }
 
             // The access token has usually expired by now, so the caller is anonymous; the token itself identifies the user.
             // When a user id is supplied it must still match.
@@ -236,7 +271,7 @@ namespace BannerService.Application.Services
                 UserId = user.Id,
                 Token = newRefreshToken,
                 JwtId = jwtId,
-                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                ExpiresAt = RefreshLifetimeEnd,
                 IpAddress = storedRefreshToken.IpAddress,
                 UserAgent = storedRefreshToken.UserAgent
             };
@@ -248,6 +283,7 @@ namespace BannerService.Application.Services
                 AccessToken = accessToken,
                 RefreshToken = newRefreshToken,
                 ExpiresIn = 900, // 15 minutes
+                RefreshTokenExpiresAt = RefreshLifetimeEnd,
                 TokenType = "Bearer"
             };
 
@@ -264,6 +300,23 @@ namespace BannerService.Application.Services
             token.Revoke();
             await _refreshTokenRepository.UpdateAsync(token);
 
+            return true;
+        }
+
+        public async Task<bool> RevokeTokenAsync(string refreshToken)
+        {
+            if (string.IsNullOrWhiteSpace(refreshToken))
+                return false;
+
+            var token = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
+            if (token == null)
+                return false;
+
+            if (!token.IsRevoked)
+            {
+                token.Revoke();
+                await _refreshTokenRepository.UpdateAsync(token);
+            }
             return true;
         }
 

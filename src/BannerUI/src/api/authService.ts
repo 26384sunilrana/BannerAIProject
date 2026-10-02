@@ -1,6 +1,6 @@
 import { apiClient } from './client'
 import { AuthResult, LoginRequest, RegisterRequest } from '@/types/auth'
-import { clearSession, getRefreshToken, saveTokens } from '@/lib/session'
+import { clearSession, mayHaveSession, saveTokens, signalSessionChange } from '@/lib/session'
 
 export const authService = {
   async login(request: LoginRequest): Promise<AuthResult> {
@@ -9,6 +9,7 @@ export const authService = {
       password: request.password,
     })
     saveTokens(result.tokens)
+    signalSessionChange()
     return result
   },
 
@@ -19,20 +20,30 @@ export const authService = {
       shopName: request.shopName.trim(),
     })
     saveTokens(result.tokens)
+    signalSessionChange()
     return result
+  },
+
+  /**
+   * Picks the session up again after a page load or in a new tab: the refresh cookie is exchanged for an access token.
+   * Skipped when this browser never signed in. Returns whether there is a session now.
+   */
+  async restore(): Promise<boolean> {
+    if (!mayHaveSession()) return false
+    const ok = await apiClient.refreshSession()
+    if (!ok) clearSession()
+    return ok
   },
 
   /** Ends the session on this device. The server call is best effort: the local session is cleared either way. */
   async logout(): Promise<void> {
-    const refreshToken = getRefreshToken()
     try {
-      if (refreshToken) {
-        await apiClient.post('/authentication/logout', { refreshToken })
-      }
+      await apiClient.post('/authentication/logout', {})
     } catch {
       // already signed out or offline
     } finally {
       clearSession()
+      signalSessionChange()
     }
   },
 }

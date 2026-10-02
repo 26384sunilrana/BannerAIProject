@@ -53,6 +53,11 @@ export function LoginForm() {
       }
     >
       <form onSubmit={submit} noValidate className="space-y-4">
+        {params?.get('handover') === '1' && (
+          <p role="status" className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900">
+            The shop was handed over. Sign in again with your own login.
+          </p>
+        )}
         <FormError message={error} />
         <Input
           id="email"

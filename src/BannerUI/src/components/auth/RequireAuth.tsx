@@ -12,15 +12,15 @@ interface RequireAuthProps {
 
 /** Sends visitors without a session to the sign-in page and blocks pages their role does not allow. */
 export function RequireAuth({ children, roles }: RequireAuthProps) {
-  const { user, ready, hasRole } = useAuth()
+  const { user, ready, hasRole, signedOutRedirect } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
 
   useEffect(() => {
     if (ready && !user) {
-      router.replace(`/login?returnUrl=${encodeURIComponent(pathname || '/')}`)
+      router.replace(signedOutRedirect ?? `/login?returnUrl=${encodeURIComponent(pathname || '/')}`)
     }
-  }, [ready, user, router, pathname])
+  }, [ready, user, router, pathname, signedOutRedirect])
 
   if (!ready || !user) {
     return <p className="p-8 text-gray-500">Loading…</p>

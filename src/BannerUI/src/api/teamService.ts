@@ -21,4 +21,9 @@ export const teamService = {
   setApprovers(shopId: string, ownerIsApprover: boolean, approverUserIds: string[]): Promise<ShopTeam> {
     return apiClient.put<ShopTeam>(`/shops/${shopId}/team/approvers`, { ownerIsApprover, approverUserIds })
   },
+
+  /** Hands the shop to one of the sales executives. Needs the owner's password. Everyone involved is signed out. */
+  transferOwnership(shopId: string, newOwnerUserId: string, password: string): Promise<{ newOwnerEmail: string }> {
+    return apiClient.post<{ newOwnerEmail: string }>(`/shops/${shopId}/team/transfer-ownership`, { newOwnerUserId, password })
+  },
 }

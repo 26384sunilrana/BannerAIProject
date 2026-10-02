@@ -47,6 +47,22 @@ export const adminService = {
     return apiClient.post<AdminUser>(`/admin/users/${encodeURIComponent(userId)}/unlock`, {})
   },
 
+  /** Moves a sales executive to another shop. The shop needs a running subscription and a free login. */
+  moveUser(userId: string, shopId: string): Promise<{ toShopId: string }> {
+    return apiClient.post<{ toShopId: string }>(`/admin/users/${encodeURIComponent(userId)}/move`, { shopId })
+  },
+
+  /** Makes a sales executive of the shop its owner (the previous owner becomes a sales executive). */
+  assignOwner(shopId: string, userId: string): Promise<{ newOwnerEmail: string }> {
+    return apiClient.post<{ newOwnerEmail: string }>(`/admin/shops/${shopId}/owner`, { userId })
+  },
+
+  /** Shops to choose from, by name. */
+  async listShopOptions(): Promise<{ id: string; name: string }[]> {
+    const page = await apiClient.get<{ items: { id: string; name: string }[] }>('/shops?pageNumber=1&pageSize=100')
+    return page.items
+  },
+
   listSubscriptions(filter: { status?: number; search?: string; page?: number; pageSize?: number }): Promise<Page<AdminSubscription>> {
     return apiClient.get<Page<AdminSubscription>>(`/admin/subscriptions${toQuery({ ...filter })}`)
   },

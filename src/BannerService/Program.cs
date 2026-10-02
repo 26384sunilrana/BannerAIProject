@@ -105,6 +105,8 @@ builder.Services.AddScoped<BannerService.Domain.Services.BannerScheduleService>(
 builder.Services.AddScoped<BannerService.Application.Services.BannerScheduleAppService>();
 builder.Services.AddScoped<BannerService.Application.Services.ShopTeamService>();
 builder.Services.AddScoped<BannerService.Application.Services.UserAdminService>();
+builder.Services.AddScoped<BannerService.Application.Services.ShopMembershipService>();
+builder.Services.AddScoped<BannerService.Application.Services.AccountService>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<ISubscriptionNotificationRepository, SubscriptionNotificationRepository>();
 builder.Services.AddScoped<ISmsSender, BannerService.Infrastructure.Services.LoggingSmsSender>();
@@ -120,6 +122,7 @@ builder.Services.AddHostedService<BannerService.Infrastructure.Background.MediaC
 builder.Services.AddScoped<ICarouselService, CarouselService>();
 builder.Services.AddScoped<MetadataExtractionService>();
 builder.Services.AddScoped<IStorageProvider, LocalStorageProvider>();
+builder.Services.AddSingleton<BannerService.Infrastructure.Security.IRefreshCookie, BannerService.Infrastructure.Security.RefreshCookie>();
 builder.Services.AddSingleton<BannerService.Infrastructure.Security.IMediaUrlSigner, BannerService.Infrastructure.Security.MediaUrlSigner>();
 builder.Services.AddScoped<IBannerService, BannerService.Application.Services.BannerService>();
 
@@ -132,13 +135,16 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policyBuilder =>
     {
-        // Cors:AllowedOrigins lists the web app origins. When it is empty, development and test allow any
-        // origin; production allows none (same-origin through the ingress).
+        // Cors:AllowedOrigins lists the web app origins. When it is empty, development and test allow the local
+        // machine (localhost, any port); production allows none (same-origin through the ingress).
         var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+        // The refresh cookie travels with these requests, so a named origin (never any origin) and AllowCredentials are required.
         if (origins.Length > 0)
-            policyBuilder.WithOrigins(origins).AllowAnyMethod().AllowAnyHeader();
+            policyBuilder.WithOrigins(origins).AllowAnyMethod().AllowAnyHeader().AllowCredentials();
         else if (!builder.Environment.IsProduction())
-            policyBuilder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+            policyBuilder
+                .SetIsOriginAllowed(origin => Uri.TryCreate(origin, UriKind.Absolute, out var uri) && (uri.IsLoopback || uri.Host == "localhost"))
+                .AllowAnyMethod().AllowAnyHeader().AllowCredentials();
     });
 });
 

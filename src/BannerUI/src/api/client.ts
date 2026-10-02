@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosError, AxiosResponse } from 'axios'
 import { ErrorResponse } from '@/types/api'
-import { clearSession, getAccessToken, getRefreshToken, saveTokens } from '@/lib/session'
+import { clearSession, getAccessToken, saveTokens } from '@/lib/session'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 
@@ -64,8 +64,12 @@ class ApiClient {
     this.client = axios.create({
       baseURL: API_URL,
       timeout: 30000,
+      // the refresh token is an HttpOnly cookie: it is sent only when the browser is told to
+      withCredentials: true,
       headers: {
         'Content-Type': 'application/json',
+        // proves the call comes from this web app and not from a form on another site (see the API's forgery protection)
+        'X-Requested-With': 'XMLHttpRequest',
       },
     })
 
@@ -105,16 +109,17 @@ class ApiClient {
 
   /** One refresh at a time, shared by every request that failed with 401 meanwhile. */
   private tryRefresh(): Promise<boolean> {
-    const refreshToken = getRefreshToken()
-    if (!refreshToken) return Promise.resolve(false)
-
     if (!this.refreshing) {
       this.refreshing = axios
-        .post(`${API_URL}${AUTH_PATH}refresh-token`, { refreshToken })
+        .post(
+          `${API_URL}${AUTH_PATH}refresh-token`,
+          {},
+          { withCredentials: true, headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+        )
         .then((res) => {
-          const tokens = res.data?.tokens
-          if (!tokens?.accessToken || !tokens?.refreshToken) return false
-          saveTokens({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken })
+          const accessToken = res.data?.tokens?.accessToken
+          if (!accessToken) return false
+          saveTokens({ accessToken })
           return true
         })
         .catch(() => false)
@@ -125,7 +130,7 @@ class ApiClient {
     return this.refreshing
   }
 
-  /** Gets a new access token from the refresh token; false when that is not possible. */
+  /** Gets a new access token with the refresh cookie; false when there is no valid session. */
   refreshSession(): Promise<boolean> {
     return this.tryRefresh()
   }

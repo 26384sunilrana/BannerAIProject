@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Button, ConfirmDialog, Input, Toast } from '@/components/Common'
 import { Pagination } from '@/components/admin/Pagination'
+import { MoveUserDialog } from '@/components/admin/MoveUserDialog'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/context/AuthContext'
@@ -27,6 +28,8 @@ export function UsersPanel() {
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [toDeactivate, setToDeactivate] = useState<AdminUser | null>(null)
+  const [toMove, setToMove] = useState<AdminUser | null>(null)
+  const [toMakeOwner, setToMakeOwner] = useState<AdminUser | null>(null)
 
   const term = useDebounce(search, 300)
 
@@ -148,6 +151,16 @@ export function UsersPanel() {
                               Unlock
                             </Button>
                           )}
+                          {user.isActive && user.shopId && user.roles.includes('SalesExecutive') && (
+                            <>
+                              <Button size="sm" variant="secondary" disabled={busy} onClick={() => setToMove(user)}>
+                                Move
+                              </Button>
+                              <Button size="sm" variant="secondary" disabled={busy} onClick={() => setToMakeOwner(user)}>
+                                Make owner
+                              </Button>
+                            </>
+                          )}
                           {user.isActive ? (
                             <Button size="sm" variant="danger" disabled={isMe || busy} title={isMe ? 'You cannot deactivate yourself' : undefined} onClick={() => setToDeactivate(user)}>
                               Deactivate
@@ -169,6 +182,35 @@ export function UsersPanel() {
           <Pagination page={result.page} pageSize={result.pageSize} total={result.total} onChange={setPage} />
         </>
       )}
+
+      {toMove && (
+        <MoveUserDialog
+          userLabel={toMove.fullName || toMove.email}
+          currentShopId={toMove.shopId}
+          onClose={() => setToMove(null)}
+          onMove={async (shopId) => {
+            const target = toMove
+            await adminService.moveUser(target.id, shopId)
+            setToMove(null)
+            toast.success(`${target.email} was moved.`)
+            await load()
+          }}
+        />
+      )}
+
+      <ConfirmDialog
+        isOpen={toMakeOwner !== null}
+        title="Make this person the owner?"
+        message={`${toMakeOwner?.email ?? ''} becomes the owner of their shop and the current owner becomes a sales executive. Both are signed out.`}
+        confirmText="Make owner"
+        isDangerous
+        onCancel={() => setToMakeOwner(null)}
+        onConfirm={async () => {
+          const target = toMakeOwner
+          setToMakeOwner(null)
+          if (target?.shopId) await act(target, () => adminService.assignOwner(target.shopId!, target.id), `${target.email} now owns the shop.`)
+        }}
+      />
 
       <ConfirmDialog
         isOpen={toDeactivate !== null}

@@ -8,7 +8,7 @@ import { DefaultBoard } from '@/components/Display/DefaultBoard'
 import { bannerService } from '@/api/bannerService'
 import { bannerListService } from '@/api/workflowService'
 import { apiClient } from '@/api/client'
-import { getSessionUser } from '@/lib/session'
+import { useAuth } from '@/context/AuthContext'
 import { loadDisplayCache, saveDisplayCache } from '@/lib/displayCache'
 import { Banner } from '@/types/banner'
 
@@ -28,6 +28,7 @@ const NOTES: Record<string, string> = {
  */
 export default function DisplayPage() {
   const router = useRouter()
+  const { user: authUser, ready: authReady, refresh } = useAuth()
   const [banner, setBanner] = useState<Banner | null>(null)
   const [reason, setReason] = useState<string | null>(null)
   const [shopName, setShopName] = useState('')
@@ -68,7 +69,9 @@ export default function DisplayPage() {
   }, [])
 
   useEffect(() => {
-    const user = getSessionUser()
+    // wait until the session cookie has been looked at, or a reload would send the screen to the sign-in page
+    if (!authReady) return
+    const user = authUser
     const cache = loadDisplayCache()
 
     if (!user && !cache) {
@@ -81,6 +84,8 @@ export default function DisplayPage() {
     setReady(true)
 
     if (!user) {
+      loaded.current = null
+      setBanner(null)
       setReason('SessionEnded')
       return
     }
@@ -100,7 +105,17 @@ export default function DisplayPage() {
     poll()
     const timer = setInterval(poll, POLL_MS)
     return () => clearInterval(timer)
-  }, [poll, router])
+  }, [poll, router, authReady, authUser])
+
+  // A screen that started without a connection (or whose session ended) keeps showing the default board and
+  // looks for the session again every minute, so it picks up by itself when the connection is back.
+  useEffect(() => {
+    if (!authReady || authUser) return
+    const timer = setInterval(() => {
+      refresh()
+    }, 60_000)
+    return () => clearInterval(timer)
+  }, [authReady, authUser, refresh])
 
   const showControls = () => {
     setControlsVisible(true)

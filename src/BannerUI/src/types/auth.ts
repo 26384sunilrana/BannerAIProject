@@ -17,7 +17,8 @@ export interface AuthResult {
   message: string
   tokens: {
     accessToken: string
-    refreshToken: string
+    /** Empty: the refresh token travels in an HttpOnly cookie. */
+    refreshToken?: string
     expiresIn: number
     tokenType: string
   }

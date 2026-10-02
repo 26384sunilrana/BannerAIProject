@@ -13,11 +13,18 @@ export interface DecodedToken extends SessionUser {
 
 export interface TokenPair {
   accessToken: string
-  refreshToken: string
+  /** Not kept by the page: the API keeps the refresh token in an HttpOnly cookie. Accepted so older callers still compile. */
+  refreshToken?: string
 }
 
-const ACCESS_KEY = 'auth_token'
-const REFRESH_KEY = 'refresh_token'
+// Older versions kept both tokens in local storage, where any script on the page could read them.
+const LEGACY_KEYS = ['auth_token', 'refresh_token']
+
+/** Written (never read for its value) whenever this browser signs in or out, so other tabs notice. Holds no secret. */
+export const SESSION_SIGNAL_KEY = 'session_signal'
+
+/** Tells this browser a session probably exists, so a visitor who never signed in does not trigger a refresh call on every page. */
+const SESSION_HINT_KEY = 'session_hint'
 
 // The API writes long claim URIs into the token; short names are accepted too.
 const CLAIM_ID = ['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier', 'nameid', 'sub']
@@ -77,36 +84,55 @@ export function isExpired(exp: number, skewSeconds = 0, now = Date.now()): boole
 }
 
 function storage(): Storage | null {
-  return typeof window !== 'undefined' ? window.localStorage : null
+  try {
+    return typeof window !== 'undefined' ? window.localStorage : null
+  } catch {
+    return null // storage blocked
+  }
 }
+
+// The access token lives only in the page's memory: it is gone when the tab closes and no script can copy it from storage.
+// The long-lived refresh token is an HttpOnly cookie that this code never sees.
+let accessToken: string | null = null
 
 export function getAccessToken(): string | null {
-  return storage()?.getItem(ACCESS_KEY) ?? null
-}
-
-export function getRefreshToken(): string | null {
-  return storage()?.getItem(REFRESH_KEY) ?? null
+  return accessToken
 }
 
 export function saveTokens(tokens: TokenPair): void {
-  storage()?.setItem(ACCESS_KEY, tokens.accessToken)
-  storage()?.setItem(REFRESH_KEY, tokens.refreshToken)
+  accessToken = tokens.accessToken
+  storage()?.setItem(SESSION_HINT_KEY, '1')
 }
 
 export function clearSession(): void {
-  storage()?.removeItem(ACCESS_KEY)
-  storage()?.removeItem(REFRESH_KEY)
+  accessToken = null
+  storage()?.removeItem(SESSION_HINT_KEY)
 }
 
-/** The signed-in user, or null. An expired access token still counts while a refresh token exists. */
+/** Whether this browser has signed in and not signed out since (the cookie itself cannot be checked from here). */
+export function mayHaveSession(): boolean {
+  return storage()?.getItem(SESSION_HINT_KEY) === '1'
+}
+
+/** Removes the tokens older versions stored in the clear. */
+export function purgeLegacyTokens(): void {
+  for (const key of LEGACY_KEYS) storage()?.removeItem(key)
+}
+
+/** Lets other tabs of this browser know the session changed (they check again with the cookie). */
+export function signalSessionChange(): void {
+  storage()?.setItem(SESSION_SIGNAL_KEY, String(Date.now()))
+}
+
+/**
+ * The signed-in user, or null. Having a token is enough: the API decides whether it is still good, and
+ * the client quietly gets a new one with the cookie when it is not.
+ */
 export function getSessionUser(): SessionUser | null {
-  const token = getAccessToken()
-  if (!token) return null
+  if (!accessToken) return null
 
-  const decoded = decodeToken(token)
+  const decoded = decodeToken(accessToken)
   if (!decoded) return null
-
-  if (isExpired(decoded.exp) && !getRefreshToken()) return null
 
   const { exp: _exp, ...user } = decoded
   return user

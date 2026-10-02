@@ -83,9 +83,9 @@ function Frame({ children }: { children: React.ReactNode }) {
             </ul>
           </div>
           <div className="flex items-center gap-4 text-sm">
-            <span className="text-gray-600" data-testid="signed-in-as">
+            <Link href="/account" className="text-gray-700 hover:text-gray-900" data-testid="signed-in-as" title="My account">
               {user?.name || user?.email}
-            </span>
+            </Link>
             <button type="button" onClick={signOut} className="text-blue-600 hover:text-blue-800 font-medium">
               Sign out
             </button>
