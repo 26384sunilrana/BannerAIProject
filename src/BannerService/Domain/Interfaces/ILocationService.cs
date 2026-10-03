@@ -42,6 +42,10 @@ namespace BannerService.Domain.Interfaces
 
         Task<LocationResult<List<Shop>>> ShopsInGroupAsync(int groupId);
 
+        /// <summary>Sets (or clears, with null) the time zone of a country or a city.</summary>
+        Task<LocationResult<Country>> SetCountryTimeZoneAsync(string isoCode, string? timeZoneId);
+        Task<LocationResult<City>> SetCityTimeZoneAsync(int id, string? timeZoneId);
+
         /// <summary>Places a shop in a city and, optionally, a group of that city.</summary>
         Task<LocationResult<Shop>> SetShopLocationAsync(Guid shopId, int cityId, int? groupId);
 

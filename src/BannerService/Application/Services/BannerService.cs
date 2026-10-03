@@ -218,6 +218,9 @@ public class BannerService : IBannerService
             ComponentCount = banner.Components.Count,
             PublishStartAt = banner.PublishStartAt,
             PublishEndAt = banner.PublishEndAt,
+            DailyStartMinutes = banner.DailyStartMinutes,
+            DailyEndMinutes = banner.DailyEndMinutes,
+            ActiveDays = banner.ActiveDays,
             CreatedAt = banner.CreatedAt,
             UpdatedAt = banner.UpdatedAt
         };

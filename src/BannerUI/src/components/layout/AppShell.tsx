@@ -16,11 +16,13 @@ interface NavItem {
 const NAV: NavItem[] = [
   { href: '/dashboard', label: 'Home' },
   { href: '/banners', label: 'Banners', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
+  { href: '/banners/calendar', label: 'Calendar', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/media', label: 'My files', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/approvals', label: 'Approvals', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/team', label: 'Team', roles: [Roles.ShopOwner] },
   { href: '/subscription', label: 'Subscription', roles: [Roles.ShopOwner] },
   { href: '/shops', label: 'My shop', roles: [Roles.ShopOwner] },
+  { href: '/default-board', label: 'Default board', roles: [Roles.ShopOwner] },
   { href: '/display', label: 'Shop screen', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/shops', label: 'Shops', roles: [Roles.Admin] },
   { href: '/admin/locations', label: 'Places', roles: [Roles.Admin] },
@@ -67,7 +69,10 @@ function Frame({ children }: { children: React.ReactNode }) {
             </Link>
             <ul className="flex flex-wrap gap-4">
               {links.map((item) => {
-                const active = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href))
+                // the most specific link is the active one (Calendar, not also Banners, on /banners/calendar)
+                const matches = (href: string) => pathname === href || (href !== '/dashboard' && !!pathname?.startsWith(href + '/'))
+                const best = links.filter((l) => matches(l.href)).sort((a, b) => b.href.length - a.href.length)[0]
+                const active = best?.href === item.href && best?.label === item.label
                 return (
                   <li key={item.href}>
                     <Link

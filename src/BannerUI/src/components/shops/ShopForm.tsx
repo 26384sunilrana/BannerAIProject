@@ -3,6 +3,9 @@
 import React, { useState } from 'react'
 import { Button, Input } from '@/components/Common'
 import { LocationPicker, PickedLocation } from '@/components/location/LocationPicker'
+import { TimeZoneSelect } from '@/components/location/TimeZoneSelect'
+import { forgetShopTimeZone } from '@/hooks/useShopTimeZone'
+import { apiClient } from '@/api/client'
 import { useShops } from '@/hooks/useShops'
 import { locationService } from '@/api/locationService'
 import { getErrorMessage } from '@/api/client'
@@ -30,6 +33,7 @@ export function ShopForm({ shop, onSaved, onCancel }: Props) {
     cityId: shop?.cityId ?? undefined,
     groupId: shop?.groupId ?? undefined,
   })
+  const [timeZone, setTimeZone] = useState(shop?.ownTimeZoneId ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -68,6 +72,12 @@ export function ShopForm({ shop, onSaved, onCancel }: Props) {
       // the city and group are saved on their own, so the group is checked against the city
       if (place.cityId && shopId) await locationService.setShopLocation(shopId, place.cityId, place.groupId ?? null)
 
+      // the time zone is kept apart from the rest of the shop; empty goes back to following the city
+      if (shopId && (timeZone || shop?.ownTimeZoneId)) {
+        await apiClient.put(`/shops/${shopId}/time-zone`, { timeZoneId: timeZone || null })
+        forgetShopTimeZone(shopId)
+      }
+
       onSaved(shopId!)
     } catch (err) {
       setError(err instanceof Error && !(err as { response?: unknown }).response ? err.message : getErrorMessage(err, 'The shop could not be saved.'))
@@ -99,6 +109,16 @@ export function ShopForm({ shop, onSaved, onCancel }: Props) {
         <Input id="shop-address" label="Street address" value={address} onChange={(e) => setAddress(e.target.value)} />
         <div className="max-w-xs">
           <Input id="shop-postal" label="Postal code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+        </div>
+        <div className="max-w-md">
+          <TimeZoneSelect
+            id="shop-time-zone"
+            label="Time zone"
+            value={timeZone}
+            onChange={setTimeZone}
+            inheritLabel={`Same as my city or country${shop?.timeZoneId && !shop.ownTimeZoneId ? ` (${shop.timeZoneId})` : ''}`}
+            helperText="Banner times and the schedule calendar use your shop's clock."
+          />
         </div>
       </fieldset>
 

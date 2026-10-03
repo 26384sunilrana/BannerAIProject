@@ -14,6 +14,13 @@ public class Banner
     public bool IsPublished { get; set; }
     public DateTime? PublishStartAt { get; private set; }
     public DateTime? PublishEndAt { get; private set; }
+
+    /// <summary>Hours of the day (shop time) the banner is shown within its date window; null means the whole window.</summary>
+    public int? DailyStartMinutes { get; private set; }
+    public int? DailyEndMinutes { get; private set; }
+
+    /// <summary>Weekdays the daily hours apply to (see <see cref="DailySchedule.Bit"/>); all days when no daily hours are set.</summary>
+    public int ActiveDays { get; private set; } = DailySchedule.AllDays;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
@@ -88,14 +95,27 @@ public class Banner
     public PublishWindow? GetPublishWindow() =>
         PublishStartAt.HasValue && PublishEndAt.HasValue ? new PublishWindow(PublishStartAt.Value, PublishEndAt.Value) : null;
 
-    /// <summary>Sets the publish window. Returns true when the change must go through approval again.</summary>
-    public bool SetSchedule(PublishWindow window)
+    public DailySchedule? GetDailySchedule() =>
+        DailyStartMinutes.HasValue && DailyEndMinutes.HasValue
+            ? new DailySchedule(DailyStartMinutes.Value, DailyEndMinutes.Value, ActiveDays)
+            : null;
+
+    /// <summary>
+    /// Sets the publish window and, optionally, the daily hours inside it. Returns true when the change must go
+    /// through approval again (a schedule that was already set was changed in any way).
+    /// </summary>
+    public bool SetSchedule(PublishWindow window, DailySchedule? daily = null)
     {
-        var changed = PublishStartAt != window.Start || PublishEndAt != window.End;
+        daily?.Validate();
+
+        var changed = PublishStartAt != window.Start || PublishEndAt != window.End || GetDailySchedule() != daily;
         var hadSchedule = PublishStartAt.HasValue;
 
         PublishStartAt = window.Start;
         PublishEndAt = window.End;
+        DailyStartMinutes = daily?.StartMinutes;
+        DailyEndMinutes = daily?.EndMinutes;
+        ActiveDays = daily?.Days ?? DailySchedule.AllDays;
         UpdatedAt = DateTime.UtcNow;
 
         if (!changed || !hadSchedule)

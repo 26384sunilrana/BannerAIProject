@@ -17,6 +17,9 @@ public class BannerResponseDto
     /// <summary>When the banner is shown (UTC); null until a schedule is set.</summary>
     public DateTime? PublishStartAt { get; set; }
     public DateTime? PublishEndAt { get; set; }
+    public int? DailyStartMinutes { get; set; }
+    public int? DailyEndMinutes { get; set; }
+    public int ActiveDays { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
@@ -34,6 +37,9 @@ public class BannerResponseDto
             ComponentCount = banner.Components.Count,
             PublishStartAt = banner.PublishStartAt,
             PublishEndAt = banner.PublishEndAt,
+            DailyStartMinutes = banner.DailyStartMinutes,
+            DailyEndMinutes = banner.DailyEndMinutes,
+            ActiveDays = banner.ActiveDays,
             CreatedAt = banner.CreatedAt,
             UpdatedAt = banner.UpdatedAt
         };

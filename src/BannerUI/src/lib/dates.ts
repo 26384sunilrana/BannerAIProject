@@ -30,15 +30,17 @@ export function checkWindow(startLocal: string, endLocal: string, now = new Date
   return { valid: true }
 }
 
-const day = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
-const time = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' })
-
-/** "Mon 3 Nov, 9:00 AM – 12:00 PM", or both dates when it runs across days. */
-export function formatWindow(startIso: string | null | undefined, endIso: string | null | undefined): string {
+/** "Mon 3 Nov, 9:00 AM – 12:00 PM", or both dates when it runs across days. In the given zone, or the visitor's own when none is given. */
+export function formatWindow(startIso: string | null | undefined, endIso: string | null | undefined, zone?: string): string {
   if (!startIso || !endIso) return 'No schedule'
   const start = new Date(startIso)
   const end = new Date(endIso)
-  const sameDay = start.toDateString() === end.toDateString()
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 'No schedule'
+
+  const day = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short', timeZone: zone })
+  const time = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', timeZone: zone })
+  const sameDay = day.format(start) === day.format(end) && end.getTime() - start.getTime() < 24 * 3600 * 1000
+
   return sameDay
     ? `${day.format(start)}, ${time.format(start)} – ${time.format(end)}`
     : `${day.format(start)}, ${time.format(start)} – ${day.format(end)}, ${time.format(end)}`

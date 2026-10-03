@@ -67,3 +67,9 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
   - Video lengths come from the file header; files without one (some recorded WebM) play to their end, and "seconds each" still works.
   - The older separate Effects and Carousel API (`/api/banners/{id}/components/{id}/effects`, `/carousels`) is still in the API but nothing uses it: settings now live in the component itself so they are saved, versioned, previewed and approved with the banner. Remove it with the next clean-up of the API.
   - Shown links to the pictures and videos of a rotation are made when the banner opens (one request per file); a very long list means that many requests.
+
+## Left after bolt 038
+- Chrome run of the scheduling screens, calendar and default board designer against the real API.
+- Restore of an old version should keep the last approved version live; `PublishWorkflow.Publish` IsPublished handling.
+- Calendar shows one week at a time; no month view or drag to reschedule.
+- A logo above about 400 KB is not kept offline.

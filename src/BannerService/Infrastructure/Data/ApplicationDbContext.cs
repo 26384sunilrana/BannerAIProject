@@ -81,6 +81,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.RegionName).HasMaxLength(128);
             entity.Property(e => e.PhoneCode).HasMaxLength(10);
             entity.HasIndex(e => e.Name).HasName("IX_Countries_Name");
+            entity.Property(e => e.TimeZoneId).HasMaxLength(100);
             entity.Property(e => e.UniqueId).HasMaxLength(16);
             entity.HasIndex(e => e.UniqueId).HasDatabaseName("IX_Countries_UniqueId").IsUnique().HasFilter("[UniqueId] IS NOT NULL");
         });
@@ -110,6 +111,7 @@ public class ApplicationDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
             entity.Property(e => e.UniqueId).HasMaxLength(16).IsRequired();
+            entity.Property(e => e.TimeZoneId).HasMaxLength(100);
 
             entity.HasOne(e => e.State)
                 .WithMany(s => s.Cities)
@@ -208,6 +210,10 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.GroupId)
                 .OnDelete(DeleteBehavior.NoAction);
 
+            entity.Property(e => e.TimeZoneId).HasMaxLength(100);
+            entity.Property(e => e.DefaultBoardMessage).HasMaxLength(200);
+            entity.Property(e => e.DefaultBoardBackground).HasMaxLength(7);
+            entity.Property(e => e.DefaultBoardTextColor).HasMaxLength(7);
             entity.Property(e => e.UniqueId).HasMaxLength(16);
             entity.HasIndex(e => e.UniqueId).HasDatabaseName("IX_Shops_UniqueId").IsUnique().HasFilter("[UniqueId] IS NOT NULL");
             entity.HasIndex(e => e.CityId).HasDatabaseName("IX_Shops_CityId");
@@ -234,6 +240,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Width).IsRequired();
             entity.Property(e => e.Height).IsRequired();
             entity.Property(e => e.IsPublished).HasDefaultValue(false);
+            entity.Property(e => e.ActiveDays).HasDefaultValue(DailySchedule.AllDays);
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.UpdatedAt).IsRequired();
 

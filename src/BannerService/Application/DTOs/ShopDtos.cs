@@ -73,6 +73,11 @@ namespace BannerService.Application.DTOs
         public string? GroupName { get; set; }
         public string? GroupUniqueId { get; set; }
 
+        /// <summary>The time zone the shop works in (its own, its city's, its country's, or UTC) and which of those it came from.</summary>
+        public string TimeZoneId { get; set; } = "UTC";
+        public string TimeZoneSource { get; set; } = "default";
+        public string? OwnTimeZoneId { get; set; }
+
         // Address details
         public string? Address { get; set; }
         public string? City { get; set; }

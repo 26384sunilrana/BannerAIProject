@@ -13,6 +13,8 @@ import { Roles } from '@/lib/session'
 import { BannerSummary, PublishWorkflow, WorkflowStatus } from '@/types/workflow'
 import { MyApprovalRole } from '@/types/team'
 import { formatWindow } from '@/lib/dates'
+import { describeDaily } from '@/lib/timeZones'
+import { useShopTimeZone } from '@/hooks/useShopTimeZone'
 import { ReasonDialog } from './ReasonDialog'
 import { StatusBadge } from './StatusBadge'
 
@@ -33,6 +35,7 @@ const NEEDS_ATTENTION: WorkflowStatus[] = ['PendingApproval', 'Approved', 'Draft
 
 function Approvals() {
   const { user } = useAuth()
+  const zone = useShopTimeZone()
   const shopId = user?.shopId ?? null
   const toast = useToast()
 
@@ -157,7 +160,7 @@ function Approvals() {
                       Submitted {new Date(workflow.submittedAt).toLocaleString()}
                     </p>
                     <p className="text-sm text-gray-700" data-testid="approval-schedule">
-                      Shown: {formatWindow(banners[workflow.bannerId]?.publishStartAt, banners[workflow.bannerId]?.publishEndAt)}
+                      Shown: {formatWindow(banners[workflow.bannerId]?.publishStartAt, banners[workflow.bannerId]?.publishEndAt, zone.timeZoneId)}{banners[workflow.bannerId]?.dailyStartMinutes != null && ` · ${describeDaily(banners[workflow.bannerId]?.dailyStartMinutes, banners[workflow.bannerId]?.dailyEndMinutes, banners[workflow.bannerId]?.activeDays)}`}
                     </p>
                   </div>
                   <StatusBadge status={workflow.status} />

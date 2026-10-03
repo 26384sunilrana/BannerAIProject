@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext'
 import { Roles } from '@/lib/session'
 import { ActiveBanner, bannerListService } from '@/api/workflowService'
 import { formatWindow } from '@/lib/dates'
+import { useShopTimeZone } from '@/hooks/useShopTimeZone'
 import { subscriptionService, ShopSubscription } from '@/api/subscriptionService'
 import { subscriptionNotice } from '@/lib/subscriptionNotice'
 import { SubscriptionNoticeCard } from '@/components/SubscriptionNoticeCard'
@@ -20,6 +21,8 @@ interface Card {
 
 const CARDS: Card[] = [
   { href: '/banners', title: 'Banners', text: 'Create banners, open the editor and send them for approval.', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
+  { href: '/banners/calendar', title: 'Schedule calendar', text: 'See when each banner is shown during the week, on your shop clock.', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
+  { href: '/default-board', title: 'Default board', text: 'Design what your screen shows when no banner is live: a message, colours and your logo.', roles: [Roles.ShopOwner] },
   { href: '/media', title: 'My files', text: 'Your uploaded pictures and videos, how much space they use, and what is safe to delete.', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/approvals', title: 'Approvals', text: 'See what is waiting for approval, publish approved banners.', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/team', title: 'Team', text: 'Add or remove sales executive logins and choose who approves banners.', roles: [Roles.ShopOwner] },
@@ -42,6 +45,7 @@ export default function DashboardPage() {
 
 function Welcome() {
   const { user, hasRole } = useAuth()
+  const zone = useShopTimeZone()
   const cards = CARDS.filter((card) => card.roles.some((role) => hasRole(role)))
   const [active, setActive] = useState<ActiveBanner | null>(null)
   const inShop = hasRole(Roles.ShopOwner) || hasRole(Roles.SalesExecutive)
@@ -74,7 +78,7 @@ function Welcome() {
           {active.banner ? (
             <>
               <span className="font-medium text-gray-900">Now showing: {active.banner.name}</span>
-              <span className="text-gray-600"> · {formatWindow(active.banner.publishStartAt, active.banner.publishEndAt)}</span>
+              <span className="text-gray-600"> · {formatWindow(active.banner.publishStartAt, active.banner.publishEndAt, zone.timeZoneId)}</span>
             </>
           ) : (
             <span className="text-gray-700">

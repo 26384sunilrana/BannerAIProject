@@ -68,4 +68,20 @@ public class BannerScheduleController : ControllerBase
     {
         return Ok(await _service.GetActiveBannerAsync(GetShopId(), DateTime.UtcNow));
     }
+
+    /// <summary>When each scheduled banner is shown between two moments (UTC), with daily hours applied in the shop's time zone.</summary>
+    [HttpGet("schedule/calendar")]
+    [ProducesResponseType(typeof(ScheduleCalendarDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetCalendar([FromQuery] DateTime from, [FromQuery] DateTime to)
+    {
+        try
+        {
+            return Ok(await _service.GetCalendarAsync(GetShopId(), from, to));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

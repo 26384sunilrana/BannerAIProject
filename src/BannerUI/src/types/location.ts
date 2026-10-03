@@ -13,6 +13,8 @@ export interface LocationItem {
   /** States in a country, cities in a state, groups in a city. */
   childCount: number
   shopCount: number
+  /** Countries and cities: the time zone shops there follow (IANA name), or null. */
+  timeZoneId?: string | null
 }
 
 export interface GroupShop {

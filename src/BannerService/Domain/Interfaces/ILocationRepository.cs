@@ -3,7 +3,7 @@ namespace BannerService.Domain.Interfaces
     using Entities;
 
     /// <summary>One line of a location list: any level of the hierarchy, with how much hangs under it.</summary>
-    public record LocationRow(string Id, string? UniqueId, string Name, string? Code, string? ParentId, bool IsActive, int ChildCount, int ShopCount);
+    public record LocationRow(string Id, string? UniqueId, string Name, string? Code, string? ParentId, bool IsActive, int ChildCount, int ShopCount, string? TimeZoneId = null);
 
     public enum LocationLevel { Country, State, City, Group }
 

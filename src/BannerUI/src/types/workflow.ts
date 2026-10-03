@@ -38,6 +38,11 @@ export interface BannerSummary {
   description: string
   width: number
   height: number
+  /** Hours of the day (shop time, minutes after midnight) the banner is shown within its dates; null = all the time. */
+  dailyStartMinutes?: number | null
+  dailyEndMinutes?: number | null
+  /** Weekdays the daily hours apply to: Sunday 1, Monday 2 ... Saturday 64. */
+  activeDays?: number
   isPublished: boolean
   componentCount: number
   /** When the banner is shown (UTC); null until a schedule is set. */

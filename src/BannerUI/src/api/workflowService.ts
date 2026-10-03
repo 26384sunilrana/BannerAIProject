@@ -53,6 +53,28 @@ export interface ActiveBanner {
   reason?: string | null
 }
 
+/** Hours of the day (the shop's clock) a banner is shown within its dates. */
+export interface DailyHours {
+  startMinutes: number
+  endMinutes: number
+  /** Weekdays: Sunday 1, Monday 2 ... Saturday 64. */
+  days: number
+}
+
+export interface CalendarEntry {
+  bannerId: string
+  name: string
+  startUtc: string
+  endUtc: string
+  /** Approved and published, so it really will be shown. */
+  published: boolean
+}
+
+export interface ScheduleCalendar {
+  timeZoneId: string
+  entries: CalendarEntry[]
+}
+
 export const bannerListService = {
   list(): Promise<BannerSummary[]> {
     return apiClient.get<BannerSummary[]>('/banners')
@@ -63,8 +85,19 @@ export const bannerListService = {
   },
 
   /** Sets when the banner is shown. Overlapping another banner of the shop is refused (409). */
-  setSchedule(bannerId: string, startAtIso: string, endAtIso: string): Promise<ScheduleResult> {
-    return apiClient.put<ScheduleResult>(`/banners/${bannerId}/schedule`, { startAt: startAtIso, endAt: endAtIso })
+  setSchedule(bannerId: string, startAtIso: string, endAtIso: string, daily?: DailyHours | null): Promise<ScheduleResult> {
+    return apiClient.put<ScheduleResult>(`/banners/${bannerId}/schedule`, {
+      startAt: startAtIso,
+      endAt: endAtIso,
+      dailyStartMinutes: daily?.startMinutes ?? null,
+      dailyEndMinutes: daily?.endMinutes ?? null,
+      activeDays: daily?.days ?? null,
+    })
+  },
+
+  /** When each scheduled banner is shown between two moments (at most 62 days), in the shop's time zone. */
+  getCalendar(fromIso: string, toIso: string): Promise<ScheduleCalendar> {
+    return apiClient.get<ScheduleCalendar>(`/banners/schedule/calendar?from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`)
   },
 
   /** The banner live right now, or useDefaultBanner when the shop falls back to the one on its own machine. */

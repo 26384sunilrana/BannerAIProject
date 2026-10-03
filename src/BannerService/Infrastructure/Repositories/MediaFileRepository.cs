@@ -108,7 +108,13 @@ public class MediaFileRepository : IMediaFileRepository
                              where b.ShopId == shopId && v.SnapshotJson.Contains(needle)
                              select b.Name).Distinct().ToListAsync();
 
-        return current.Union(earlier).OrderBy(n => n).ToList();
+        var names = current.Union(earlier).OrderBy(n => n).ToList();
+
+        // the logo on the shop's default board counts as a use too
+        if (await _context.Shops.AnyAsync(sh => sh.Id == shopId && sh.DefaultBoardLogoMediaId == mediaFileId))
+            names.Add("the default board");
+
+        return names;
     }
 
     public async Task<List<MediaFile>> GetAbandonedAsync(DateTime pendingBefore)

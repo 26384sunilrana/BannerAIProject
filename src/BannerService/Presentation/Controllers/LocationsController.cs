@@ -56,6 +56,12 @@ namespace BannerService.Presentation.Controllers
         public bool IsActive { get; set; } = true;
     }
 
+    public class SetLocationTimeZoneRequest
+    {
+        /// <summary>An IANA name such as Asia/Kolkata; null or empty to clear it.</summary>
+        public string? TimeZoneId { get; set; }
+    }
+
     public class SetShopLocationRequest
     {
         public int CityId { get; set; }
@@ -213,6 +219,24 @@ namespace BannerService.Presentation.Controllers
             return result.Succeeded ? Ok(new { message = result.Message }) : Failure(result.Outcome, result.Message);
         }
 
+        // ----- time zones
+
+        [HttpPut("countries/{isoCode}/time-zone")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> SetCountryTimeZone(string isoCode, [FromBody] SetLocationTimeZoneRequest request)
+        {
+            var result = await _locations.SetCountryTimeZoneAsync(isoCode.ToUpperInvariant(), request.TimeZoneId);
+            return result.Succeeded ? Ok(Row(result.Value!)) : Failure(result.Outcome, result.Message);
+        }
+
+        [HttpPut("cities/{id:int}/time-zone")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> SetCityTimeZone(int id, [FromBody] SetLocationTimeZoneRequest request)
+        {
+            var result = await _locations.SetCityTimeZoneAsync(id, request.TimeZoneId);
+            return result.Succeeded ? Ok(Row(result.Value!)) : Failure(result.Outcome, result.Message);
+        }
+
         // ----- a shop's own place in the hierarchy
 
         /// <summary>The shop owner (or an administrator) places the shop in a city and, optionally, a group of that city.</summary>
@@ -235,9 +259,9 @@ namespace BannerService.Presentation.Controllers
             _ => BadRequest(new { message }),
         };
 
-        private static LocationRow Row(Country c) => new(c.ISOCode, c.UniqueId, c.Name, c.ISOCode, null, c.IsActive, 0, 0);
+        private static LocationRow Row(Country c) => new(c.ISOCode, c.UniqueId, c.Name, c.ISOCode, null, c.IsActive, 0, 0, c.TimeZoneId);
         private static LocationRow Row(State s) => new(s.Id.ToString(), s.UniqueId, s.Name, s.Code, s.CountryCode, s.IsActive, 0, 0);
-        private static LocationRow Row(City c) => new(c.Id.ToString(), c.UniqueId, c.Name, null, c.StateId.ToString(), c.IsActive, 0, 0);
+        private static LocationRow Row(City c) => new(c.Id.ToString(), c.UniqueId, c.Name, null, c.StateId.ToString(), c.IsActive, 0, 0, c.TimeZoneId);
         private static LocationRow Row(LocationGroup g) => new(g.Id.ToString(), g.UniqueId, g.Name, null, g.CityId.ToString(), g.IsActive, 0, 0);
     }
 }

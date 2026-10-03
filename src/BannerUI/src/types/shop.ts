@@ -21,6 +21,11 @@ export interface ShopDto extends ShopLocation {
   cityUniqueId?: string | null;
   groupName?: string | null;
   groupUniqueId?: string | null;
+  /** The time zone the shop works in, and where it came from (shop, city, country or default). */
+  timeZoneId?: string;
+  timeZoneSource?: string;
+  /** The shop's own setting; null when it follows its city or country. */
+  ownTimeZoneId?: string | null;
   name: string;
   description?: string;
   parentShopId?: string;

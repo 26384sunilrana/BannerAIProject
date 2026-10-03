@@ -19,9 +19,9 @@ namespace BannerService.Infrastructure.Repositories
             var rows = await _context.Countries
                 .Where(c => includeInactive || c.IsActive)
                 .OrderBy(c => c.Name)
-                .Select(c => new { c.ISOCode, c.UniqueId, c.Name, c.IsActive, States = c.States.Count, Shops = c.Shops.Count })
+                .Select(c => new { c.ISOCode, c.UniqueId, c.Name, c.IsActive, c.TimeZoneId, States = c.States.Count, Shops = c.Shops.Count })
                 .ToListAsync();
-            return rows.Select(c => new LocationRow(c.ISOCode, c.UniqueId, c.Name, c.ISOCode, null, c.IsActive, c.States, c.Shops)).ToList();
+            return rows.Select(c => new LocationRow(c.ISOCode, c.UniqueId, c.Name, c.ISOCode, null, c.IsActive, c.States, c.Shops, c.TimeZoneId)).ToList();
         }
 
         public async Task<List<LocationRow>> ListStatesAsync(string? countryCode, bool includeInactive)
@@ -39,9 +39,9 @@ namespace BannerService.Infrastructure.Repositories
             var rows = await _context.Cities
                 .Where(c => (includeInactive || c.IsActive) && (stateId == null || c.StateId == stateId))
                 .OrderBy(c => c.Name)
-                .Select(c => new { c.Id, c.UniqueId, c.Name, c.StateId, c.IsActive, Groups = c.Groups.Count, Shops = c.Shops.Count })
+                .Select(c => new { c.Id, c.UniqueId, c.Name, c.StateId, c.IsActive, c.TimeZoneId, Groups = c.Groups.Count, Shops = c.Shops.Count })
                 .ToListAsync();
-            return rows.Select(c => new LocationRow(c.Id.ToString(), c.UniqueId, c.Name, null, c.StateId.ToString(), c.IsActive, c.Groups, c.Shops)).ToList();
+            return rows.Select(c => new LocationRow(c.Id.ToString(), c.UniqueId, c.Name, null, c.StateId.ToString(), c.IsActive, c.Groups, c.Shops, c.TimeZoneId)).ToList();
         }
 
         public async Task<List<LocationRow>> ListGroupsAsync(int? cityId, bool includeInactive)
@@ -156,6 +156,13 @@ namespace BannerService.Infrastructure.Repositories
 
             foreach (var c in await _context.Countries.Where(c => c.UniqueId == null).ToListAsync()) { c.UniqueId = Fresh("CNT"); changed++; }
             foreach (var s in await _context.States.Where(s => s.UniqueId == null).ToListAsync()) { s.UniqueId = Fresh("STA"); changed++; }
+
+            // countries that should have a time zone (the ones the product is sold in) get it when they have none
+            var zones = new Dictionary<string, string> { ["IN"] = "Asia/Kolkata" };
+            foreach (var c in await _context.Countries.Where(c => c.TimeZoneId == null).ToListAsync())
+            {
+                if (zones.TryGetValue(c.ISOCode, out var zone)) { c.TimeZoneId = zone; changed++; }
+            }
 
             // a shop that already pays for a subscription gets its identifier too
             var subscribed = await _context.Shops

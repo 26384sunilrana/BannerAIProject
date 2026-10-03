@@ -21,6 +21,15 @@ namespace BannerService.Domain.Entities
         /// <summary>Platform-wide identifier (SHP-...) given when the shop takes a subscription. Never changed.</summary>
         public string? UniqueId { get; set; }
 
+        /// <summary>The shop's own time zone (IANA name). Null means "use my city's, then my country's".</summary>
+        public string? TimeZoneId { get; set; }
+
+        // The shop's own default board, shown when no banner is live (colours are #rrggbb)
+        public string? DefaultBoardMessage { get; set; }
+        public string? DefaultBoardBackground { get; set; }
+        public string? DefaultBoardTextColor { get; set; }
+        public Guid? DefaultBoardLogoMediaId { get; set; }
+
         // Location - Details
         public string? Address { get; set; }
         public string? City { get; set; }

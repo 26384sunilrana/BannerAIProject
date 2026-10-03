@@ -54,6 +54,11 @@ export const locationService = {
     return apiClient.delete<{ message: string }>(`${BASE}/${level}/${encodeURIComponent(id)}`)
   },
 
+  /** Sets (or clears, with null) the time zone of a country or a city. */
+  setTimeZone(level: 'countries' | 'cities', id: string, timeZoneId: string | null): Promise<LocationItem> {
+    return apiClient.put<LocationItem>(`${BASE}/${level}/${encodeURIComponent(id)}/time-zone`, { timeZoneId })
+  },
+
   shopsInGroup(groupId: string): Promise<GroupShop[]> {
     return apiClient.get<GroupShop[]>(`${BASE}/groups/${groupId}/shops`)
   },

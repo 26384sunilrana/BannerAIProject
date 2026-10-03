@@ -4,10 +4,19 @@
  */
 const KEY = 'display_cache'
 
+export interface CachedLook {
+  message: string | null
+  background: string | null
+  textColor: string | null
+  /** The logo itself, as a data address, so the board still shows it with no connection. Null when there is none (or it was too big to keep). */
+  logoData: string | null
+}
+
 export interface DisplayCache {
   shopId: string
   shopName: string
   savedAt: number
+  look?: CachedLook | null
 }
 
 export function loadDisplayCache(): DisplayCache | null {
@@ -20,6 +29,9 @@ export function loadDisplayCache(): DisplayCache | null {
     return null
   }
 }
+
+/** A logo above this size is not kept on the machine (local storage is small); the board then shows it only while online. */
+export const MAX_CACHED_LOGO_CHARS = 400_000
 
 export function saveDisplayCache(cache: Omit<DisplayCache, 'savedAt'>): void {
   try {

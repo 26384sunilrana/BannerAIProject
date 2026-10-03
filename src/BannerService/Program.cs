@@ -107,6 +107,7 @@ builder.Services.AddScoped<BannerService.Application.Services.ShopTeamService>()
 builder.Services.AddScoped<BannerService.Application.Services.UserAdminService>();
 builder.Services.AddScoped<BannerService.Application.Services.ShopMembershipService>();
 builder.Services.AddScoped<BannerService.Application.Services.AccountService>();
+builder.Services.AddScoped<BannerService.Application.Services.ShopSettingsService>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<ISubscriptionNotificationRepository, SubscriptionNotificationRepository>();
 builder.Services.AddScoped<ISmsSender, BannerService.Infrastructure.Services.LoggingSmsSender>();

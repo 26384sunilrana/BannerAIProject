@@ -140,3 +140,8 @@ Manifests are in `deploy/k8s` (kustomize).
 - Also verified: the web app type-checks and `next build` succeeds, and the sign-up, login, subscription, team and approval
   screens were driven in Chrome against the real API and SQL Server (28 checks).
 - Not verified: Docker image builds (the Docker daemon was not running) and anything on a real cluster.
+
+## Time zones and the default board
+- Time zone names are IANA names. The API image needs time zone data (`tzdata`); a slim Linux image without it cannot read the zones. Install it in the image.
+- A shop uses its own zone, else its city's, else its country's, else UTC. Set the country and city zones in Admin, Places.
+- The shop screen keeps the default board design (and the logo, up to about 400 KB) in the machine's browser storage, so it still shows with no connection.

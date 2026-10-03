@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { Button, ConfirmDialog, Input } from '@/components/Common'
+import { TimeZoneSelect } from '@/components/location/TimeZoneSelect'
 import { LocationItem, NewLocation } from '@/types/location'
 
 export type AddKind = 'country' | 'state' | 'name'
@@ -23,15 +24,18 @@ interface Props {
   onRename: (item: LocationItem, name: string) => Promise<boolean>
   onToggle: (item: LocationItem) => Promise<void>
   onDelete: (item: LocationItem) => Promise<void>
+  /** Countries and cities can carry a time zone; give this to show and change it. */
+  onSetTimeZone?: (item: LocationItem, timeZoneId: string | null) => Promise<boolean>
 }
 
 export function LocationColumn({
-  title, noun, addKind, items, blockedReason, selectedId, childNoun, busy, onSelect, onAdd, onRename, onToggle, onDelete,
+  title, noun, addKind, items, blockedReason, selectedId, childNoun, busy, onSelect, onAdd, onRename, onToggle, onDelete, onSetTimeZone,
 }: Props) {
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null)
   const [toDelete, setToDelete] = useState<LocationItem | null>(null)
+  const [zoneFor, setZoneFor] = useState<{ id: string; value: string } | null>(null)
 
   const needsCode = addKind !== 'name'
   const canAdd = !blockedReason && name.trim().length > 0 && (!needsCode || code.trim().length > 0)
@@ -111,6 +115,11 @@ export function LocationColumn({
                       <span className={`font-medium ${item.isActive ? 'text-gray-900' : 'text-gray-400 line-through'}`}>{item.name}</span>
                       {!item.isActive && <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">Off</span>}
                       <span className="block font-mono text-xs text-gray-500">{item.uniqueId ?? 'no identifier yet'}</span>
+                      {onSetTimeZone && (
+                        <span className="block text-xs text-gray-500" data-testid="item-time-zone">
+                          {item.timeZoneId ? `Time zone: ${item.timeZoneId}` : 'No time zone set'}
+                        </span>
+                      )}
                       <span className="block text-xs text-gray-500">
                         {childNoun ? `${item.childCount} ${childNoun}${item.childCount === 1 ? '' : 's'} · ` : ''}
                         {item.shopCount} shop{item.shopCount === 1 ? '' : 's'}
@@ -120,6 +129,11 @@ export function LocationColumn({
                       <Button size="sm" variant="ghost" onClick={() => setEditing({ id: item.id, name: item.name })}>
                         Rename
                       </Button>
+                      {onSetTimeZone && (
+                        <Button size="sm" variant="ghost" onClick={() => setZoneFor({ id: item.id, value: item.timeZoneId ?? '' })}>
+                          Time zone
+                        </Button>
+                      )}
                       <Button size="sm" variant="ghost" disabled={busy} onClick={() => onToggle(item)}>
                         {item.isActive ? 'Switch off' : 'Switch on'}
                       </Button>
@@ -128,6 +142,32 @@ export function LocationColumn({
                       </Button>
                     </div>
                   </>
+                )}
+                {zoneFor?.id === item.id && onSetTimeZone && (
+                  <div className="mt-2 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-2">
+                    <TimeZoneSelect
+                      id={`zone-${item.id}`}
+                      label={`Time zone of ${item.name}`}
+                      value={zoneFor.value}
+                      onChange={(value) => setZoneFor({ id: item.id, value })}
+                      inheritLabel="Not set"
+                      alwaysOpen
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        disabled={busy}
+                        onClick={async () => {
+                          if (await onSetTimeZone(item, zoneFor.value || null)) setZoneFor(null)
+                        }}
+                      >
+                        Save time zone
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setZoneFor(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </li>
             ))}

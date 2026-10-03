@@ -7,9 +7,10 @@ import { BannerView } from '@/components/Display/BannerView'
 import { DefaultBoard } from '@/components/Display/DefaultBoard'
 import { bannerService } from '@/api/bannerService'
 import { bannerListService } from '@/api/workflowService'
-import { apiClient } from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
-import { loadDisplayCache, saveDisplayCache } from '@/lib/displayCache'
+import { defaultBoardService } from '@/api/defaultBoardService'
+import { BoardLook } from '@/components/Display/DefaultBoard'
+import { MAX_CACHED_LOGO_CHARS, loadDisplayCache, saveDisplayCache } from '@/lib/displayCache'
 import { Banner } from '@/types/banner'
 
 const POLL_MS = 30_000
@@ -32,6 +33,7 @@ export default function DisplayPage() {
   const [banner, setBanner] = useState<Banner | null>(null)
   const [reason, setReason] = useState<string | null>(null)
   const [shopName, setShopName] = useState('')
+  const [look, setLook] = useState<BoardLook | null>(null)
   const [ready, setReady] = useState(false)
   const [signedIn, setSignedIn] = useState(false)
   const [controlsVisible, setControlsVisible] = useState(false)
@@ -79,7 +81,10 @@ export default function DisplayPage() {
       return
     }
 
-    if (cache) setShopName(cache.shopName)
+    if (cache) {
+      setShopName(cache.shopName)
+      if (cache.look) setLook({ message: cache.look.message, background: cache.look.background, textColor: cache.look.textColor, logoUrl: cache.look.logoData })
+    }
     setSignedIn(!!user)
     setReady(true)
 
@@ -91,13 +96,21 @@ export default function DisplayPage() {
     }
 
     if (user.shopId) {
-      apiClient
-        .get<{ name: string }>(`/shops/${user.shopId}`)
-        .then((shop) => {
-          if (shop?.name) {
-            setShopName(shop.name)
-            saveDisplayCache({ shopId: user.shopId!, shopName: shop.name })
-          }
+      // The shop's own board design (and name). Kept on this machine, with the logo as data, so it shows with no connection.
+      defaultBoardService
+        .get(user.shopId)
+        .then(async (board) => {
+          setShopName(board.shopName)
+          const fresh: BoardLook = { message: board.message, background: board.background, textColor: board.textColor, logoUrl: board.logoUrl }
+          setLook(fresh)
+
+          const logoData = board.logoUrl ? await toDataAddress(board.logoUrl) : null
+          if (logoData) setLook({ ...fresh, logoUrl: logoData })
+          saveDisplayCache({
+            shopId: user.shopId!,
+            shopName: board.shopName,
+            look: { message: board.message, background: board.background, textColor: board.textColor, logoData },
+          })
         })
         .catch(() => undefined)
     }
@@ -139,7 +152,7 @@ export default function DisplayPage() {
       {banner ? (
         <BannerView banner={banner} />
       ) : (
-        <DefaultBoard shopName={shopName} note={reason ? NOTES[reason] : undefined} />
+        <DefaultBoard shopName={shopName} look={look} note={reason ? NOTES[reason] : undefined} />
       )}
 
       <div
@@ -154,4 +167,22 @@ export default function DisplayPage() {
       </div>
     </div>
   )
+}
+
+/** Fetches a picture and returns it as a data address, or null when it cannot be fetched or is too big to keep. */
+async function toDataAddress(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url)
+    if (!response.ok) return null
+    const blob = await response.blob()
+    const data = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result))
+      reader.onerror = () => reject(reader.error)
+      reader.readAsDataURL(blob)
+    })
+    return data.length <= MAX_CACHED_LOGO_CHARS ? data : null
+  } catch {
+    return null
+  }
 }

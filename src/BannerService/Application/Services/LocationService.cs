@@ -312,6 +312,41 @@ namespace BannerService.Application.Services
             return LocationResult<List<Shop>>.Ok(await _locations.ShopsInGroupAsync(groupId));
         }
 
+        // ----- time zones
+
+        public async Task<LocationResult<Country>> SetCountryTimeZoneAsync(string isoCode, string? timeZoneId)
+        {
+            var country = await _locations.FindCountryAsync(isoCode);
+            if (country == null)
+                return LocationResult<Country>.NotFound("Country not found");
+            if (CheckTimeZone(timeZoneId) is { } error)
+                return LocationResult<Country>.Invalid(error);
+
+            country.TimeZoneId = Clean(timeZoneId);
+            country.UpdatedAt = DateTime.UtcNow;
+            await _locations.SaveAsync();
+            return LocationResult<Country>.Ok(country);
+        }
+
+        public async Task<LocationResult<City>> SetCityTimeZoneAsync(int id, string? timeZoneId)
+        {
+            var city = await _locations.FindCityAsync(id);
+            if (city == null)
+                return LocationResult<City>.NotFound("City not found");
+            if (CheckTimeZone(timeZoneId) is { } error)
+                return LocationResult<City>.Invalid(error);
+
+            city.TimeZoneId = Clean(timeZoneId);
+            city.UpdatedAt = DateTime.UtcNow;
+            await _locations.SaveAsync();
+            return LocationResult<City>.Ok(city);
+        }
+
+        private static string? CheckTimeZone(string? timeZoneId) =>
+            string.IsNullOrWhiteSpace(timeZoneId) || TimeZones.TryGet(timeZoneId, out _)
+                ? null
+                : "That time zone is not known on this server. Use a name like Asia/Kolkata or Europe/London.";
+
         // ----- shops
 
         public async Task<LocationResult<Shop>> SetShopLocationAsync(Guid shopId, int cityId, int? groupId)

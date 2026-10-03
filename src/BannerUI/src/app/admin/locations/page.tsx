@@ -89,6 +89,11 @@ export default function AdminLocationsPage() {
     },
   })
 
+  const zoneHandler = (level: 'countries' | 'cities') => ({
+    onSetTimeZone: (item: LocationItem, timeZoneId: string | null) =>
+      attempt(() => locationService.setTimeZone(level, item.id, timeZoneId), `Time zone of ${item.name} saved`),
+  })
+
   // choosing a place clears everything chosen below it
   const selectCountry = (item: LocationItem | null) => {
     setCountry(item); setState(null); setCity(null); setGroup(null)
@@ -124,7 +129,7 @@ export default function AdminLocationsPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <LocationColumn
           title="Countries" noun="Country" addKind="country" childNoun="state" items={countries}
-          selectedId={country?.id ?? null} onSelect={selectCountry} {...handlers('countries', 'Country')}
+          selectedId={country?.id ?? null} onSelect={selectCountry} {...handlers('countries', 'Country')} {...zoneHandler('countries')}
         />
         <LocationColumn
           title="States" noun="State" addKind="state" childNoun="city" items={states}
@@ -134,7 +139,7 @@ export default function AdminLocationsPage() {
         <LocationColumn
           title="Cities" noun="City" addKind="name" childNoun="group" items={cities}
           blockedReason={state ? undefined : 'Choose a state first.'}
-          selectedId={city?.id ?? null} onSelect={selectCity} {...handlers('cities', 'City')}
+          selectedId={city?.id ?? null} onSelect={selectCity} {...handlers('cities', 'City')} {...zoneHandler('cities')}
         />
         <LocationColumn
           title="Groups" noun="Group" addKind="name" items={groups}
