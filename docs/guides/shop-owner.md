@@ -42,7 +42,8 @@ Open **My shop**, then **Edit**.
 ## 4. Your team and who approves
 Open **Team**.
 - Add up to **two sales executives** (their e-mail and a first password). They make banners and ads; they cannot approve, change the plan or hand over the shop.
-- Choose **who approves banners**: you, and/or an executive. You can hand the shop to an executive (your password is asked).
+- Choose **who approves banners**: you, and/or an executive. This is the only permission you hand to an executive. Executives you add can always make banners and book
+  ads (adding them is your approval; removing them ends it), and their ads always come to you to approve. You can hand the shop to an executive (your password is asked).
 - If you just took over a shop, a yellow notice asks you to **confirm the approvers**. Nothing can be approved until you do.
 
 ## 5. Banners

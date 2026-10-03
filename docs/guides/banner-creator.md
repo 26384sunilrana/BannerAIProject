@@ -22,12 +22,14 @@ Your owner gives you an e-mail and a first password. Sign in, then open **My acc
 passwords lock the login; ask your owner or the administrator to unlock it. Too many tries in a minute (for example many wrong passwords from one place) show a message to wait a minute; nothing is broken.
 
 ## 2. What you can and cannot do
-| You can | You cannot |
-|---|---|
-| Make and edit banners, set schedules, upload files | Approve or publish banners (unless the owner made you an approver) |
-| Submit banners for approval | Change the plan, the team or the shop's details |
-| Book ads (they wait for the owner) | Hand over or take over the shop |
-| See the calendar, the shop screen and all the shop's ads | See the monthly ad statement |
+| Always, once the owner has added you | Only if the owner chose you | Never |
+|---|---|---|
+| Make and edit banners, set schedules, upload files; submit banners for approval; book ads (they wait for the owner); see the calendar, Screens and the shop's ads | **Approve or reject banners**, and publish them: the owner turns this on for you under **Team → Who approves banners** | Approve ads (only the owner does); change the plan, the team or the shop's details; hand over or take over the shop; see the monthly ad statement |
+
+**Who decides what.** Adding you to **Team** is the owner's approval for you to create banners and book ads; there is no separate switch for either. Removing you
+from the team ends it. What your owner *can* choose for you is approving banners: the owner alone, the owner and/or you, or the other executive. When you are an
+approver, **Approvals** shows the banners waiting and you can approve or reject them with a reason; when you are not, you only submit. A banner you made
+can be approved by you only if the owner made you an approver. Ads are different: **every ad an executive books is approved by the owner**, whoever is an approver.
 
 ## 3. Making a banner
 **Banners → Create banner** (name, width and height in pixels) → **Open editor**.
