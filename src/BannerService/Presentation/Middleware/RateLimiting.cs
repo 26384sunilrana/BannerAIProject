@@ -28,7 +28,7 @@ public static class RateLimitRules
     public static RateClass Classify(string? path, string? method)
     {
         path ??= string.Empty;
-        if (path.StartsWith("/health", StringComparison.OrdinalIgnoreCase)) return RateClass.None;
+        if (path.StartsWith("/health", StringComparison.OrdinalIgnoreCase) || path.StartsWith("/metrics", StringComparison.OrdinalIgnoreCase)) return RateClass.None;
         if (path.StartsWith("/api/authentication/refresh", StringComparison.OrdinalIgnoreCase)) return RateClass.Refresh;
         if (path.StartsWith("/api/authentication", StringComparison.OrdinalIgnoreCase)) return RateClass.Authentication;
         if (path.StartsWith("/api/media/upload", StringComparison.OrdinalIgnoreCase)
@@ -58,6 +58,7 @@ public static class RateLimiting
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             options.OnRejected = async (context, token) =>
             {
+                Infrastructure.Monitoring.BusinessMetrics.RateLimited.WithLabels(RateLimitRules.Classify(context.HttpContext.Request.Path.Value, context.HttpContext.Request.Method).ToString().ToLowerInvariant()).Inc();
                 if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var wait))
                     context.HttpContext.Response.Headers.RetryAfter = ((int)Math.Ceiling(wait.TotalSeconds)).ToString();
 

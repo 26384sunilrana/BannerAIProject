@@ -1,0 +1,45 @@
+# Alert rules for Prometheus (or Azure Monitor managed Prometheus). Scrape the API at /metrics (with Metrics__Token as a bearer token in production).
+# What to do for each alert: docs/RUNBOOK.md
+groups:
+  - name: bannerai
+    rules:
+      - alert: BannerApiDown
+        expr: up{job="banner-api"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations: { summary: "The BannerAI API cannot be scraped", runbook: "docs/RUNBOOK.md#api-down" }
+
+      - alert: BannerApiErrors
+        expr: sum(rate(http_requests_received_total{job="banner-api", code=~"5.."}[5m])) / sum(rate(http_requests_received_total{job="banner-api"}[5m])) > 0.05
+        for: 10m
+        labels: { severity: critical }
+        annotations: { summary: "More than 5% of API requests fail", runbook: "docs/RUNBOOK.md#many-errors" }
+
+      - alert: BannerJobLate
+        expr: bannerai_job_late == 1
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: "Background job {{ $labels.job }} is late", runbook: "docs/RUNBOOK.md#a-background-job-stopped" }
+
+      - alert: BannerSignInAttack
+        expr: bannerai_failed_sign_ins_5m > 30
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: "Many refused sign-ins: someone may be guessing passwords", runbook: "docs/RUNBOOK.md#many-failed-sign-ins" }
+
+      - alert: BannerRateLimiting
+        expr: sum(increase(bannerai_rate_limited_total[10m])) > 200
+        labels: { severity: warning }
+        annotations: { summary: "Many requests are being refused by the rate limits", runbook: "docs/RUNBOOK.md#many-failed-sign-ins" }
+
+      - alert: BannerAdsWaitingForReview
+        expr: bannerai_ads_waiting{kind="compliance"} > 0
+        for: 1d
+        labels: { severity: info }
+        annotations: { summary: "Ads have waited a day for a compliance review", runbook: "docs/RUNBOOK.md#ads-waiting-for-review" }
+
+      - alert: BannerLockedLogins
+        expr: bannerai_users_locked_out > 5
+        for: 30m
+        labels: { severity: info }
+        annotations: { summary: "Several logins are locked", runbook: "docs/RUNBOOK.md#many-logins-locked" }

@@ -10,6 +10,7 @@ using BannerService.Infrastructure.Repositories;
 using BannerService.Infrastructure.Storage;
 using BannerService.Application.Services;
 using BannerService.Presentation.Middleware;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -191,6 +192,13 @@ builder.Services.AddAuthorization();
 // Limits on how fast one caller can use the API (see RateLimiting:* in configuration)
 builder.Services.AddAppRateLimiting(builder.Configuration);
 
+// Health: /health/live (the process is up), /health/ready (database, media folder, background jobs); metrics at /metrics; the watchdog tells administrators about trouble
+builder.Services.AddHealthChecks()
+    .AddCheck<BannerService.Infrastructure.Monitoring.DatabaseHealthCheck>("database", tags: new[] { "ready" })
+    .AddCheck<BannerService.Infrastructure.Monitoring.StorageHealthCheck>("storage", tags: new[] { "ready" })
+    .AddCheck<BannerService.Infrastructure.Monitoring.JobsHealthCheck>("jobs", tags: new[] { "ready" });
+builder.Services.AddHostedService<BannerService.Infrastructure.Monitoring.OpsWatchdog>();
+
 // Keys for field-level encryption. Production should keep them in a protected store (Azure Blob + Key Vault);
 // see Security:KeyDirectory and Security:EncryptionEnabled in configuration.
 if (builder.Configuration.GetValue("Security:EncryptionEnabled", true))
@@ -342,6 +350,7 @@ if (!app.Environment.IsProduction() || app.Configuration.GetValue("Swagger:Enabl
 if (app.Configuration.GetValue("Security:RequireHttpsRedirect", true))
     app.UseHttpsRedirection();
 app.UseCors();
+app.UseHttpMetrics(); // request counts and durations for /metrics
 
 // Custom middleware
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
@@ -355,6 +364,36 @@ app.UseMiddleware<ShopContextMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Liveness and readiness for the orchestrator. Ready answers 503 when the database or the media folder fails; a late background job only degrades.
+static Task WriteHealth(HttpContext context, Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport report)
+{
+    context.Response.ContentType = "application/json";
+    return context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new
+    {
+        status = report.Status.ToString().ToLowerInvariant(),
+        checks = report.Entries.ToDictionary(e => e.Key, e => new { status = e.Value.Status.ToString().ToLowerInvariant(), detail = e.Value.Description }),
+    }));
+}
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions { Predicate = _ => false, ResponseWriter = WriteHealth });
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions { Predicate = check => check.Tags.Contains("ready"), ResponseWriter = WriteHealth });
+
+// /metrics: on by default outside production; in production only when Metrics:Token is set (then it must be sent as "Authorization: Bearer <token>")
+BannerService.Infrastructure.Monitoring.BusinessMetrics.Register(app.Services.GetRequiredService<IServiceScopeFactory>());
+var metricsToken = app.Configuration["Metrics:Token"];
+var metricsOn = app.Configuration.GetValue("Metrics:Enabled", !app.Environment.IsProduction() || !string.IsNullOrEmpty(metricsToken));
+if (metricsOn)
+{
+    app.MapMetrics("/metrics").AddEndpointFilter(async (invocation, next) =>
+    {
+        if (string.IsNullOrEmpty(metricsToken)) return await next(invocation);
+        var header = invocation.HttpContext.Request.Headers.Authorization.ToString();
+        var sent = header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? header[7..] : string.Empty;
+        return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(System.Text.Encoding.UTF8.GetBytes(sent), System.Text.Encoding.UTF8.GetBytes(metricsToken))
+            ? await next(invocation)
+            : Results.Unauthorized();
+    });
+}
 
 // Health check endpoint
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))

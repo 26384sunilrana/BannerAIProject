@@ -1,6 +1,7 @@
 namespace BannerService.Infrastructure.Background;
 
 using Application.Services;
+using Monitoring;
 
 /// <summary>
 /// Tidies the media store on a timer: Media:Cleanup:Enabled=false turns it off, Media:Cleanup:IntervalHours sets how often (default 6).
@@ -28,6 +29,8 @@ public class MediaCleanupWorker : BackgroundService
 
         var hours = Math.Max(1, _configuration.GetValue("Media:Cleanup:IntervalHours", 6));
 
+        JobHeartbeats.Expect("media-cleanup", TimeSpan.FromHours(hours));
+
         try { await Task.Delay(TimeSpan.FromSeconds(60), stoppingToken); } catch (OperationCanceledException) { return; }
 
         using var timer = new PeriodicTimer(TimeSpan.FromHours(hours));
@@ -46,10 +49,12 @@ public class MediaCleanupWorker : BackgroundService
                     var removed = await scope.ServiceProvider.GetRequiredService<Domain.Interfaces.IAuditLogRepository>().PurgeAsync(DateTime.UtcNow.AddDays(-retention));
                     if (removed > 0) _logger.LogInformation("Removed {Count} audit entries older than {Days} days", removed, retention);
                 }
+                JobHeartbeats.Succeeded("media-cleanup");
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 _logger.LogError(ex, "Media clean-up failed");
+                JobHeartbeats.Failed("media-cleanup", ex.GetType().Name);
             }
         }
         while (await WaitAsync(timer, stoppingToken));

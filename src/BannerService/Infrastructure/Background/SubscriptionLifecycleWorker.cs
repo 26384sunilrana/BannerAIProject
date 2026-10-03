@@ -1,6 +1,7 @@
 namespace BannerService.Infrastructure.Background;
 
 using Application.Services;
+using Monitoring;
 
 /// <summary>
 /// Runs the subscription lifecycle (renewals, reminders, grace and expiry) on a timer.
@@ -30,6 +31,8 @@ public class SubscriptionLifecycleWorker : BackgroundService
 
         var minutes = Math.Max(1, _configuration.GetValue("Subscriptions:LifecycleIntervalMinutes", 60));
 
+        JobHeartbeats.Expect("subscription-lifecycle", TimeSpan.FromMinutes(minutes));
+
         // Let start-up (migrations) finish before the first run
         try { await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken); } catch (OperationCanceledException) { return; }
 
@@ -43,10 +46,12 @@ public class SubscriptionLifecycleWorker : BackgroundService
                 _logger.LogInformation(
                     "Subscription lifecycle: {Renewed} renewed, {Failed} payments failed, {Grace} entered grace, {Expired} expired, {Messages} messages sent",
                     report.AutoRenewed, report.RenewalsFailed, report.EnteredGrace, report.Expired, report.MessagesSent);
+                JobHeartbeats.Succeeded("subscription-lifecycle");
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 _logger.LogError(ex, "Subscription lifecycle run failed");
+                JobHeartbeats.Failed("subscription-lifecycle", ex.GetType().Name);
             }
         }
         while (await WaitAsync(timer, stoppingToken));
