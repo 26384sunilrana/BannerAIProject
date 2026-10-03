@@ -181,6 +181,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.CreatedByUserId).IsRequired();
             entity.Property(e => e.OwnerIsApprover).HasDefaultValue(true);
             Json(entity.Property(e => e.ApproverUserIds));
+            Json(entity.Property(e => e.AdApproverUserIds));
 
             // Hierarchy configuration (NoAction: SQL Server rejects self-referencing SET NULL/CASCADE; shops are archived, not deleted)
             entity.HasOne(e => e.ParentShop)

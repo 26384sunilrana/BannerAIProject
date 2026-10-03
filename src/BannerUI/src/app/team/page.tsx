@@ -46,11 +46,14 @@ function TeamManager() {
   const [ownerApproves, setOwnerApproves] = useState(true)
   const [approverIds, setApproverIds] = useState<string[]>([])
   const [savingApprovers, setSavingApprovers] = useState(false)
+  const [adApproverIds, setAdApproverIds] = useState<string[]>([])
+  const [savingAdApprovers, setSavingAdApprovers] = useState(false)
 
   const applyTeam = useCallback((loaded: ShopTeam) => {
     setTeam(loaded)
     setOwnerApproves(loaded.ownerIsApprover)
     setApproverIds(loaded.salesExecutives.filter((m) => m.isApprover).map((m) => m.userId))
+    setAdApproverIds(loaded.salesExecutives.filter((m) => m.isAdApprover).map((m) => m.userId))
   }, [])
 
   useEffect(() => {
@@ -84,6 +87,7 @@ function TeamManager() {
     ownerApproves !== team.ownerIsApprover ||
     [...approverIds].sort().join() !== team.salesExecutives.filter((m) => m.isApprover).map((m) => m.userId).sort().join()
   const noApprover = !ownerApproves && approverIds.length === 0
+  const adApproversChanged = [...adApproverIds].sort().join() !== team.salesExecutives.filter((m) => m.isAdApprover).map((m) => m.userId).sort().join()
 
   const setField = (field: keyof typeof EMPTY_FORM) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }))
@@ -172,6 +176,23 @@ function TeamManager() {
     }
   }
 
+  const saveAdApprovers = async () => {
+    setSavingAdApprovers(true)
+    try {
+      // the banner approvers are sent as they are saved, so only the ad list changes
+      const savedBanner = team.salesExecutives.filter((m) => m.isApprover).map((m) => m.userId)
+      applyTeam(await teamService.setApprovers(shopId, team.ownerIsApprover, savedBanner, adApproverIds))
+      toast.success('Ad approvers saved.')
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Could not save the ad approvers.'))
+    } finally {
+      setSavingAdApprovers(false)
+    }
+  }
+
+  const toggleAdApprover = (id: string) =>
+    setAdApproverIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+
   const toggleApprover = (id: string) =>
     setApproverIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
 
@@ -227,6 +248,9 @@ function TeamManager() {
                 <div className="flex items-center gap-3">
                   {member.isApprover && (
                     <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Approver</span>
+                  )}
+                  {member.isAdApprover && (
+                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">Approves ads</span>
                   )}
                   <Button variant="secondary" size="sm" onClick={() => setToHandOver(member)}>
                     Hand the shop over
@@ -318,6 +342,33 @@ function TeamManager() {
             Save approvers
           </Button>
         </fieldset>
+      </section>
+
+      <section aria-labelledby="ad-approvers-heading">
+        <h2 id="ad-approvers-heading" className="text-lg font-semibold text-gray-900">
+          Who approves ads booked by sales executives
+        </h2>
+        <p className="mt-1 text-sm text-gray-600">
+          You always can. Choose an executive here to let them approve or send back the ads <b>other</b> executives book. Nobody approves their own ads.
+        </p>
+        {team.salesExecutives.length === 0 ? (
+          <p className="mt-3 text-sm text-gray-600">Add a sales executive first.</p>
+        ) : (
+          <fieldset className="mt-3 max-w-xl space-y-3 rounded-xl border border-gray-200 bg-white p-5">
+            <legend className="sr-only">Ad approvers</legend>
+            {team.salesExecutives.map((member) => (
+              <label key={member.userId} className="flex items-center gap-3">
+                <input type="checkbox" checked={adApproverIds.includes(member.userId)} onChange={() => toggleAdApprover(member.userId)} />
+                <span className="text-gray-900">
+                  {member.fullName || member.email} <span className="text-sm text-gray-500">approves ads</span>
+                </span>
+              </label>
+            ))}
+            <Button onClick={saveAdApprovers} isLoading={savingAdApprovers} disabled={!adApproversChanged}>
+              Save ad approvers
+            </Button>
+          </fieldset>
+        )}
       </section>
 
       {toHandOver && (

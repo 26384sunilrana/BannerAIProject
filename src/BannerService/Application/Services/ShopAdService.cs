@@ -214,8 +214,13 @@ namespace BannerService.Application.Services
             await _ads.SaveAsync(ad, Event(ad, actor, auto ? "Approved" : "Submitted", auto ? ad.DecisionNote : null));
 
             if (ad.Source == ShopAdSource.SalesExecutive)
+            {
                 await _notifications.NotifyShopOwnersAsync(ad.ShopId, "AdSubmitted", "Ad waiting for approval",
                     $"{actor.Name} booked \"{ad.Headline}\" for {ad.AdvertiserName}.", "/ads");
+                var helpers = (shop?.AdApproverUserIds ?? new List<string>()).Where(i => !string.Equals(i, actor.UserId.ToString(), StringComparison.OrdinalIgnoreCase)).ToList();
+                if (helpers.Count > 0)
+                    await _notifications.NotifyUsersAsync(helpers, "AdSubmitted", "Ad waiting for approval", $"{actor.Name} booked \"{ad.Headline}\" for {ad.AdvertiserName}.", "/ads");
+            }
             else if (ad.Source == ShopAdSource.Admin)
                 await _notifications.NotifyShopOwnersAsync(ad.ShopId, "AdBookedByAdmin", ad.Kind == ShopAdKind.Mega ? "A major ad was booked on your screen" : "An ad was booked on your screen",
                     $"\"{ad.Headline}\" for {ad.AdvertiserName} runs on your screen from {ad.StartAt:d MMM yyyy} to {ad.EndAt:d MMM yyyy}.", "/ads");
@@ -227,10 +232,11 @@ namespace BannerService.Application.Services
         {
             var now = nowUtc ?? DateTime.UtcNow;
             var ad = await LoadAsync(actor, adId);
+            var decidingShop = await _shops.GetByIdAsync(ad.ShopId);
             if (ad.Status == ShopAdStatus.PendingCompliance) EnsureCanReview(actor);
-            else EnsureCanDecide(actor, ad);
+            else EnsureCanDecide(actor, ad, decidingShop);
             if (ad.Status is not (ShopAdStatus.PendingApproval or ShopAdStatus.PendingCompliance)) throw new InvalidOperationException("This ad is not waiting for approval.");
-            if (actor.Source == ShopAdSource.ShopOwner && (await _shops.GetByIdAsync(ad.ShopId))?.ApprovalReviewRequired == true)
+            if (actor.Source != ShopAdSource.Admin && decidingShop?.ApprovalReviewRequired == true)
                 throw new InvalidOperationException("This shop has a new owner. Open Team and confirm who approves before anything is approved.");
             if (ad.EndAt <= now) throw new InvalidOperationException("The ad would already be over. Send it back so the dates can be changed.");
 
@@ -265,7 +271,7 @@ namespace BannerService.Application.Services
         {
             var ad = await LoadAsync(actor, adId);
             if (ad.Status == ShopAdStatus.PendingCompliance) EnsureCanReview(actor);
-            else EnsureCanDecide(actor, ad);
+            else EnsureCanDecide(actor, ad, await _shops.GetByIdAsync(ad.ShopId));
             if (ad.Status is not (ShopAdStatus.PendingApproval or ShopAdStatus.PendingCompliance)) throw new InvalidOperationException("This ad is not waiting for approval.");
             if (string.IsNullOrWhiteSpace(reason)) throw new ArgumentException("Say why the ad is sent back.");
 
@@ -441,9 +447,14 @@ namespace BannerService.Application.Services
         }
 
         /// <summary>The owner decides on an executive's ad; the admin may decide on any.</summary>
-        private static void EnsureCanDecide(AdActor actor, ShopAd ad)
+        private static void EnsureCanDecide(AdActor actor, ShopAd ad, Shop? shop)
         {
-            if (actor.Source == ShopAdSource.SalesExecutive) throw new UnauthorizedAccessException("Only the shop owner can approve ads.");
+            if (actor.Source == ShopAdSource.SalesExecutive)
+            {
+                // an executive the owner named may decide on another executive's ad, never on their own
+                if (shop == null || !shop.CanApproveAds(actor.UserId)) throw new UnauthorizedAccessException("Only the shop owner, or an executive the owner chose, can approve ads.");
+                if (ad.CreatedByUserId == actor.UserId) throw new UnauthorizedAccessException("You cannot approve an ad you booked yourself.");
+            }
             if (ad.Source != ShopAdSource.SalesExecutive && actor.Source != ShopAdSource.Admin)
                 throw new UnauthorizedAccessException("This ad does not need your approval.");
         }
@@ -575,11 +586,11 @@ namespace BannerService.Application.Services
                 ShopSharePercent = ad.ShopSharePercent,
                 ComplianceNote = ad.ComplianceNote,
                 StoppedAt = ad.StoppedAt == null ? null : DateTime.SpecifyKind(ad.StoppedAt.Value, DateTimeKind.Utc),
-                Can = actor == null ? new List<string>() : Abilities(actor, ad),
+                Can = actor == null ? new List<string>() : Abilities(actor, ad, shop),
             };
         }
 
-        private static List<string> Abilities(AdActor actor, ShopAd ad)
+        private static List<string> Abilities(AdActor actor, ShopAd ad, Shop? shop)
         {
             var can = new List<string>();
             bool manage;
@@ -591,7 +602,7 @@ namespace BannerService.Application.Services
                 can.Add("override");
             if (ad.Status == ShopAdStatus.PendingApproval)
             {
-                try { EnsureCanDecide(actor, ad); can.Add("approve"); can.Add("reject"); } catch (UnauthorizedAccessException) { }
+                try { EnsureCanDecide(actor, ad, shop); can.Add("approve"); can.Add("reject"); } catch (UnauthorizedAccessException) { }
             }
             else if (ad.Status == ShopAdStatus.PendingCompliance && actor.Source == ShopAdSource.Admin)
             {

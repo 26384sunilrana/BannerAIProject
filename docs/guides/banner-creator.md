@@ -24,12 +24,12 @@ passwords lock the login; ask your owner or the administrator to unlock it. Too 
 ## 2. What you can and cannot do
 | Always, once the owner has added you | Only if the owner chose you | Never |
 |---|---|---|
-| Make and edit banners, set schedules, upload files; submit banners for approval; book ads (they wait for the owner); see the calendar, Screens and the shop's ads | **Approve or reject banners**, and publish them: the owner turns this on for you under **Team → Who approves banners** | Approve ads (only the owner does); change the plan, the team or the shop's details; hand over or take over the shop; see the monthly ad statement |
+| Make and edit banners, set schedules, upload files; submit banners for approval; book ads (they wait for approval); see the calendar, Screens and the shop's ads | **Approve or reject banners**, and publish them (**Team → Who approves banners**). **Approve or send back the ads other executives book** (**Team → Who approves ads**) | Approve your own ad; change the plan, the team or the shop's details; hand over or take over the shop; see the monthly ad statement |
 
 **Who decides what.** Adding you to **Team** is the owner's approval for you to create banners and book ads; there is no separate switch for either. Removing you
 from the team ends it. What your owner *can* choose for you is approving banners: the owner alone, the owner and/or you, or the other executive. When you are an
 approver, **Approvals** shows the banners waiting and you can approve or reject them with a reason; when you are not, you only submit. A banner you made
-can be approved by you only if the owner made you an approver. Ads are different: **every ad an executive books is approved by the owner**, whoever is an approver.
+can be approved by you only if the owner made you an approver. Ads have their own choice: an ad an executive books is approved by the owner, or by another executive the owner named under **Who approves ads**. Nobody approves an ad they booked themselves; that one always waits for someone else. If you are named, a waiting ad shows **Approve** and **Send back** under **Ads**, and you get a message when one is booked.
 
 ## 3. Making a banner
 **Banners → Create banner** (name, width and height in pixels) → **Open editor**.

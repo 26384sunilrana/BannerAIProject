@@ -18,8 +18,8 @@ export const teamService = {
     await apiClient.delete(`/shops/${shopId}/team/executives/${encodeURIComponent(userId)}`)
   },
 
-  setApprovers(shopId: string, ownerIsApprover: boolean, approverUserIds: string[]): Promise<ShopTeam> {
-    return apiClient.put<ShopTeam>(`/shops/${shopId}/team/approvers`, { ownerIsApprover, approverUserIds })
+  setApprovers(shopId: string, ownerIsApprover: boolean, approverUserIds: string[], adApproverUserIds?: string[]): Promise<ShopTeam> {
+    return apiClient.put<ShopTeam>(`/shops/${shopId}/team/approvers`, { ownerIsApprover, approverUserIds, adApproverUserIds })
   },
 
   /** After a takeover: the new owner keeps the approvers as they are. */

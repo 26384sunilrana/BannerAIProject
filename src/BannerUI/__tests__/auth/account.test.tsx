@@ -210,6 +210,21 @@ describe('Team page: handing the shop over', () => {
     await waitFor(() => expect(logout).toHaveBeenCalledWith('/login?handover=1'))
   })
 
+  it('lets the owner choose which executives approve ads, keeping the banner approvers as saved', async () => {
+    team.setApprovers.mockResolvedValue({ ...shopTeam, salesExecutives: [{ ...shopTeam.salesExecutives[0], isAdApprover: true }] } as never)
+    render(<TeamPage />)
+
+    const section = (await screen.findByText('Who approves ads booked by sales executives')).closest('section') as HTMLElement
+    const save = within(section).getByRole('button', { name: 'Save ad approvers' })
+    expect(save).toBeDisabled()
+
+    await userEvent.click(within(section).getByRole('checkbox'))
+    await userEvent.click(save)
+
+    await waitFor(() => expect(team.setApprovers).toHaveBeenCalledWith('shop-1', true, [], ['sam-1']))
+    expect(await screen.findByText('Approves ads')).toBeInTheDocument()
+  })
+
   it('stays open and shows the reason when the password is wrong', async () => {
     team.transferOwnership.mockRejectedValue({ response: { data: { message: 'Your password is not right.' } } })
     render(<TeamPage />)

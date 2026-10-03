@@ -124,6 +124,44 @@ public class ShopAdSmokeTests : IClassFixture<SmokeFactory>
     }
 
     [Fact]
+    public async Task AnExecutiveTheOwnerNamesCanApproveAnotherExecutivesAd_ButNotTheirOwn()
+    {
+        var (owner, shopId) = await OwnerAsync("ads-owner-delegate@example.com");
+        var booker = await ExecutiveAsync(shopId, "ads-booker@example.com");
+        var helper = await ExecutiveAsync(shopId, "ads-helper@example.com");
+
+        var theirs = await CreateAsync(booker, Ad("Booker offer", placement: "Left"));
+        await StatusAfter(booker, theirs, "submit");
+
+        // not named yet: the helper cannot approve it
+        Assert.Equal(HttpStatusCode.Forbidden, (await helper.PostAsJsonAsync($"/api/shop-ads/{theirs}/approve", new { })).StatusCode);
+        var before = (await Json(await helper.GetAsync("/api/shop-ads"))).EnumerateArray().First(a => a.GetProperty("id").GetGuid() == theirs);
+        Assert.Empty(before.GetProperty("can").EnumerateArray());
+
+        var team = await Json(await owner.GetAsync($"/api/shops/{shopId}/team"));
+        var helperId = team.GetProperty("salesExecutives").EnumerateArray().First(m => m.GetProperty("email").GetString() == "ads-helper@example.com").GetProperty("userId").GetString()!;
+        var saved = await owner.PutAsJsonAsync($"/api/shops/{shopId}/team/approvers", new { ownerIsApprover = true, approverUserIds = new string[0], adApproverUserIds = new[] { helperId } });
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        Assert.True((await Json(saved)).GetProperty("salesExecutives").EnumerateArray().First(m => m.GetProperty("userId").GetString() == helperId).GetProperty("isAdApprover").GetBoolean());
+
+        // the helper now sees it, can decide, and the booker still cannot
+        var seen = (await Json(await helper.GetAsync("/api/shop-ads"))).EnumerateArray().First(a => a.GetProperty("id").GetGuid() == theirs);
+        Assert.Contains(seen.GetProperty("can").EnumerateArray(), c => c.GetString() == "approve");
+        Assert.Equal(HttpStatusCode.Forbidden, (await booker.PostAsJsonAsync($"/api/shop-ads/{theirs}/approve", new { })).StatusCode);
+        Assert.Equal("Approved", await StatusAfter(helper, theirs, "approve", new { note = "Fine by me" }));
+
+        // never their own ad: that one waits for the owner
+        var own = await CreateAsync(helper, Ad("Helper offer", placement: "Right"));
+        await StatusAfter(helper, own, "submit");
+        Assert.Equal(HttpStatusCode.Forbidden, (await helper.PostAsJsonAsync($"/api/shop-ads/{own}/approve", new { })).StatusCode);
+        Assert.Equal("Approved", await StatusAfter(owner, own, "approve"));
+
+        // naming someone who is not an executive of the shop is refused
+        var bad = await owner.PutAsJsonAsync($"/api/shops/{shopId}/team/approvers", new { ownerIsApprover = true, approverUserIds = new string[0], adApproverUserIds = new[] { Guid.NewGuid().ToString() } });
+        Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
+    }
+
+    [Fact]
     public async Task ARejectedAdCanBeChangedAndSentAgain()
     {
         var (owner, shopId) = await OwnerAsync("ads-owner2@example.com");

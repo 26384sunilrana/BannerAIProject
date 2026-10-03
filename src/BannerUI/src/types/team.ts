@@ -3,6 +3,8 @@ export interface TeamMember {
   email: string
   fullName: string
   isApprover: boolean
+  /** May approve the ads other executives book. */
+  isAdApprover?: boolean
 }
 
 export interface ShopTeam {
@@ -26,4 +28,5 @@ export interface MyApprovalRole {
   shopId: string
   isOwner: boolean
   canApprove: boolean
+  canApproveAds?: boolean
 }

@@ -114,6 +114,18 @@ namespace BannerService.Domain.Entities
         public bool OwnerIsApprover { get; private set; } = true;
         public List<string> ApproverUserIds { get; private set; } = new();
 
+        /// <summary>Sales executives the owner allows to approve the ads other executives book. The owner always can.</summary>
+        public List<string> AdApproverUserIds { get; private set; } = new();
+
+        public bool CanApproveAds(Guid userId) =>
+            OwnerUserId == userId || AdApproverUserIds.Contains(userId.ToString(), StringComparer.OrdinalIgnoreCase);
+
+        public void SetAdApprovers(IEnumerable<string> userIds)
+        {
+            AdApproverUserIds = userIds.Select(i => i.ToLowerInvariant()).Distinct().ToList();
+            UpdatedAt = DateTime.UtcNow;
+        }
+
         public bool CanApprove(Guid userId)
         {
             if (OwnerIsApprover && OwnerUserId == userId)
@@ -137,6 +149,7 @@ namespace BannerService.Domain.Entities
         public void RemoveApprover(string userId)
         {
             ApproverUserIds = ApproverUserIds.Where(i => !string.Equals(i, userId, StringComparison.OrdinalIgnoreCase)).ToList();
+            AdApproverUserIds = AdApproverUserIds.Where(i => !string.Equals(i, userId, StringComparison.OrdinalIgnoreCase)).ToList();
 
             // Never leave a shop without anyone able to approve banners
             if (!OwnerIsApprover && ApproverUserIds.Count == 0)

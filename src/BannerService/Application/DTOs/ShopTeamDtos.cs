@@ -15,6 +15,9 @@ namespace BannerService.Application.DTOs
 
         /// <summary>User ids of sales executives who also (or instead) approve banners.</summary>
         public List<string>? ApproverUserIds { get; set; }
+
+        /// <summary>User ids of sales executives who approve the ads other executives book. Null leaves the list as it is.</summary>
+        public List<string>? AdApproverUserIds { get; set; }
     }
 
     public class MyApprovalRoleDto
@@ -22,6 +25,7 @@ namespace BannerService.Application.DTOs
         public Guid ShopId { get; set; }
         public bool IsOwner { get; set; }
         public bool CanApprove { get; set; }
+        public bool CanApproveAds { get; set; }
     }
 
     public class TeamMemberDto
@@ -30,6 +34,7 @@ namespace BannerService.Application.DTOs
         public string Email { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public bool IsApprover { get; set; }
+        public bool IsAdApprover { get; set; }
     }
 
     public class ShopTeamDto

@@ -62,7 +62,8 @@ public class ShopTeamService
         {
             ShopId = shop.Id,
             IsOwner = shop.OwnerUserId == callerId,
-            CanApprove = shop.CanApprove(callerId)
+            CanApprove = shop.CanApprove(callerId),
+            CanApproveAds = shop.CanApproveAds(callerId)
         };
     }
 
@@ -138,7 +139,14 @@ public class ShopTeamService
                 throw new ArgumentException($"User {id} is not an active sales executive of this shop");
         }
 
+        var adApproverIds = request.AdApproverUserIds;
+        if (adApproverIds != null)
+            foreach (var id in adApproverIds)
+                if (!executives.Any(u => string.Equals(u.Id, id, StringComparison.OrdinalIgnoreCase)))
+                    throw new ArgumentException($"User {id} is not an active sales executive of this shop");
+
         shop.SetApprovers(request.OwnerIsApprover, approverIds);
+        if (adApproverIds != null) shop.SetAdApprovers(adApproverIds);
         await _shopRepository.UpdateAsync(shop);
 
         return await GetTeamAsync(shopId, callerId);
@@ -169,6 +177,7 @@ public class ShopTeamService
         UserId = user.Id,
         Email = user.Email,
         FullName = user.GetFullName(),
-        IsApprover = shop.ApproverUserIds.Contains(user.Id, StringComparer.OrdinalIgnoreCase)
+        IsApprover = shop.ApproverUserIds.Contains(user.Id, StringComparer.OrdinalIgnoreCase),
+        IsAdApprover = shop.AdApproverUserIds.Contains(user.Id, StringComparer.OrdinalIgnoreCase)
     };
 }
