@@ -105,6 +105,12 @@ namespace BannerService.Domain.Entities
         public const int MaxSalesExecutives = 2;
 
         // Who may approve new or changed banners: the owner, either executive, or both
+        /// <summary>
+        /// Set when the shop changes owner while its associates stay. Nothing can be approved until the new owner has looked at who approves
+        /// (Team screen) and confirmed it.
+        /// </summary>
+        public bool ApprovalReviewRequired { get; set; }
+
         public bool OwnerIsApprover { get; private set; } = true;
         public List<string> ApproverUserIds { get; private set; } = new();
 
@@ -118,6 +124,7 @@ namespace BannerService.Domain.Entities
 
         public void SetApprovers(bool ownerIsApprover, IEnumerable<string> approverUserIds)
         {
+            ApprovalReviewRequired = false; // saving the setup is the confirmation
             var ids = approverUserIds.Select(i => i.ToLowerInvariant()).Distinct().ToList();
             if (!ownerIsApprover && ids.Count == 0)
                 throw new InvalidOperationException("A shop needs at least one approver");

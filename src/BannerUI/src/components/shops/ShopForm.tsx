@@ -10,6 +10,7 @@ import { useShops } from '@/hooks/useShops'
 import { locationService } from '@/api/locationService'
 import { getErrorMessage } from '@/api/client'
 import { ShopDto } from '@/types/shop'
+import Link from 'next/link'
 
 interface Props {
   /** The shop being edited; leave out to create a new one (administrators only). */
@@ -91,6 +92,14 @@ export function ShopForm({ shop, onSaved, onCancel }: Props) {
       {error && (
         <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
           {error}
+          {/takeover/i.test(error) && (
+            <>
+              {' '}
+              <Link href="/takeover" className="font-medium underline">
+                Go to Takeover
+              </Link>
+            </>
+          )}
         </p>
       )}
 

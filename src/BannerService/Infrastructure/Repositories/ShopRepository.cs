@@ -32,6 +32,13 @@ namespace BannerService.Infrastructure.Repositories
                 .FirstOrDefaultAsync(s => s.Name == name && s.Status != ShopStatus.Archived);
         }
 
+        public async Task<List<Shop>> ListByNameAsync(string name)
+        {
+            // candidates share the first word of the name (any case); the caller compares the whole name and address forgivingly
+            var word = Domain.Services.ShopIdentity.Normalise(name).Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
+            return await _context.Shops.Where(s => s.Name.ToLower().Contains(word) && s.Status != ShopStatus.Archived).ToListAsync();
+        }
+
         public async Task<List<Shop>> GetAllAsync()
         {
             return await _context.Shops

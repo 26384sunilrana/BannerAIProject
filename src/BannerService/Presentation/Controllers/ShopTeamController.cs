@@ -39,6 +39,10 @@ public class ShopTeamController : ControllerBase
             return (object?)null;
         });
 
+    /// <summary>After a takeover: the new owner confirms the approvers as they are.</summary>
+    [HttpPost("confirm-approvers")]
+    public Task<IActionResult> ConfirmApprovers(Guid shopId) => Run(() => _service.ConfirmApproversAsync(shopId, User.GetUserId()));
+
     [HttpPut("approvers")]
     public Task<IActionResult> SetApprovers(Guid shopId, [FromBody] SetApproversDto request) =>
         Run(() => _service.SetApproversAsync(shopId, User.GetUserId(), request));

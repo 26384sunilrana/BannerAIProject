@@ -82,7 +82,7 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 - Notification history page, e-mail/SMS copy (044), opt-out per kind; more producers to come with ads.
 - Sign-up allows two shops with the same name (updates only check on rename). Decide whether sign-up should refuse it.
 
-## Bolt 036b (decided 2026-10-03): shop identity and takeover
+## Bolt 036b (decided 2026-10-03, DONE): shop identity and takeover
 - Same name allowed with a different address. Same name + same address = takeover, needs both owners to confirm (old owner and new owner).
 - Associates also changing: deactivate old shop, create new shop and new associates. Associates staying: swap owner only and re-verify the approval mechanism with the new owner.
 - Builds on bolt 036 (owner hand-over, moving executives) and the notification bell (040a). Needs a decision on how a new owner proves they are the new owner (confirmation by the old owner in the app is the assumption).
@@ -100,3 +100,6 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 
 ## Left after bolt 042b
 - HIPAA review open items 7-15 in hipaa-review.md (CSP, screening banner text, e-mail encryption, Key Vault, encrypted media, e-mail verification and reset, audit tamper protection, alerts).
+
+## Left after bolt 036b
+- See "Not done" in memory-bank/bolts/036b-shop-takeover/bolt.md (ads on a closed shop, proof of sale, Team notice unit test).

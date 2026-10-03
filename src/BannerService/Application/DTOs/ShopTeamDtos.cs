@@ -37,6 +37,9 @@ namespace BannerService.Application.DTOs
         public Guid ShopId { get; set; }
         public Guid? OwnerUserId { get; set; }
         public bool OwnerIsApprover { get; set; }
+
+        /// <summary>The shop has a new owner who has not yet confirmed who approves; nothing can be approved until then.</summary>
+        public bool ApprovalReviewRequired { get; set; }
         public int MaxSalesExecutives { get; set; }
         public List<TeamMemberDto> SalesExecutives { get; set; } = new();
     }

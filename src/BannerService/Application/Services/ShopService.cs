@@ -2,6 +2,7 @@ namespace BannerService.Application.Services
 {
     using Domain.Entities;
     using Domain.Interfaces;
+    using Domain.Services;
     using Validators;
 
     public class ShopService : IShopService
@@ -74,9 +75,9 @@ namespace BannerService.Application.Services
             if (!isValid)
                 return (false, errorMessage!, null);
 
-            // Check if shop already exists with same name
-            if (await _shopRepository.ExistsByNameAsync(name))
-                return (false, "A shop with this name already exists", null);
+            // Names may repeat; one name at one address is one shop
+            if (await FindSameShopAsync(null, name, address, postalCode) != null)
+                return (false, SameShopMessage, null);
 
             // Validate parent shop exists if specified
             if (parentShopId.HasValue)
@@ -150,14 +151,9 @@ namespace BannerService.Application.Services
             if (!isValid)
                 return (false, errorMessage!);
 
-            // Check name uniqueness only when the name changes: sign-up does not check it, so a shop may already share its
-            // name with another, and saving other details must still work
-            if (!string.Equals(shop.Name, name, StringComparison.OrdinalIgnoreCase))
-            {
-                var existingShop = await _shopRepository.GetByNameAsync(name);
-                if (existingShop != null && existingShop.Id != shopId)
-                    return (false, "A shop with this name already exists");
-            }
+            // Names may repeat; one name at one address is one shop (a shop that changed hands asks for a takeover instead)
+            if (await FindSameShopAsync(shopId, name, address, postalCode) != null)
+                return (false, SameShopMessage);
 
             // Validate status transition
             var (validTransition, transitionError) = ShopValidator.ValidateStatusTransition(shop.Status, status);
@@ -181,6 +177,17 @@ namespace BannerService.Application.Services
             _logger.LogInformation("Shop updated: {ShopId} - {ShopName}", shopId, name);
 
             return (true, "Shop updated successfully");
+        }
+
+        public const string SameShopMessage =
+            "A shop with this name and address already exists. If that shop changed hands and is yours now, ask for a takeover on the Takeover page instead.";
+
+        /// <summary>An active shop, other than this one, with the same name at the same address.</summary>
+        private async Task<Shop?> FindSameShopAsync(Guid? exceptShopId, string name, string? address, string? postalCode)
+        {
+            if (!ShopIdentity.HasAddress(address)) return null;
+            return (await _shopRepository.ListByNameAsync(name.Trim()))
+                .FirstOrDefault(s => s.Id != exceptShopId && s.Status == ShopStatus.Active && ShopIdentity.Same(name, address, postalCode, s.Name, s.Address, s.PostalCode));
         }
 
         public async Task<(bool success, string message)> AssignOwnerAsync(Guid shopId, Guid userId)

@@ -30,6 +30,7 @@ public class ShopAdSmokeTests : IClassFixture<SmokeFactory>
         var client = _factory.CreateClient();
         var response = await client.PostAsJsonAsync("/api/authentication/register",
             new { email, password = "Password123!", firstName = "Ada", lastName = "Ads", shopName = "Ad Shop " + email });
+        if (!response.IsSuccessStatusCode) throw new Exception("register failed " + (int)response.StatusCode + ": " + await response.Content.ReadAsStringAsync());
         var token = (await Json(response)).GetProperty("tokens").GetProperty("accessToken").GetString()!;
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return (client, Guid.Parse(new JwtSecurityTokenHandler().ReadJwtToken(token).Claims.First(c => c.Type == "shop_id").Value));

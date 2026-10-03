@@ -9,6 +9,8 @@ export interface ShopTeam {
   shopId: string
   ownerUserId: string | null
   ownerIsApprover: boolean
+  /** The shop has a new owner who has not yet confirmed who approves. */
+  approvalReviewRequired?: boolean
   maxSalesExecutives: number
   salesExecutives: TeamMember[]
 }

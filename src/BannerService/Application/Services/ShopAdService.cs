@@ -230,6 +230,8 @@ namespace BannerService.Application.Services
             if (ad.Status == ShopAdStatus.PendingCompliance) EnsureCanReview(actor);
             else EnsureCanDecide(actor, ad);
             if (ad.Status is not (ShopAdStatus.PendingApproval or ShopAdStatus.PendingCompliance)) throw new InvalidOperationException("This ad is not waiting for approval.");
+            if (actor.Source == ShopAdSource.ShopOwner && (await _shops.GetByIdAsync(ad.ShopId))?.ApprovalReviewRequired == true)
+                throw new InvalidOperationException("This shop has a new owner. Open Team and confirm who approves before anything is approved.");
             if (ad.EndAt <= now) throw new InvalidOperationException("The ad would already be over. Send it back so the dates can be changed.");
 
             await EnsureSlotFreeAsync(ad);

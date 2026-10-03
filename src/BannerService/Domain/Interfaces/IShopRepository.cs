@@ -6,6 +6,9 @@ namespace BannerService.Domain.Interfaces
     {
         Task<Shop?> GetByIdAsync(Guid shopId);
         Task<Shop?> GetByNameAsync(string name);
+
+        /// <summary>Every shop with this name (not archived). Names are not unique: the address tells shops apart.</summary>
+        Task<List<Shop>> ListByNameAsync(string name);
         Task<List<Shop>> GetAllAsync();
         Task<List<Shop>> GetActiveAsync();
         Task<List<Shop>> GetByOwnerAsync(Guid ownerId);

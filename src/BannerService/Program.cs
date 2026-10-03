@@ -120,6 +120,8 @@ builder.Services.AddScoped<IMediaUploadService, MediaUploadService>();
 builder.Services.AddScoped<MediaLibraryService>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IShopAdRepository, ShopAdRepository>();
+builder.Services.AddScoped<IShopTakeoverRepository, ShopTakeoverRepository>();
+builder.Services.AddScoped<ShopTakeoverService>();
 builder.Services.AddScoped<IAdRateRepository, AdRateRepository>();
 builder.Services.AddScoped<AdRateService>();
 builder.Services.AddScoped<AdStatementService>();

@@ -47,7 +47,6 @@ public class ShopAdRulesTests
     [InlineData(10, 0, false)]
     [InlineData(10, 61, false)]
     [InlineData(30, 1, true)]
-    [InlineData(30, 1, true)]
     public void APopupNeedsSensibleTimes(int seconds, int everyMinutes, bool ok)
     {
         var popup = Ad(ShopAdKind.Popup);

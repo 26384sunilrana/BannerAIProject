@@ -25,6 +25,7 @@ const NAV: NavItem[] = [
   { href: '/subscription', label: 'Subscription', roles: [Roles.ShopOwner] },
   { href: '/shops', label: 'My shop', roles: [Roles.ShopOwner] },
   { href: '/default-board', label: 'Default board', roles: [Roles.ShopOwner] },
+  { href: '/takeover', label: 'Takeover', roles: [Roles.ShopOwner, Roles.Admin] },
   { href: '/display', label: 'Shop screen', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/shops', label: 'Shops', roles: [Roles.Admin] },
   { href: '/admin/locations', label: 'Places', roles: [Roles.Admin] },

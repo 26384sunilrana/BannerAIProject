@@ -179,6 +179,29 @@ function TeamManager() {
     <div className="space-y-10">
       <Toast messages={toast.messages} onRemove={toast.remove} />
 
+      {team.approvalReviewRequired && (
+        <div role="alert" data-testid="approval-review" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900">
+          <p className="font-semibold">This shop has a new owner.</p>
+          <p className="mt-1 text-sm">
+            Nothing can be approved until you have looked at who approves banners (below) and confirmed it. Keep it as it is, or change it and save.
+          </p>
+          <Button
+            className="mt-3"
+            size="sm"
+            onClick={async () => {
+              try {
+                applyTeam(await teamService.confirmApprovers(shopId))
+                toast.success('Thank you. Banners can be approved again.')
+              } catch (err) {
+                toast.error(getErrorMessage(err, 'Could not confirm.'))
+              }
+            }}
+          >
+            Keep the approvers as they are
+          </Button>
+        </div>
+      )}
+
       <header>
         <h1 className="text-2xl font-semibold text-gray-900">Team</h1>
         <p className="mt-1 text-gray-600">

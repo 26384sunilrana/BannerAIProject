@@ -33,6 +33,9 @@ namespace BannerService.Application.Services
 
             if (!shop.CanApprove(reviewerId))
                 throw new UnauthorizedAccessException("You are not an approver for this shop");
+
+            if (shop.ApprovalReviewRequired)
+                throw new InvalidOperationException("This shop has a new owner. Open Team and confirm who approves banners before anything is approved.");
         }
 
         public async Task<PublishWorkflow> InitiateWorkflowAsync(Guid bannerId, Guid shopId, Guid userId, string userName)

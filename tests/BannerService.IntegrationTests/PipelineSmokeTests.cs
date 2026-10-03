@@ -27,6 +27,16 @@ public class SmokeFactory : WebApplicationFactory<Program>
 
     private readonly string _mediaFolder = Path.Combine(Path.GetTempPath(), "banner-smoke-" + Guid.NewGuid());
 
+    // Each test class starts its own application, and starting one applies the database migrations. Against a shared real database two
+    // applications migrating at the same moment collide ("object already exists"), so applications are started one at a time.
+    private static readonly object StartLock = new();
+
+    protected override Microsoft.Extensions.Hosting.IHost CreateHost(Microsoft.Extensions.Hosting.IHostBuilder builder)
+    {
+        lock (StartLock)
+            return base.CreateHost(builder);
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");

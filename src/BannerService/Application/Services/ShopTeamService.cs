@@ -46,6 +46,7 @@ public class ShopTeamService
             ShopId = shop.Id,
             OwnerUserId = shop.OwnerUserId,
             OwnerIsApprover = shop.OwnerIsApprover,
+            ApprovalReviewRequired = shop.ApprovalReviewRequired,
             MaxSalesExecutives = Shop.MaxSalesExecutives,
             SalesExecutives = executives.Select(u => ToMember(u, shop)).ToList()
         };
@@ -114,6 +115,15 @@ public class ShopTeamService
 
         shop.RemoveApprover(target.Id);
         await _shopRepository.UpdateAsync(shop);
+    }
+
+    /// <summary>The new owner looks at who approves and keeps it as it is.</summary>
+    public async Task<ShopTeamDto> ConfirmApproversAsync(Guid shopId, Guid callerId)
+    {
+        var shop = await GetOwnedShopAsync(shopId, callerId);
+        shop.ApprovalReviewRequired = false;
+        await _shopRepository.UpdateAsync(shop);
+        return await GetTeamAsync(shopId, callerId);
     }
 
     public async Task<ShopTeamDto> SetApproversAsync(Guid shopId, Guid callerId, SetApproversDto request)
