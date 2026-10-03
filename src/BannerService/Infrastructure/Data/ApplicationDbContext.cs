@@ -541,6 +541,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Subscription>().Property(e => e.PendingPrice).HasPrecision(18, 2);
 
         modelBuilder.Entity<User>().Property(e => e.PhoneNumber).HasConversion(encrypted);
+        modelBuilder.Entity<User>().Property(e => e.TwoFactorSecret).HasConversion(encrypted);
         modelBuilder.Entity<Shop>().Property(e => e.PhoneNumber).HasConversion(encrypted);
         modelBuilder.Entity<Shop>().Property(e => e.Address).HasConversion(encrypted);
         modelBuilder.Entity<Shop>().Property(e => e.PostalCode).HasConversion(encrypted);

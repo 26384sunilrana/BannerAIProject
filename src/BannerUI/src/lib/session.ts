@@ -4,6 +4,8 @@ export interface SessionUser {
   name: string
   shopId: string | null
   roles: string[]
+  /** An administrator who must set up two-step sign-in before anything else is open. */
+  twoFactorSetupRequired?: boolean
 }
 
 export interface DecodedToken extends SessionUser {
@@ -72,6 +74,7 @@ export function decodeToken(token: string): DecodedToken | null {
       name: String(firstClaim(payload, CLAIM_NAME) ?? ''),
       shopId: typeof shopId === 'string' && shopId ? shopId : null,
       roles: Array.isArray(role) ? role.map(String) : role ? [String(role)] : [],
+      twoFactorSetupRequired: payload.two_factor_setup_required === 'true' || payload.two_factor_setup_required === true || undefined,
       exp,
     }
   } catch {

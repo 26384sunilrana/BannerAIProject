@@ -31,6 +31,8 @@ services:
       Jwt__SecretKey: ${JWT_SECRET_KEY:?set JWT_SECRET_KEY in .env (32+ characters)}
       Cors__AllowedOrigins__0: http://localhost:3000
       Security__RequireHttpsRedirect: "false"
+      # administrators must use two-step sign-in (an authenticator app); set REQUIRE_TWO_FACTOR_FOR_ADMINS=true in .env to require it
+      Security__RequireTwoFactorForAdmins: ${REQUIRE_TWO_FACTOR_FOR_ADMINS:-false}
     ports:
       - "5000:5000"
     volumes:

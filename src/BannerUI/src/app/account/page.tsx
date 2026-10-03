@@ -6,6 +6,7 @@ import { Button, ConfirmDialog, Input, Toast } from '@/components/Common'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/hooks/useToast'
 import { accountService, Account } from '@/api/accountService'
+import { TwoFactorSection } from '@/components/auth/TwoFactorSection'
 import { getErrorMessage } from '@/api/client'
 
 export default function AccountPage() {
@@ -23,7 +24,7 @@ const ROLE_NAMES: Record<string, string> = {
 }
 
 function AccountSettings() {
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
   const toast = useToast()
 
   const [account, setAccount] = useState<Account | null>(null)
@@ -176,6 +177,8 @@ function AccountSettings() {
           </Button>
         </form>
       </section>
+
+      <TwoFactorSection forced={!!user?.twoFactorSetupRequired} />
 
       <section aria-labelledby="sessions-heading">
         <h2 id="sessions-heading" className="text-lg font-semibold text-gray-900">

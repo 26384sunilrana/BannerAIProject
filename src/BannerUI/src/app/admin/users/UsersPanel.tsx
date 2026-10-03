@@ -146,6 +146,9 @@ export function UsersPanel() {
                           <Link href={`/admin/audit-log?userId=${encodeURIComponent(user.id)}`} className="text-blue-600 hover:text-blue-800">
                             Activity
                           </Link>
+                          <Button size="sm" variant="ghost" isLoading={busy} onClick={() => act(user, () => adminService.resetTwoFactor(user.id), `Two-step sign-in was switched off for ${user.email}.`)}>
+                            Reset two-step
+                          </Button>
                           {user.isLockedOut && (
                             <Button size="sm" variant="secondary" isLoading={busy} onClick={() => act(user, () => adminService.unlockUser(user.id), `${user.email} was unlocked.`)}>
                               Unlock

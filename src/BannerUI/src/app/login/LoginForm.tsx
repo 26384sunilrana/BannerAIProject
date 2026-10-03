@@ -10,7 +10,7 @@ import { getErrorMessage } from '@/api/client'
 import { safeReturnUrl } from '@/lib/redirect'
 
 export function LoginForm() {
-  const { login } = useAuth()
+  const { login, loginWithCode } = useAuth()
   const router = useRouter()
   const params = useSearchParams()
 
@@ -18,10 +18,30 @@ export function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // set when the password was right and a code from the authenticator app is needed
+  const [challenge, setChallenge] = useState<string | null>(null)
+  const [code, setCode] = useState('')
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     setError(null)
+
+    if (challenge) {
+      if (!code.trim()) {
+        setError('Enter the code from your authenticator app.')
+        return
+      }
+      setBusy(true)
+      try {
+        await loginWithCode(challenge, code)
+        router.replace(safeReturnUrl(params?.get('returnUrl')))
+      } catch (err) {
+        setError(getErrorMessage(err, 'Could not sign in. Please try again.'))
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
 
     if (!email.trim() || !password) {
       setError('Enter your email and password.')
@@ -30,7 +50,11 @@ export function LoginForm() {
 
     setBusy(true)
     try {
-      await login({ email, password })
+      const next = await login({ email, password })
+      if (next && 'challenge' in next) {
+        setChallenge(next.challenge)
+        return
+      }
       router.replace(safeReturnUrl(params?.get('returnUrl')))
     } catch (err) {
       setError(getErrorMessage(err, 'Could not sign in. Please try again.'))
@@ -59,6 +83,35 @@ export function LoginForm() {
           </p>
         )}
         <FormError message={error} />
+        {challenge ? (
+          <>
+            <p className="text-sm text-gray-700">
+              Open your authenticator app and type the six-digit code it shows for BannerAI. Lost your phone? Type one of your recovery codes instead.
+            </p>
+            <Input
+              id="code"
+              name="code"
+              label="Code"
+              inputMode="text"
+              autoComplete="one-time-code"
+              autoFocus
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+            />
+            <button
+              type="button"
+              className="text-sm text-blue-600 hover:text-blue-800"
+              onClick={() => {
+                setChallenge(null)
+                setCode('')
+                setError(null)
+              }}
+            >
+              Use a different account
+            </button>
+          </>
+        ) : (
+          <>
         <Input
           id="email"
           name="email"
@@ -77,6 +130,8 @@ export function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+          </>
+        )}
         <Button type="submit" isLoading={busy} className="w-full">
           Sign in
         </Button>

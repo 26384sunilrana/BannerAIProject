@@ -13,6 +13,13 @@ export interface RegisterRequest {
   phoneNumber?: string
 }
 
+/** The password was right and a code from the authenticator app is needed next. */
+export interface TwoFactorChallenge {
+  requiresTwoFactor: true
+  challenge: string
+  message: string
+}
+
 export interface AuthResult {
   message: string
   tokens: {

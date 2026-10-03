@@ -119,6 +119,7 @@ builder.Services.AddScoped<IEffectService, EffectService>();
 builder.Services.AddScoped<IMediaUploadService, MediaUploadService>();
 builder.Services.AddScoped<MediaLibraryService>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<TwoFactorService>();
 builder.Services.AddScoped<IShopAdRepository, ShopAdRepository>();
 builder.Services.AddScoped<IShopTakeoverRepository, ShopTakeoverRepository>();
 builder.Services.AddScoped<ShopTakeoverService>();
@@ -200,6 +201,10 @@ if (builder.Configuration.GetValue("Security:EncryptionEnabled", true))
         .PersistKeysToFileSystem(new DirectoryInfo(keyDirectory));
 }
 
+// Administrators must use two-step sign-in in production unless this is set otherwise (Security:RequireTwoFactorForAdmins)
+if (builder.Configuration["Security:RequireTwoFactorForAdmins"] == null)
+    builder.Configuration["Security:RequireTwoFactorForAdmins"] = builder.Environment.IsProduction() ? "true" : "false";
+
 var app = builder.Build();
 
 if (builder.Configuration.GetValue("Security:EncryptionEnabled", true))
@@ -256,6 +261,30 @@ if (adminIndex >= 0)
         scope.ServiceProvider.GetRequiredService<BannerService.Domain.Services.IPasswordHashService>(),
         args.Skip(adminIndex + 1).TakeWhile(a => !a.StartsWith("--")).ToArray());
     Log.Information("{Message}", message);
+    Log.CloseAndFlush();
+    return;
+}
+
+// dotnet BannerService.dll --reset-two-factor <email>
+//   switches two-step sign-in off for someone who lost their phone and recovery codes (for the last administrator, when no other administrator can do it)
+var resetIndex = Array.IndexOf(args, "--reset-two-factor");
+if (resetIndex >= 0)
+{
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var target = (args.Length > resetIndex + 1 ? args[resetIndex + 1] : string.Empty).Trim().ToLowerInvariant();
+    var person = await context.Users.FirstOrDefaultAsync(u => u.Email == target);
+    if (person == null)
+        Log.Error("No login with that e-mail address.");
+    else
+    {
+        person.TwoFactorEnabled = false;
+        person.TwoFactorSecret = null;
+        person.TwoFactorRecoveryHashes = null;
+        person.TwoFactorLastStep = 0;
+        await context.SaveChangesAsync();
+        Log.Information("Two-step sign-in was switched off for {Email}. They set it up again at the next sign-in.", target);
+    }
     Log.CloseAndFlush();
     return;
 }
@@ -321,6 +350,7 @@ app.UseMiddleware<AuditLoggingMiddleware>();
 // Authentication must run before ShopContextMiddleware, which reads the validated token's claims
 app.UseAuthentication();
 app.UseRateLimiter(); // after authentication, so a signed-in caller is limited by user and not by address
+app.UseMiddleware<TwoFactorSetupMiddleware>();
 app.UseMiddleware<ShopContextMiddleware>();
 app.UseAuthorization();
 

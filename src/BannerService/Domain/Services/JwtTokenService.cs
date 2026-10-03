@@ -11,6 +11,12 @@ namespace BannerService.Domain.Services
     {
         (string accessToken, string jwtId) GenerateAccessToken(User user);
         string GenerateRefreshToken();
+
+        /// <summary>A short-lived proof that the password was right, to be traded for a session together with the one-time code.</summary>
+        string GenerateTwoFactorChallenge(string userId);
+
+        /// <summary>The user id inside a valid, unexpired challenge, or null.</summary>
+        string? ReadTwoFactorChallenge(string challenge);
         ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
         bool ValidateToken(string token, out ClaimsPrincipal? principal);
     }
@@ -54,6 +60,10 @@ namespace BannerService.Domain.Services
                 claims.Add(new Claim(ClaimTypes.Role, role ?? string.Empty));
             }
 
+            // An administrator without two-step sign-in, where it is required, may only reach the screens that set it up
+            if (roles.Contains(Role.Admin) && !user.TwoFactorEnabled && _configuration.GetValue("Security:RequireTwoFactorForAdmins", false))
+                claims.Add(new Claim(TwoFactorSetupClaim, "true"));
+
             var expiresIn = int.Parse(_configuration["Jwt:AccessTokenExpirationMinutes"] ?? _configuration["Jwt:ExpiresInMinutes"] ?? "15");
 
             var token = new JwtSecurityToken(
@@ -68,6 +78,44 @@ namespace BannerService.Domain.Services
             var accessToken = tokenHandler.WriteToken(token);
 
             return (accessToken, jwtId);
+        }
+
+        public const string TwoFactorSetupClaim = "two_factor_setup_required";
+        private const string ChallengeAudience = "BannerAI.TwoFactorChallenge";
+
+        public string GenerateTwoFactorChallenge(string userId)
+        {
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: ChallengeAudience, // not the API's audience: it cannot be used as an access token
+                claims: new[] { new Claim(ClaimTypes.NameIdentifier, userId) },
+                expires: DateTime.UtcNow.AddMinutes(5),
+                signingCredentials: _signingCredentials);
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public string? ReadTwoFactorChallenge(string challenge)
+        {
+            try
+            {
+                var key = Encoding.ASCII.GetBytes(_configuration["Jwt:SecretKey"] ?? _configuration["Jwt:Key"] ?? string.Empty);
+                var principal = new JwtSecurityTokenHandler().ValidateToken(challenge, new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = true,
+                    ValidIssuer = _configuration["Jwt:Issuer"],
+                    ValidateAudience = true,
+                    ValidAudience = ChallengeAudience,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero,
+                }, out _);
+                return principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public string GenerateRefreshToken()

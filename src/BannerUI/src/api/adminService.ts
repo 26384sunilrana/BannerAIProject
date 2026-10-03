@@ -43,6 +43,11 @@ export const adminService = {
     return apiClient.post<AdminUser>(`/admin/users/${encodeURIComponent(userId)}/activate`, {})
   },
 
+  /** For someone who lost their phone and their recovery codes. */
+  async resetTwoFactor(userId: string): Promise<void> {
+    await apiClient.post(`/admin/users/${encodeURIComponent(userId)}/reset-two-factor`, {})
+  },
+
   unlockUser(userId: string): Promise<AdminUser> {
     return apiClient.post<AdminUser>(`/admin/users/${encodeURIComponent(userId)}/unlock`, {})
   },

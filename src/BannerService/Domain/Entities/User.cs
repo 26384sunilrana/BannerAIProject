@@ -16,6 +16,14 @@ namespace BannerService.Domain.Entities
         public string? PasswordResetToken { get; set; }
         public DateTime? PasswordResetExpires { get; set; }
         public int LoginAttempts { get; set; } = 0;
+
+        // Two-step sign-in with an authenticator app. The secret is stored encrypted; recovery codes only as hashes.
+        public bool TwoFactorEnabled { get; set; }
+        public string? TwoFactorSecret { get; set; }
+        public string? TwoFactorRecoveryHashes { get; set; }
+
+        /// <summary>The last 30-second step that was accepted, so the same code cannot be used twice.</summary>
+        public long TwoFactorLastStep { get; set; }
         public DateTime? LastLoginAttempt { get; set; }
         public bool IsLockedOut { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

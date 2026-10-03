@@ -23,6 +23,12 @@ namespace BannerService.Application.DTOs
         public string? UserAgent { get; set; }
     }
 
+    public class TwoFactorLoginDto
+    {
+        public string Challenge { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+    }
+
     public class RefreshTokenDto
     {
         public string RefreshToken { get; set; } = string.Empty;

@@ -167,3 +167,10 @@ Manifests are in `deploy/k8s` (kustomize).
 - Per minute: sign-in and sign-up 20 per IP address (`RateLimiting__AuthPerMinute`), session refresh 60, upload pieces 600 per user, everything else 1200 per user (or per address when nobody is signed in). Turn off with `RateLimiting__Enabled=false`. Refusals answer 429 with `Retry-After` and are written to the activity log.
 - Behind an ingress or load balancer set `Proxy__TrustForwardedHeaders=true` (the Kubernetes configmap does) so the real caller's address is used. Never set it when the API is reachable directly: the header can be forged.
 - Many shop screens behind one office or mall address share the 1200 limit only when not signed in; signed-in screens are counted per user.
+
+## Two-step sign-in (authenticator app)
+- Anyone can turn it on under *My account*. For **administrators** it is required when `Security__RequireTwoFactorForAdmins=true`, which is the default whenever `ASPNETCORE_ENVIRONMENT=Production` (the Kubernetes configmap). An administrator who has not set it up can sign in but every screen except *My account* answers 403 until it is on, and it cannot be switched off.
+- The first administrator: `--create-admin`, then sign in once and follow the screen to set it up (scan the picture with Google/Microsoft Authenticator or Authy, keep the ten recovery codes).
+- Lost phone: another administrator opens *Users → Reset two-step* for that person. The last administrator, with no one to do it: `dotnet BannerService.dll --reset-two-factor <email>` (a job or `docker compose run --rm api --reset-two-factor <email>`).
+- The demo uses `REQUIRE_TWO_FACTOR_FOR_ADMINS=false` (compose default) so the demo script can run; do not run the demo script on a real system.
+- Wrong codes count against the same five-attempt lockout as wrong passwords. A code can be used once; recovery codes work once.

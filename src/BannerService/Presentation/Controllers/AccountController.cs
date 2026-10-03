@@ -66,11 +66,13 @@ internal static class ServiceErrors
 public class AccountController : ControllerBase
 {
     private readonly AccountService _account;
+    private readonly TwoFactorService _twoFactor;
     private readonly IRefreshCookie _cookie;
 
-    public AccountController(AccountService account, IRefreshCookie cookie)
+    public AccountController(AccountService account, TwoFactorService twoFactor, IRefreshCookie cookie)
     {
         _account = account;
+        _twoFactor = twoFactor;
         _cookie = cookie;
     }
 
@@ -99,6 +101,33 @@ public class AccountController : ControllerBase
             }
             return new { message = "Your password was changed. Other devices were signed out.", tokens };
         });
+
+    // ----- two-step sign-in (an authenticator app)
+
+    [HttpGet("two-factor")]
+    public Task<IActionResult> TwoFactorStatus() => ServiceErrors.Run(this, () => _twoFactor.StatusAsync(UserId));
+
+    /// <summary>Makes a secret and the address for the QR picture. The password is asked for again.</summary>
+    [HttpPost("two-factor/setup")]
+    public Task<IActionResult> TwoFactorSetup([FromBody] TwoFactorRequest request) =>
+        ServiceErrors.Run(this, () => _twoFactor.BeginSetupAsync(UserId, request.Password));
+
+    /// <summary>Confirms the first code; answers with the recovery codes, shown only this once.</summary>
+    [HttpPost("two-factor/enable")]
+    public Task<IActionResult> TwoFactorEnable([FromBody] TwoFactorRequest request) =>
+        ServiceErrors.Run(this, () => _twoFactor.EnableAsync(UserId, request.Code));
+
+    [HttpPost("two-factor/disable")]
+    public Task<IActionResult> TwoFactorDisable([FromBody] TwoFactorRequest request) =>
+        ServiceErrors.Run(this, async () =>
+        {
+            await _twoFactor.DisableAsync(UserId, request.Password, request.Code);
+            return new { message = "Two-step sign-in is off." };
+        });
+
+    [HttpPost("two-factor/recovery-codes")]
+    public Task<IActionResult> TwoFactorRecoveryCodes([FromBody] TwoFactorRequest request) =>
+        ServiceErrors.Run(this, () => _twoFactor.NewRecoveryCodesAsync(UserId, request.Password, request.Code));
 
     /// <summary>Ends every session on every device, this one included.</summary>
     [HttpPost("sign-out-everywhere")]
@@ -150,4 +179,10 @@ public class AdminMembershipController : ControllerBase
     [HttpPost("users/{userId}/move")]
     public Task<IActionResult> Move(string userId, [FromBody] MoveUserRequest request) =>
         ServiceErrors.Run(this, () => _membership.MoveExecutiveAsync(userId, request.ShopId));
+}
+
+public class TwoFactorRequest
+{
+    public string? Password { get; set; }
+    public string? Code { get; set; }
 }

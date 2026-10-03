@@ -27,6 +27,7 @@ public class EncryptionBackfill
 
         var count = 0;
         count += await EncryptAsync<User, string>(u => u.PhoneNumber, u => u.Id);
+        count += await EncryptAsync<User, string>(u => u.TwoFactorSecret, u => u.Id);
         count += await EncryptAsync<Shop, Guid>(s => s.PhoneNumber, s => s.Id);
         count += await EncryptAsync<Shop, Guid>(s => s.Address, s => s.Id);
         count += await EncryptAsync<Shop, Guid>(s => s.PostalCode, s => s.Id);

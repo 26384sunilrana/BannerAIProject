@@ -16,7 +16,9 @@ interface AuthContextValue {
   user: SessionUser | null
   /** False until the session has been looked up (the server renders without it, and the cookie is exchanged after load). */
   ready: boolean
-  login: (request: LoginRequest) => Promise<void>
+  /** Resolves with a challenge when a code is needed next (two-step sign-in); with nothing when the person is signed in. */
+  login: (request: LoginRequest) => Promise<{ challenge: string } | void>
+  loginWithCode: (challenge: string, code: string) => Promise<void>
   register: (request: RegisterRequest) => Promise<void>
   /** Signs out. Pages that need a session then send the person to redirectTo (default: the sign-in page, remembering where they were). */
   logout: (redirectTo?: string) => Promise<void>
@@ -68,7 +70,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refresh])
 
   const login = useCallback(async (request: LoginRequest) => {
-    await authService.login(request)
+    const result = await authService.login(request)
+    if (result && 'requiresTwoFactor' in result && result.requiresTwoFactor) return { challenge: result.challenge }
+    setSignedOutRedirect(null)
+    setUser(getSessionUser())
+    return undefined
+  }, [])
+
+  const loginWithCode = useCallback(async (challenge: string, code: string) => {
+    await authService.completeTwoFactor(challenge, code)
     setSignedOutRedirect(null)
     setUser(getSessionUser())
   }, [])
@@ -85,8 +95,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, ready, login, register, logout, refresh, signedOutRedirect, hasRole: (role) => userHasRole(user, role) }),
-    [user, ready, login, register, logout, refresh, signedOutRedirect]
+    () => ({ user, ready, login, loginWithCode, register, logout, refresh, signedOutRedirect, hasRole: (role) => userHasRole(user, role) }),
+    [user, ready, login, loginWithCode, register, logout, refresh, signedOutRedirect]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

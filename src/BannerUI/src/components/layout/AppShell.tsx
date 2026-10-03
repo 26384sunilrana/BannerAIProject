@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
@@ -56,6 +56,11 @@ function Frame({ children }: { children: React.ReactNode }) {
   const { user, logout, hasRole } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
+
+  // an administrator who must set up two-step sign-in can only use the account page until it is on
+  useEffect(() => {
+    if (user?.twoFactorSetupRequired && pathname !== '/account') router.replace('/account')
+  }, [user?.twoFactorSetupRequired, pathname, router])
 
   const links = NAV.filter((item) => !item.roles || item.roles.some((role) => hasRole(role)))
 

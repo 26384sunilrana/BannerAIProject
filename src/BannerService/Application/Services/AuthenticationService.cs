@@ -11,11 +11,27 @@ namespace BannerService.Application.Services
         Task<(bool success, string message, AuthTokenDto? tokens)> LoginAsync(LoginDto request);
         Task<(bool success, string message, AuthTokenDto? tokens)> RefreshTokenAsync(string refreshToken, string userId);
         Task<bool> RevokeTokenAsync(string userId, string refreshToken);
+
+        /// <summary>Password step. When the person uses two-step sign-in the outcome carries a challenge instead of tokens.</summary>
+        Task<LoginOutcome> BeginLoginAsync(LoginDto request);
+
+        /// <summary>Second step: the challenge from the first step plus a code from the authenticator app (or a recovery code).</summary>
+        Task<LoginOutcome> CompleteTwoFactorLoginAsync(string challenge, string code, string? ipAddress, string? userAgent);
         /// <summary>Ends the session that holds this refresh token. False when the token is not known.</summary>
         Task<bool> RevokeTokenAsync(string refreshToken);
         Task<(bool success, string message)> VerifyEmailAsync(string userId, string token);
         Task<(bool success, string message)> RequestPasswordResetAsync(string email);
         Task<(bool success, string message)> ResetPasswordAsync(string userId, string token, string newPassword);
+    }
+
+    public class LoginOutcome
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public AuthTokenDto? Tokens { get; set; }
+
+        /// <summary>Set when the password was right and a one-time code is needed next.</summary>
+        public string? Challenge { get; set; }
     }
 
     public class AuthenticationService : IAuthenticationService
@@ -161,62 +177,131 @@ namespace BannerService.Application.Services
 
         public async Task<(bool success, string message, AuthTokenDto? tokens)> LoginAsync(LoginDto request)
         {
+            var outcome = await BeginLoginAsync(request);
+            if (outcome.Challenge != null) return (false, "A one-time code is needed to finish signing in", null);
+            return (outcome.Success, outcome.Message, outcome.Tokens);
+        }
+
+        private static LoginOutcome Fail(string message) => new() { Success = false, Message = message };
+
+        public async Task<LoginOutcome> BeginLoginAsync(LoginDto request)
+        {
             if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
-                return (false, "Email and password are required", null);
+                return Fail("Email and password are required");
 
             var user = await _userRepository.GetByEmailAsync(request.Email.ToLower());
 
             if (user == null)
-                return (false, "Invalid email or password", null);
+                return Fail("Invalid email or password");
 
             if (!user.IsActive)
-                return (false, "Account is inactive", null);
+                return Fail("Account is inactive");
 
             if (user.IsLockedOut)
-                return (false, "Account is locked due to multiple failed login attempts", null);
+                return Fail("Account is locked due to multiple failed login attempts");
 
             if (!_passwordHashService.VerifyPassword(request.Password, user.PasswordHash))
             {
                 user.RecordLoginAttempt();
                 await _userRepository.UpdateAsync(user);
-                    return (false, "Invalid email or password", null);
+                return Fail("Invalid email or password");
             }
 
             if (await IsLockedBySubscriptionAsync(user))
-                return (false, SubscriptionEndedMessage, null);
-
-            user.ResetLoginAttempts();
+                return Fail(SubscriptionEndedMessage);
 
             // a hash made with older, weaker settings is replaced now that the password is known
             if (_passwordHashService.NeedsRehash(user.PasswordHash))
                 user.PasswordHash = _passwordHashService.HashPassword(request.Password);
-            await _userRepository.UpdateAsync(user);
 
+            if (user.TwoFactorEnabled)
+            {
+                // the failed-attempt count is NOT reset here: wrong codes count against the same limit, so guessing codes cannot be restarted with the password
+                await _userRepository.UpdateAsync(user);
+                return new LoginOutcome { Success = true, Message = "Enter the code from your authenticator app", Challenge = _jwtTokenService.GenerateTwoFactorChallenge(user.Id) };
+            }
+
+            user.ResetLoginAttempts();
+            await _userRepository.UpdateAsync(user);
+            return await IssueAsync(user, request.IpAddress, request.UserAgent, "Login successful");
+        }
+
+        public async Task<LoginOutcome> CompleteTwoFactorLoginAsync(string challenge, string code, string? ipAddress, string? userAgent)
+        {
+            var userId = string.IsNullOrWhiteSpace(challenge) ? null : _jwtTokenService.ReadTwoFactorChallenge(challenge);
+            if (userId == null)
+                return Fail("The sign-in took too long. Please start again.");
+
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null || !user.IsActive || !user.TwoFactorEnabled || string.IsNullOrEmpty(user.TwoFactorSecret))
+                return Fail("The sign-in could not be finished. Please start again.");
+            if (user.IsLockedOut)
+                return Fail("Account is locked due to multiple failed login attempts");
+            if (await IsLockedBySubscriptionAsync(user))
+                return Fail(SubscriptionEndedMessage);
+
+            var accepted = false;
+            if (Totp.Verify(user.TwoFactorSecret, code, DateTime.UtcNow, user.TwoFactorLastStep, out var step))
+            {
+                user.TwoFactorLastStep = step;
+                accepted = true;
+            }
+            else if (TryUseRecoveryCode(user, code))
+            {
+                accepted = true;
+            }
+
+            if (!accepted)
+            {
+                user.RecordLoginAttempt();
+                await _userRepository.UpdateAsync(user);
+                return Fail("That code is not right.");
+            }
+
+            user.ResetLoginAttempts();
+            await _userRepository.UpdateAsync(user);
+            return await IssueAsync(user, ipAddress, userAgent, "Login successful");
+        }
+
+        /// <summary>A recovery code works once: it is removed from the list when it is used.</summary>
+        private static bool TryUseRecoveryCode(User user, string code)
+        {
+            if (string.IsNullOrWhiteSpace(code) || string.IsNullOrEmpty(user.TwoFactorRecoveryHashes)) return false;
+            var hashes = System.Text.Json.JsonSerializer.Deserialize<List<string>>(user.TwoFactorRecoveryHashes) ?? new List<string>();
+            var hash = Totp.HashRecoveryCode(code);
+            if (!hashes.Remove(hash)) return false;
+            user.TwoFactorRecoveryHashes = System.Text.Json.JsonSerializer.Serialize(hashes);
+            return true;
+        }
+
+        private async Task<LoginOutcome> IssueAsync(User user, string? ipAddress, string? userAgent, string message)
+        {
             var (accessToken, jwtId) = _jwtTokenService.GenerateAccessToken(user);
             var refreshToken = _jwtTokenService.GenerateRefreshToken();
 
-            var refreshTokenEntity = new RefreshToken
+            await _refreshTokenRepository.AddAsync(new RefreshToken
             {
                 UserId = user.Id,
                 Token = refreshToken,
                 JwtId = jwtId,
                 ExpiresAt = RefreshLifetimeEnd,
-                IpAddress = request.IpAddress ?? string.Empty,
-                UserAgent = request.UserAgent ?? string.Empty
-            };
+                IpAddress = ipAddress ?? string.Empty,
+                UserAgent = userAgent ?? string.Empty
+            });
 
-            await _refreshTokenRepository.AddAsync(refreshTokenEntity);
-
-            var tokens = new AuthTokenDto
+            return new LoginOutcome
             {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken,
-                ExpiresIn = 900, // 15 minutes
-                RefreshTokenExpiresAt = RefreshLifetimeEnd,
-                TokenType = "Bearer"
+                Success = true,
+                Message = message,
+                Tokens = new AuthTokenDto
+                {
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken,
+                    ExpiresIn = 900, // 15 minutes
+                    RefreshTokenExpiresAt = RefreshLifetimeEnd,
+                    TokenType = "Bearer"
+                },
             };
-
-            return (true, "Login successful", tokens);
         }
 
         public async Task<(bool success, string message, AuthTokenDto? tokens)> RefreshTokenAsync(string refreshToken, string userId)

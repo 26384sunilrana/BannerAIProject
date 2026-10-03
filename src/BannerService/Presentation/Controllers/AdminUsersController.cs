@@ -16,9 +16,11 @@ public class AdminUsersController : ControllerBase
     private readonly UserAdminService _users;
     private readonly IAuditLogRepository _audit;
     private readonly ISubscriptionRepository _subscriptions;
+    private readonly TwoFactorService _twoFactor;
 
-    public AdminUsersController(UserAdminService users, IAuditLogRepository audit, ISubscriptionRepository subscriptions)
+    public AdminUsersController(UserAdminService users, IAuditLogRepository audit, ISubscriptionRepository subscriptions, TwoFactorService twoFactor)
     {
+        _twoFactor = twoFactor;
         _users = users;
         _audit = audit;
         _subscriptions = subscriptions;
@@ -39,6 +41,14 @@ public class AdminUsersController : ControllerBase
 
     [HttpPost("users/{userId}/activate")]
     public Task<IActionResult> Activate(string userId) => Run(() => _users.ActivateAsync(userId));
+
+    /// <summary>For someone who lost their phone and their recovery codes: switches their two-step sign-in off so they can set it up again.</summary>
+    [HttpPost("users/{userId}/reset-two-factor")]
+    public Task<IActionResult> ResetTwoFactor(string userId) => Run(async () =>
+    {
+        await _twoFactor.ResetForUserAsync(userId);
+        return new { message = "Two-step sign-in was switched off for this person." };
+    });
 
     [HttpPost("users/{userId}/unlock")]
     public Task<IActionResult> Unlock(string userId) => Run(() => _users.UnlockAsync(userId));

@@ -93,12 +93,30 @@ namespace BannerService.Presentation.Controllers
             request.IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             request.UserAgent = Request.Headers["User-Agent"];
 
-            var (success, message, tokens) = await _authenticationService.LoginAsync(request);
+            var outcome = await _authenticationService.BeginLoginAsync(request);
 
-            if (!success)
-                return Unauthorized(new { message });
+            if (!outcome.Success)
+                return Unauthorized(new { message = outcome.Message });
 
-            return Issue(message, tokens!);
+            // the password was right and the person uses two-step sign-in: no session yet, only a short-lived challenge
+            if (outcome.Challenge != null)
+                return Ok(new { message = outcome.Message, requiresTwoFactor = true, challenge = outcome.Challenge });
+
+            return Issue(outcome.Message, outcome.Tokens!);
+        }
+
+        /// <summary>The second step: the challenge from the password step and a code from the authenticator app (or a recovery code).</summary>
+        [HttpPost("login/two-factor")]
+        [AllowAnonymous]
+        public async Task<IActionResult> LoginTwoFactor([FromBody] TwoFactorLoginDto request)
+        {
+            var outcome = await _authenticationService.CompleteTwoFactorLoginAsync(
+                request.Challenge, request.Code, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers["User-Agent"]);
+
+            if (!outcome.Success)
+                return Unauthorized(new { message = outcome.Message });
+
+            return Issue(outcome.Message, outcome.Tokens!);
         }
 
         /// <summary>Gets a new access token. The refresh token comes from the body, or from the cookie when the body has none.</summary>
