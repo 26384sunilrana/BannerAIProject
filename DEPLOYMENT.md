@@ -154,3 +154,10 @@ Manifests are in `deploy/k8s` (kustomize).
 - Passwords are re-hashed with the current strength at the next sign-in, so no migration step is needed.
 - The API sends security headers (no content-type guessing, no framing, no referrer, no caching of API answers, HSTS in production); the web app sets its own in `next.config.js`.
 - See `memory-bank/intents/002-requirements-gap-closure/hipaa-review.md` for the review and what a person still has to do.
+
+## Static review of the images and manifests (bolt 043, Docker was not running)
+- Found and fixed: the API Dockerfile's `ENV` line had a stray `\n` in place of a line break, so the image would not have built.
+- `deploy/k8s/encrypt-existing-job.yaml` runs `--encrypt-existing` once (not in the default kustomization).
+- The runtime image `mcr.microsoft.com/dotnet/aspnet:8.0` (Debian) carries time zone data; do not switch to an Alpine or chiseled image without adding `tzdata`.
+- Several API pods may run: the daily subscription reminders and the media clean-up are safe to run twice (unique claims and repeatable steps); migrations belong to the `banner-migrate` Job only.
+- NOT done: building the images, running the stack in compose or a cluster, a real MP4 playback check (no encoder on this machine). Start Docker Desktop and run `docker compose up --build`.

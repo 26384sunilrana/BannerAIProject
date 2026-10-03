@@ -1,0 +1,31 @@
+# Encrypts personal values saved before field encryption was on (run once, then again never needed). Not part of the default kustomization:
+#   kubectl apply -f deploy/k8s/encrypt-existing-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: banner-encrypt-existing
+  namespace: bannerai
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      securityContext:
+        fsGroup: 1654
+      containers:
+        - name: encrypt-existing
+          image: bannerai/banner-api:latest
+          args: ["--encrypt-existing"]
+          envFrom:
+            - configMapRef:
+                name: banner-api-config
+            - secretRef:
+                name: banner-api-secrets
+          volumeMounts:
+            - name: keys
+              mountPath: /keys
+      volumes:
+        - name: keys
+          persistentVolumeClaim:
+            claimName: banner-keys

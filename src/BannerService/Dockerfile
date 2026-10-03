@@ -19,7 +19,8 @@ RUN mkdir -p /keys /media /app/logs && chown -R app:app /keys /media /app/logs
 USER app
 
 ENV ASPNETCORE_URLS=http://+:5000 \
-    Security__KeyDirectory=/keys \n    MediaService__LocalStoragePath=/media
+    Security__KeyDirectory=/keys \
+    MediaService__LocalStoragePath=/media
 EXPOSE 5000
 
 ENTRYPOINT ["dotnet", "BannerService.dll"]
