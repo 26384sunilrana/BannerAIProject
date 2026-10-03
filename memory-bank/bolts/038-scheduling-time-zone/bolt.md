@@ -16,4 +16,4 @@ Status: complete (browser run done in bolt 040a)
 ## Not done
 - Chrome run was done later, with bolt 040a (13/13).
 - Re-running the SQL-mode integration tests on a database that already holds an earlier run fails (fixed e-mail addresses); use a fresh database each time.
-- Restore-version keeping the last approved version live is still open (pending.md).
+- Restore-version keeping the last approved version live is still open (backlog.md).

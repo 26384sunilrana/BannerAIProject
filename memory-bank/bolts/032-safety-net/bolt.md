@@ -22,9 +22,9 @@ Status: complete (CI workflow not yet run on GitHub)
 - **Secrets out of the repository:** `appsettings.json` has no connection string or signing key; the API refuses to start without
   them; `appsettings.Development.example.json` is the template for local use.
 - **CI:** `.github/workflows/ci.yml` (API build + 3 test projects, integration tests on a SQL Server container, web type check/tests/build).
-- Baseline guidance for old databases written in DEPLOYMENT.md (untried on data).
+- Baseline guidance for old databases written in docs/operations/deployment.md (untried on data).
 
-## Not done (kept in pending.md)
+## Not done (kept in backlog.md)
 - 39 quarantined .NET test files remain (about 500 compile errors: they target models and APIs that were redesigned). Their
   behaviour is to be covered by HTTP-level integration tests in each area's bolt rather than by rewriting them one by one.
 - The CI workflow has not run on GitHub. Docker images are still unbuilt.

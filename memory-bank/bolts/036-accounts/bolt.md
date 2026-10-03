@@ -26,4 +26,4 @@ Status: complete. Forgot password, email verification and self-service renewal w
   and the earlier admin (19), places (19) and files (13) scripts still pass.
 
 ## Not done
-See pending.md section C (email-based flows, per-device session list, hand-over acceptance, token claim lag, password hashing strength).
+See backlog.md section C (email-based flows, per-device session list, hand-over acceptance, token claim lag, password hashing strength).

@@ -3,7 +3,7 @@
 You are **Olivia**, you run **Sunrise Cafe**. You will look at what is running, approve what Sam made, change a banner, book an ad and learn where everything is.
 
 Sign in at <http://localhost:3000> with `demo-owner@bannerai.demo` / `Demo-Owner-2026!`.
-(New to the demo? Start with [DEMO_START_HERE.md](../../DEMO_START_HERE.md).)
+(New to the demo? Start with [Start here](../start-here.md).)
 
 ![The sign-in page](images/owner-00-sign-in.png)
 
@@ -128,4 +128,4 @@ associates stay. Nothing changes until they agree.
 ## You are done: what to try next
 - Open the demo in a second window as **Sam** and book an ad as him: watch the bell on your side.
 - Open the **administrator** window and book an ad on Sunrise Cafe: it appears on your Ads page and on the shop screen.
-- Read the full [Shop Owner Guide](../../SHOP_OWNER_USER_GUIDE.md) for every detail.
+- Read the full [Shop Owner Guide](../shop-owner.md) for every detail.

@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const BASE = process.env.WEB ?? 'http://localhost:3000'
 const CHROME = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe'
-const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'demo', 'images')
+const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'guides', 'walkthroughs', 'images')
 fs.mkdirSync(OUT, { recursive: true })
 
 const accounts = {

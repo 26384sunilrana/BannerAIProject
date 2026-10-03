@@ -7,9 +7,9 @@ guide for each of them. You do not need to know programming. If you can open a w
 
 | Person | Signs in as | Password | Guide |
 |---|---|---|---|
-| **Administrator** (you, the product owner) | `demo-admin@bannerai.demo` | `Demo-Admin-2026!` | [docs/demo/ADMIN_WALKTHROUGH.md](docs/demo/ADMIN_WALKTHROUGH.md) |
-| **Shop owner** (Olivia, runs *Sunrise Cafe*) | `demo-owner@bannerai.demo` | `Demo-Owner-2026!` | [docs/demo/OWNER_WALKTHROUGH.md](docs/demo/OWNER_WALKTHROUGH.md) |
-| **Sales executive** (Sam, works for Olivia) | `demo-seller@bannerai.demo` | `Demo-Seller-2026!` | [docs/demo/EXECUTIVE_WALKTHROUGH.md](docs/demo/EXECUTIVE_WALKTHROUGH.md) |
+| **Administrator** (you, the product owner) | `demo-admin@bannerai.demo` | `Demo-Admin-2026!` | [Admin walkthrough](walkthroughs/admin.md) |
+| **Shop owner** (Olivia, runs *Sunrise Cafe*) | `demo-owner@bannerai.demo` | `Demo-Owner-2026!` | [Owner walkthrough](walkthroughs/owner.md) |
+| **Sales executive** (Sam, works for Olivia) | `demo-seller@bannerai.demo` | `Demo-Seller-2026!` | [Executive walkthrough](walkthroughs/executive.md) |
 
 Each guide is a list of small steps, "click this, you will see that", with a picture of the screen. Start with the person you are.
 To understand the whole product, read the **owner** guide first, then the other two.
@@ -93,5 +93,5 @@ Open **<http://localhost:3000/display>** signed in as the owner to see the shop 
 
 ## What the demo does not do yet
 
-No real e-mails, text messages or payments: those need accounts of yours. The guide **[docs/PROVIDERS_SETUP_GUIDE.md](docs/PROVIDERS_SETUP_GUIDE.md)** explains,
+No real e-mails, text messages or payments: those need accounts of yours. The guide **[Providers setup guide](../operations/providers-setup.md)** explains,
 step by step, what to sign up for and what to give me so I can connect them. Everything else in the guides works for real.

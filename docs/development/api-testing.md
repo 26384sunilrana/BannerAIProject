@@ -13,7 +13,7 @@ This guide covers comprehensive testing of the Subscription Management API inclu
 - Valid JWT authentication token for authorized endpoints
 
 ### Postman Collection
-Import the `Subscription_Management_API.postman_collection.json` file into Postman.
+Import the collections in `postman/` (this folder) into Postman.
 
 ### Environment Variables
 Configure the following variables in Postman:

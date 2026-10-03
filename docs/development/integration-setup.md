@@ -487,9 +487,7 @@ npm run test
 - API: See Swagger UI at `/swagger`
 
 ### Frontend
-- Components: See [src/BannerUI/README.md](src/BannerUI/README.md)
-- Setup: See [IMPLEMENTATION_STATUS.md](src/BannerUI/IMPLEMENTATION_STATUS.md)
-- Phases: See PHASE_*_COMPLETE.md files
+- Components: See [src/BannerUI/README.md](../../src/BannerUI/README.md)
 
 ---
 
@@ -528,7 +526,6 @@ npm run test
 For issues or questions:
 1. Check the troubleshooting section above
 2. Review the README files in each folder
-3. Check the PHASE_*_COMPLETE.md documentation
 4. Open an issue on GitHub
 
 ---

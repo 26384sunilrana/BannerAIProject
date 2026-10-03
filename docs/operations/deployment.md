@@ -179,7 +179,7 @@ Manifests are in `deploy/k8s` (kustomize).
 - `GET /health/live` (up) and `GET /health/ready` (database, media folder, background jobs; 503 when the database or the media folder fails) are used by the Kubernetes probes. `/health` still answers.
 - `GET /metrics` (Prometheus): request counts and durations, shops, ads waiting, locked logins, refused sign-ins, rate-limit refusals, background job last success. On by default except in production, where it is on only when `Metrics__Token` is set (send it as `Authorization: Bearer <token>`); `Metrics__Enabled` overrides.
 - A watchdog tells administrators in the bell about a spike of refused sign-ins (`Monitoring__FailedSignInsPer5Minutes`, default 30) and about a stopped background job, at most once an hour each; `Monitoring__WatchdogEnabled=false` switches it off.
-- Alert rules for Prometheus: `deploy/monitoring/prometheus-alerts.yaml`; what to do for each: `docs/RUNBOOK.md`.
+- Alert rules for Prometheus: `deploy/monitoring/prometheus-alerts.yaml`; what to do for each: [runbook](runbook.md).
 
 ## Shop screens (bolt 049)
 

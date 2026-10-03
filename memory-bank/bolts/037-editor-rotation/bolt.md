@@ -31,4 +31,4 @@ are saved, versioned, restored, previewed and approved with the banner for free.
 - An empty picture or video component now shows a dashed "No picture yet" / "No video yet" box in the editor so it can still be found.
 
 ## Not done
-See pending.md ("Editor and screen, left after bolt 037").
+See backlog.md ("Editor and screen, left after bolt 037").

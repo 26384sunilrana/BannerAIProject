@@ -85,7 +85,7 @@ a written reason (for example, the papers were sent to you). Answer carefully: t
 You are told when an ad needs a review, when an owner overrides an ad of yours, and when a shop changes hands.
 
 ## 11. Running the system
-See `DEPLOYMENT.md` for secrets, the `--migrate` job, the `--encrypt-existing` command, retention, media storage and the shop-screen notes, and
+See [deployment guide](../operations/deployment.md) for secrets, the `--migrate` job, the `--encrypt-existing` command, retention, media storage and the shop-screen notes, and
 `memory-bank/intents/002-requirements-gap-closure/hipaa-review.md` for the personal-data review and what a person still has to do.
 
 ## 12. Not available yet

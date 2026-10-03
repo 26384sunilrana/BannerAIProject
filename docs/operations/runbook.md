@@ -42,7 +42,7 @@ Often a shared password or a script. **Users, then Unlock** after checking with 
 `/health/ready` shows the media folder failing. Free space or enlarge the volume (`media-pvc.yaml`). Files are not lost by this: an upload that fails is refused with a message and cleaned up by the clean-up job.
 
 ## Lost the phone of an administrator
-Another administrator: **Users, then Reset two-step**. The last administrator: `dotnet BannerService.dll --reset-two-factor <email>` (see `DEPLOYMENT.md`).
+Another administrator: **Users, then Reset two-step**. The last administrator: `dotnet BannerService.dll --reset-two-factor <email>` (see [deployment guide](deployment.md)).
 
 ## A shop says its screen is blank
 1. Open **Shop screen** as the owner on any computer: does it show? 2. Is the plan active (Subscriptions)? A shop whose plan ended shows only its default board. 3. Is the banner approved and scheduled for now (shop time zone)? 4. On the TV, reload the page and check the network.

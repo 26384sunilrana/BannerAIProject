@@ -25,7 +25,7 @@ The media service accepted uploads but never kept the bytes. Uploading now works
 - Pasting an address still works and replaces an uploaded file.
 
 ## Deployment
-- Media volume (compose volume, Kubernetes ReadWriteMany claim banner-media, MediaService__LocalStoragePath=/media) and notes in DEPLOYMENT.md.
+- Media volume (compose volume, Kubernetes ReadWriteMany claim banner-media, MediaService__LocalStoragePath=/media) and notes in docs/operations/deployment.md.
 
 ## Verification
 - Chrome against the real API on SQL Server: 11 media checks (image shows and survives reload through a fresh link, only the id is saved, SVG and disguised file refused, 20 MB video sent as three pieces, ranged reads, stored bytes identical) plus the earlier 18 editor and 28 account checks.

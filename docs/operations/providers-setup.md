@@ -4,7 +4,7 @@ This is for you, the owner of the product, not for a programmer. It tells you **
 what to hand over to me** so I can finish the connection. Prices, screens and rules of the providers change: where I say "check", look at the provider's
 current page before you pay or promise anything.
 
-Nothing here is needed to **try** BannerAI: the demo (`DEMO_START_HERE.md`) works without any of it. These services are needed to **sell** it.
+Nothing here is needed to **try** BannerAI: the demo ([start-here guide](../guides/start-here.md)) works without any of it. These services are needed to **sell** it.
 
 ## What is waiting on what
 
@@ -50,7 +50,7 @@ Nothing here is needed to **try** BannerAI: the demo (`DEMO_START_HERE.md`) work
 | `AppUrl` | the address of the web app, for the links in the mails, e.g. `https://banners.yourcompany.com` |
 
 With Docker Compose, add those lines to `.env` and to the `api:` section's `environment:`; in Kubernetes put the password in the secret and the rest in the configmap
-(see `DEPLOYMENT.md`).
+(see [deployment guide](deployment.md)).
 
 **Check it works:** I add a "send me a test e-mail" button for administrators when we do this step. Until then, subscription reminders show in the API log
 as "sent" or "not sent".

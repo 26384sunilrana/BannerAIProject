@@ -48,7 +48,7 @@ to keep PHI out, to protect the personal information (PII) it does hold, and to 
 | 14 | Audit log has no tamper protection (a database admin could change rows) | Low | **Open.** Ship the export to write-once storage in production. |
 | 15 | No automatic breach notification or access alerts | Low | **Open.** Failed-sign-in spikes and admin exports could raise an in-app notice. |
 | 16 | `Jwt:SecretKey` and keys come from configuration; the placeholder is refused in production | OK | Checked, no change. |
-| 17 | The 39 older .NET test files are still switched off | Process | **Open** (pending.md). |
+| 17 | The 39 older .NET test files are still switched off | Process | **Open** (backlog.md). |
 
 ## 4. What a human still has to do (cannot be done in code)
 

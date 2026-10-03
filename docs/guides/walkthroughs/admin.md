@@ -3,7 +3,7 @@
 You are the **administrator**: you look after all shops, their plans, the places, the prices of ads and anything that needs a decision.
 
 Sign in at <http://localhost:3000> with `demo-admin@bannerai.demo` / `Demo-Admin-2026!`.
-(New to the demo? Start with [DEMO_START_HERE.md](../../DEMO_START_HERE.md).)
+(New to the demo? Start with [Start here](../start-here.md).)
 
 ![The sign-in page](images/admin-00-sign-in.png)
 
@@ -92,5 +92,5 @@ The bell tells you when an ad needs a review, when an owner overrides one of you
 
 ## After the demo
 - For real use, create your own administrator: `docker compose run --rm api --create-admin you@yourcompany.com "<a long password>"` and **do not run the demo script** on the real database.
-- To go live (e-mail, texts, payments, cloud) follow [docs/PROVIDERS_SETUP_GUIDE.md](../PROVIDERS_SETUP_GUIDE.md).
-- The full [Administrator Guide](../../ADMIN_USER_GUIDE.md) has every detail, and `DEPLOYMENT.md` explains running it for real.
+- To go live (e-mail, texts, payments, cloud) follow [Providers setup guide](../../operations/providers-setup.md).
+- The full [Administrator Guide](../admin.md) has every detail, and [deployment guide](../../operations/deployment.md) explains running it for real.

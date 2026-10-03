@@ -28,4 +28,4 @@ Status: complete
 - Chrome against the real API: 19/19 checks (build the hierarchy, refuse duplicates, place a shop, subscribe and get the SHP identifier, group lists the shop, in-use delete refused, switch-off hides from owners, unused group deleted, admin vs owner buttons).
 
 ## Not done
-See pending.md (district level left unused, owner cannot request a new city, no import, no search by identifier).
+See backlog.md (district level left unused, owner cannot request a new city, no import, no search by identifier).

@@ -11,9 +11,9 @@ Status: complete
 
 ## Verified
 - Domain 443, Application 144, Integration 12 (incl. admin can list, owners cannot), tsc clean, next build OK.
-- Jest: 16 new tests pass; the 103 older failures are unchanged (see pending.md E).
+- Jest: 16 new tests pass; the 103 older failures are unchanged (see backlog.md E).
 - Chrome against the real API on SQL Server LocalDB: 19/19 checks.
 
 ## Not done
-- Everything else stays in `memory-bank/intents/002-requirements-gap-closure/pending.md`.
+- Everything else stays in `memory-bank/intents/002-requirements-gap-closure/backlog.md`.
 - `GET /api/subscriptions/{shopId}` returns 404 for a shop without a subscription, which clutters the activity log.

@@ -26,4 +26,4 @@ Status: complete. Azure Blob is deliberately left for the end (bolt 044), as dec
   picker offers only images, chosen file shows in the banner, used file marked and its delete refused naming the banner, unused file deleted, storage drops).
 
 ## Not done
-See pending.md section D. Storage limit is shown but not enforced yet (bolt 039).
+See backlog.md section D. Storage limit is shown but not enforced yet (bolt 039).

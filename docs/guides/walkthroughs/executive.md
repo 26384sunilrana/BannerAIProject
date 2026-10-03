@@ -4,7 +4,7 @@ You are **Sam**, you work for Olivia at **Sunrise Cafe**. You make banners and b
 can and cannot do.
 
 Sign in at <http://localhost:3000> with `demo-seller@bannerai.demo` / `Demo-Seller-2026!`.
-(New to the demo? Start with [DEMO_START_HERE.md](../../DEMO_START_HERE.md).)
+(New to the demo? Start with [Start here](../start-here.md).)
 
 ![The sign-in page](images/seller-00-sign-in.png)
 
@@ -77,4 +77,4 @@ The **bell** tells you when Olivia approves or sends back something of yours. Cl
 | Change the plan, the team or the shop's details | Olivia |
 | See the monthly money statement | Olivia and the administrator |
 
-Read the [Sales Executive Guide](../../BANNER_CREATOR_USER_GUIDE.md) for every detail.
+Read the [Sales Executive Guide](../banner-creator.md) for every detail.

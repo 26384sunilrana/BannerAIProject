@@ -16,11 +16,11 @@ closes: [Docker and Kubernetes, local then Azure]
 - Packaging: API Dockerfile (non-root, keys and logs on volumes), web Dockerfile with API URL build args, .dockerignore files, docker-compose.yml (SQL Server + API + web) with .env.example.
 - Kubernetes (kustomize, renders 11 objects): namespace, config, secret template, shared key volume claim, API deployment + service + autoscaler + disruption budget, web, ingress, migration Job.
 - Real-database check: the integration smoke tests run against SQL Server when SMOKE_SQL is set (passed on LocalDB, including migrations and seeding).
-- DEPLOYMENT.md documents local, Docker, migrations, required settings, key handling and what was and was not verified.
+- docs/operations/deployment.md documents local, Docker, migrations, required settings, key handling and what was and was not verified.
 
 ## Not verified / not done
 - Docker images were not built (Docker daemon not running); the web app was not built (no node_modules in the repository).
 - Nothing was applied to a cluster.
-- Existing databases built from the old model cannot take InitialCreate; development databases should be recreated (see DEPLOYMENT.md).
+- Existing databases built from the old model cannot take InitialCreate; development databases should be recreated (see docs/operations/deployment.md).
 - Encryption keys are on a shared file volume; Azure Key Vault protection is not wired.
 - No CI pipeline.
