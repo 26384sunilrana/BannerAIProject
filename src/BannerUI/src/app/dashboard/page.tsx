@@ -23,6 +23,7 @@ const CARDS: Card[] = [
   { href: '/banners', title: 'Banners', text: 'Create banners, open the editor and send them for approval.', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/banners/calendar', title: 'Schedule calendar', text: 'See when each banner is shown during the week, on your shop clock.', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/default-board', title: 'Default board', text: 'Design what your screen shows when no banner is live: a message, colours and your logo.', roles: [Roles.ShopOwner] },
+  { href: '/ads', title: 'Ads', text: 'Book an ad on a shop screen: a side strip, a mega ad, a popup or a corner tile.', roles: [Roles.Admin, Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/media', title: 'My files', text: 'Your uploaded pictures and videos, how much space they use, and what is safe to delete.', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/approvals', title: 'Approvals', text: 'See what is waiting for approval, publish approved banners.', roles: [Roles.ShopOwner, Roles.SalesExecutive] },
   { href: '/team', title: 'Team', text: 'Add or remove sales executive logins and choose who approves banners.', roles: [Roles.ShopOwner] },

@@ -119,6 +119,8 @@ builder.Services.AddScoped<IEffectService, EffectService>();
 builder.Services.AddScoped<IMediaUploadService, MediaUploadService>();
 builder.Services.AddScoped<MediaLibraryService>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IShopAdRepository, ShopAdRepository>();
+builder.Services.AddScoped<ShopAdService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<MediaCleanupService>();
 builder.Services.AddHostedService<BannerService.Infrastructure.Background.MediaCleanupWorker>();

@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { BannerView } from '@/components/Display/BannerView'
 import { DefaultBoard } from '@/components/Display/DefaultBoard'
+import { ScreenWithAds } from '@/components/Display/AdLayout'
+import { adService, ShopAd } from '@/api/adService'
 import { bannerService } from '@/api/bannerService'
 import { bannerListService } from '@/api/workflowService'
 import { useAuth } from '@/context/AuthContext'
@@ -34,6 +36,7 @@ export default function DisplayPage() {
   const [reason, setReason] = useState<string | null>(null)
   const [shopName, setShopName] = useState('')
   const [look, setLook] = useState<BoardLook | null>(null)
+  const [ads, setAds] = useState<ShopAd[]>([])
   const [ready, setReady] = useState(false)
   const [signedIn, setSignedIn] = useState(false)
   const [controlsVisible, setControlsVisible] = useState(false)
@@ -115,8 +118,18 @@ export default function DisplayPage() {
         .catch(() => undefined)
     }
 
+    // the ads on the screen now; when the call fails the ones showing stay (an ad ends by its own end time on the server)
+    const shopId = user.shopId
+    const pollAds = () => {
+      if (shopId) adService.live(shopId).then(setAds).catch(() => undefined)
+    }
+
     poll()
-    const timer = setInterval(poll, POLL_MS)
+    pollAds()
+    const timer = setInterval(() => {
+      poll()
+      pollAds()
+    }, POLL_MS)
     return () => clearInterval(timer)
   }, [poll, router, authReady, authUser])
 
@@ -149,11 +162,13 @@ export default function DisplayPage() {
       onMouseMove={showControls}
       style={{ cursor: controlsVisible ? 'default' : 'none' }}
     >
-      {banner ? (
-        <BannerView banner={banner} />
-      ) : (
-        <DefaultBoard shopName={shopName} look={look} note={reason ? NOTES[reason] : undefined} />
-      )}
+      <ScreenWithAds ads={ads}>
+        {banner ? (
+          <BannerView banner={banner} />
+        ) : (
+          <DefaultBoard shopName={shopName} look={look} note={reason ? NOTES[reason] : undefined} />
+        )}
+      </ScreenWithAds>
 
       <div
         className={`absolute right-4 top-4 flex gap-2 transition-opacity ${controlsVisible ? 'opacity-100' : 'pointer-events-none opacity-0'}`}

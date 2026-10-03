@@ -119,6 +119,14 @@ public class MediaFileRepository : IMediaFileRepository
         if (await _context.Shops.AnyAsync(sh => sh.Id == shopId && sh.DefaultBoardLogoMediaId == mediaFileId))
             names.Add("the default board");
 
+        // so does a picture on an ad that is waiting or approved and not over yet
+        var now = DateTime.UtcNow;
+        var ads = await _context.ShopAds
+            .Where(ad => ad.ShopId == shopId && ad.MediaFileId == mediaFileId && ad.EndAt > now
+                         && (ad.Status == ShopAdStatus.PendingApproval || ad.Status == ShopAdStatus.Approved))
+            .Select(ad => ad.Headline).ToListAsync();
+        names.AddRange(ads.Select(h => $"the ad \"{h}\""));
+
         return names;
     }
 

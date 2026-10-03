@@ -46,6 +46,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
     public DbSet<SubscriptionNotification> SubscriptionNotifications { get; set; } = null!;
     public DbSet<InAppNotification> InAppNotifications { get; set; } = null!;
+    public DbSet<ShopAd> ShopAds { get; set; } = null!;
+    public DbSet<ShopAdEvent> ShopAdEvents { get; set; } = null!;
 
     // Publish workflow, advertising and dashboards
     public DbSet<PublishWorkflow> PublishWorkflows { get; set; } = null!;
@@ -553,6 +555,29 @@ public class ApplicationDbContext : DbContext
             e.Property(x => x.Kind).HasMaxLength(40).IsRequired();
             e.Property(x => x.Error).HasMaxLength(500);
             e.HasIndex(x => new { x.SubscriptionId, x.Kind, x.Channel, x.Day }).IsUnique();
+        });
+
+        modelBuilder.Entity<ShopAd>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.AdvertiserName).HasMaxLength(80).IsRequired();
+            e.Property(x => x.Headline).HasMaxLength(80).IsRequired();
+            e.Property(x => x.Body).HasMaxLength(300);
+            e.Property(x => x.Background).HasMaxLength(7).IsRequired();
+            e.Property(x => x.TextColor).HasMaxLength(7).IsRequired();
+            e.Property(x => x.DecidedByName).HasMaxLength(200);
+            e.Property(x => x.DecisionNote).HasMaxLength(500);
+            e.HasIndex(x => new { x.ShopId, x.Status, x.StartAt });
+            e.HasIndex(x => new { x.Status, x.StartAt });
+        });
+
+        modelBuilder.Entity<ShopAdEvent>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.UserName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Action).HasMaxLength(30).IsRequired();
+            e.Property(x => x.Note).HasMaxLength(500);
+            e.HasIndex(x => new { x.ShopAdId, x.At });
         });
 
         modelBuilder.Entity<InAppNotification>(e =>
