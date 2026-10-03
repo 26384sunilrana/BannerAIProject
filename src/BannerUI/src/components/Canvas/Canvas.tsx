@@ -78,6 +78,10 @@ export const Canvas = React.forwardRef<HTMLDivElement, CanvasProps>(
     const { dragState, isDragging, draggedComponentId, getFinalPosition } = drag
     React.useEffect(() => {
       if (!isDragging || !draggedComponentId) return
+      // a click (the pointer has not really moved) only selects the component: it must not snap it to the grid or mark the banner as changed
+      const start = dragState.dragStartPos
+      const now = dragState.currentDragPos
+      if (!start || !now || Math.hypot(now.x - start.x, now.y - start.y) < 3) return
       const position = getFinalPosition()
       if (position) onComponentMove(draggedComponentId, position.x, position.y)
       // eslint-disable-next-line react-hooks/exhaustive-deps

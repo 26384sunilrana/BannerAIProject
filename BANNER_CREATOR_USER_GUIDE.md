@@ -44,7 +44,7 @@ is not approved yet.
 
 ## 5. Submitting for approval
 **Submit for approval** needs a schedule. The owner and the chosen approvers are told in the bell. You see **Waiting for approval**, then **Approved**
-or **Sent back** with the reason. Fix a sent-back banner and submit it again. If you change the schedule of an approved banner it goes back for approval.
+or **Rejected** with the reason. Fix a rejected banner and submit it again. If you change the schedule of an approved banner it goes back for approval.
 
 ## 6. My files
 Upload PNG, JPEG, GIF, WebP pictures and MP4, WebM videos (up to 500 MB). Files in use by a banner or ad cannot be deleted. The bar shows the plan's storage;

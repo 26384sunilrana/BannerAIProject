@@ -118,4 +118,33 @@ public class HardeningSmokeTests : IClassFixture<SmokeFactory>
         if (!FieldEncryption.IsConfigured)
             await Assert.ThrowsAsync<InvalidOperationException>(() => backfill.RunAsync());
     }
+
+    [Fact]
+    public async Task CreateAdmin_MakesAnAdministratorWhoCanSignIn_AndRunningAgainResetsThePassword()
+    {
+        await _factory.SeedAsync();
+        var email = $"first-admin-{Guid.NewGuid():N}@example.com";
+
+        async Task<string> RunAsync(string password)
+        {
+            using var scope = _factory.Services.CreateScope();
+            return await AdminBootstrap.RunAsync(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(),
+                scope.ServiceProvider.GetRequiredService<BannerService.Domain.Services.IPasswordHashService>(), new[] { email, password, "Fiona", "First" });
+        }
+
+        Assert.Contains("created", await RunAsync("Long-Admin-Pass1"));
+        var admin = await LoginAsync(email, "Long-Admin-Pass1");
+        Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync("/api/admin/users")).StatusCode);
+
+        Assert.Contains("updated", await RunAsync("Another-Admin-Pass2"));
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _factory.CreateClient().PostAsJsonAsync("/api/authentication/login", new { email, password = "Long-Admin-Pass1" })).StatusCode);
+        await LoginAsync(email, "Another-Admin-Pass2");
+
+        using var scope2 = _factory.Services.CreateScope();
+        var context = scope2.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var hasher = scope2.ServiceProvider.GetRequiredService<BannerService.Domain.Services.IPasswordHashService>();
+        await Assert.ThrowsAsync<ArgumentException>(() => AdminBootstrap.RunAsync(context, hasher, new[] { email }));
+        await Assert.ThrowsAsync<ArgumentException>(() => AdminBootstrap.RunAsync(context, hasher, new[] { email, "short" }));
+        await Assert.ThrowsAsync<ArgumentException>(() => AdminBootstrap.RunAsync(context, hasher, new[] { "not-an-email", "Long-Admin-Pass1" }));
+    }
 }

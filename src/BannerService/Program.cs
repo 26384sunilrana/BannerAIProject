@@ -241,6 +241,22 @@ if (migrateOnly)
     return;
 }
 
+// dotnet BannerService.dll --create-admin <email> <password> [first name] [last name]
+//   makes (or repairs) the first administrator login: sign-up only makes shop owners, so a new installation has no administrator until this is run.
+//   Run again with a new password to reset an administrator's password.
+var adminIndex = Array.IndexOf(args, "--create-admin");
+if (adminIndex >= 0)
+{
+    using var scope = app.Services.CreateScope();
+    var message = await BannerService.Infrastructure.Data.AdminBootstrap.RunAsync(
+        scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(),
+        scope.ServiceProvider.GetRequiredService<BannerService.Domain.Services.IPasswordHashService>(),
+        args.Skip(adminIndex + 1).TakeWhile(a => !a.StartsWith("--")).ToArray());
+    Log.Information("{Message}", message);
+    Log.CloseAndFlush();
+    return;
+}
+
 // dotnet BannerService.dll --encrypt-existing   encrypts personal values saved before field encryption was on, then exits
 if (args.Contains("--encrypt-existing"))
 {

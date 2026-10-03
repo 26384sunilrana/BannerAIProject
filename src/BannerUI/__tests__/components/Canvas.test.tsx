@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Canvas } from '@/components/Canvas/Canvas'
 import { BannerComponent } from '@/types/banner'
@@ -51,6 +51,25 @@ describe('Canvas', () => {
   it('renders components on canvas', () => {
     render(<Canvas {...defaultProps} />)
     expect(screen.getByText('Test Text')).toBeInTheDocument()
+  })
+
+  it('does not move or snap a component that is only clicked, but moves it when dragged', () => {
+    const onComponentMove = jest.fn()
+    const odd = { ...mockComponent, x: 53, y: 51 } // not on the 8 pixel grid
+    const { container } = render(<Canvas {...defaultProps} components={[odd]} onComponentMove={onComponentMove} />)
+    const target = screen.getByText('Test Text').closest('[data-component-id]') as HTMLElement
+    const surface = container.querySelector('[class*="container"]') as HTMLElement
+
+    fireEvent.mouseDown(target, { clientX: 100, clientY: 100 })
+    fireEvent.mouseUp(window)
+    expect(onComponentMove).not.toHaveBeenCalled()
+
+    fireEvent.mouseDown(target, { clientX: 100, clientY: 100 })
+    fireEvent.mouseMove(surface, { clientX: 101, clientY: 100 }) // a tremor of the hand
+    expect(onComponentMove).not.toHaveBeenCalled()
+    fireEvent.mouseMove(surface, { clientX: 140, clientY: 120 })
+    fireEvent.mouseUp(window)
+    expect(onComponentMove).toHaveBeenCalled()
   })
 
   it('calls onComponentSelect when component clicked', async () => {

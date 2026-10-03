@@ -55,7 +55,7 @@ Open **Team**.
 **Schedule** (under the banner in the list): start and end, optionally **only certain hours each day** and chosen **weekdays**. Two banners can share dates
 if their hours do not meet; the program refuses two banners at the same moment and names the other one. **Calendar** shows the week.
 
-**Submit for approval** needs a schedule. Whoever approves finds it under **Approvals**, approves or sends it back with a reason, and then **Publish**es.
+**Submit for approval** needs a schedule. Whoever approves finds it under **Approvals**, approves it, or rejects it with a reason, and then **Publish**es it.
 Changing the schedule of an approved banner sends it for approval again.
 
 ## 6. My files
