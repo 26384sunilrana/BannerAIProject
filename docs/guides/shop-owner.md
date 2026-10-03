@@ -3,7 +3,7 @@
 For the person who runs a shop on BannerAI: you sign up, design banners, schedule them, approve what your team makes, book ads on your own
 screen and keep the shop screen playing.
 
-This guide matches the application as built through bolt 042b (October 2026). Things that are not available yet are listed at the end.
+This guide matches the application as built through bolt 049 (October 2026). Things that are not available yet are listed at the end.
 
 ## Contents
 1. Signing up and signing in
@@ -13,22 +13,22 @@ This guide matches the application as built through bolt 042b (October 2026). Th
 5. Banners: make, schedule, submit, approve, publish
 6. My files
 7. The default board
-8. The shop screen
+8. Screens: the television in your shop
 9. Ads on your screen
 10. Messages (the bell)
 11. Subscription and storage
-12. Your account
+12. Your account and two-step sign-in
 13. A shop that changes hands
 14. Not available yet
 
 ## 1. Signing up and signing in
 - **Register**: your name, e-mail, a password of at least 8 characters, and the **shop name**. You become the owner of that shop.
-- **Sign in** with your e-mail and password. Five wrong passwords lock the login; ask the administrator to unlock it.
+- **Sign in** with your e-mail and password. Five wrong passwords lock the login; ask the administrator to unlock it. Too many tries in a minute (for example many wrong passwords from one place) show a message to wait a minute; nothing is broken.
 - You stay signed in in the browser; the page keeps a protected cookie, never your password. **Sign out** is at the top right. *My account* has
   **Sign out everywhere** if you used a shared computer.
 
 ## 2. The menu
-Home, Banners, Calendar, Ads, My files, Approvals, Team, Subscription, My shop, Default board, Takeover, Shop screen. The bell next to your name shows
+Home, Banners, Calendar, Ads, My files, Approvals, Team, Subscription, My shop, Default board, Takeover, Screens, Shop screen. The bell next to your name shows
 messages. Home has a card for each of these.
 
 ## 3. Your shop: address, place and time zone
@@ -66,10 +66,20 @@ an ad uses the file. A file in use cannot be deleted: the message names the bann
 **Default board** is what the screen shows when no banner is live: a message, your logo from My files, and your own colours. It is kept on the
 screen's machine, so it shows even without a connection.
 
-## 8. The shop screen
-Open **Shop screen** on the machine in the shop (Full screen with the button at the top right). It shows the live banner, swaps it by the schedule
-and falls back to the default board. Ads are drawn around it. It checks the server every 30 seconds and keeps working if the connection drops.
-If your plan has ended, the screen shows the default board and a note.
+## 8. Screens: the television in your shop
+Your shop has **one screen** (a television or Android tablet). Nobody signs in on it.
+1. On the television, open the web browser and go to **your-site/player**. It shows a code of six characters.
+2. In BannerAI open **Screens**, type the code (and a name if you like) and choose **Add the screen**.
+3. Within seconds the television starts by itself. After a power cut it starts again by itself.
+
+**Screens** shows whether it is **Online** or **Offline**, when it was last heard from, and **What was shown**: hours each banner, ad and the default board
+were on the screen (last 7, 30 or 90 days). If the screen stays offline for about 10 minutes you get a message in the bell. **Remove this screen** makes it
+forget your shop and show a new code (use it when the television is sold or replaced).
+
+It shows the live banner, swaps it by the schedule and falls back to the default board; ads are drawn around it. It keeps working if the connection
+drops and catches up when it returns. If your plan has ended, it shows the default board and a note.
+
+The older **Shop screen** page plays the same thing in your own signed-in browser, handy to check how it looks.
 
 ## 9. Ads on your screen
 **Ads** lets you book an ad for an advertiser who came to you. Advertisers are not users of BannerAI: you type their business name.
@@ -95,6 +105,11 @@ shows only the default board. Your plan includes storage; at 80% a warning appea
 ## 12. Your account
 Click your name: change your first and last name, phone and password (the e-mail is your sign-in name and cannot be changed here), and sign out of every device.
 
+Two-step sign-in (recommended): under **My account**, **Set up two-step sign-in**. Scan the picture with an authenticator app (Google Authenticator,
+Microsoft Authenticator or similar), type the six-digit code, and **save the ten recovery codes** somewhere safe: each works once if you lose your phone.
+From then on sign-in asks for the code after your password. **New recovery codes** and **Turn off** are on the same page (both ask for a code).
+Lost your phone and the codes? The administrator can reset it for you.
+
 ## 13. A shop that changes hands
 - If you took over a shop that is already in BannerAI, sign up with your own shop first, then open **Takeover** and type the shop's name and address.
   The owner of that shop is told and **hands it over with their password**, choosing whether the **associates stay** (only the owner changes; you
@@ -106,4 +121,5 @@ Click your name: change your first and last name, phone and password (the e-mail
 - Paying for or renewing the plan yourself, forgot-password and e-mail verification, reminders by real e-mail or SMS (they wait for the providers).
   Ask the administrator for these today.
 - Admin-booked ads carry text only (no pictures).
+- Only one screen per shop. The player page has been tried in a desktop browser only, not yet on an Android television.
 - Currency is not shown: amounts are plain numbers.

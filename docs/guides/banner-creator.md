@@ -2,7 +2,7 @@
 
 For a login created by a shop owner. You make banners and book ads for **your shop**; the owner (or the people the owner chose) approves.
 
-This guide matches the application as built through bolt 042b (October 2026).
+This guide matches the application as built through bolt 049 (October 2026).
 
 ## Contents
 1. Signing in
@@ -19,7 +19,7 @@ This guide matches the application as built through bolt 042b (October 2026).
 
 ## 1. Signing in
 Your owner gives you an e-mail and a first password. Sign in, then open **My account** (your name, top right) and change the password. Five wrong
-passwords lock the login; ask your owner or the administrator to unlock it.
+passwords lock the login; ask your owner or the administrator to unlock it. Too many tries in a minute (for example many wrong passwords from one place) show a message to wait a minute; nothing is broken.
 
 ## 2. What you can and cannot do
 | You can | You cannot |
@@ -62,10 +62,15 @@ is a draft or was sent back; an approved ad can only be cancelled.
 The bell shows unread messages: approvals, ads approved or sent back. Click one to open the page.
 
 ## 9. The shop screen
-**Shop screen** plays what is live, with ads around it, and the shop's default board between banners.
+The shop's television is set up by the owner under **Screens**. You can see there whether it is **Online** and what it showed (hours per banner and ad), but not change it.
+**Shop screen** plays what is live in your own browser, with ads around it and the default board between banners, to check how it looks.
 
 ## 10. Your account
 Change your name, phone and password; **Sign out everywhere** ends every session of yours.
+
+Two-step sign-in (recommended): under **My account**, **Set up two-step sign-in**. Scan the picture with an authenticator app (Google Authenticator,
+Microsoft Authenticator or similar), type the six-digit code, and **save the ten recovery codes** somewhere safe: each works once if you lose your phone.
+From then on sign-in asks for the code after your password. **New recovery codes** and **Turn off** are on the same page (both ask for a code).
 
 ## 11. Not available yet
 Forgot-password and e-mail verification, reminders by real e-mail or SMS (they wait for the providers); ask your owner or the administrator.

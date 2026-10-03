@@ -50,3 +50,40 @@ appsettings.local.json
 appsettings.Development.json
 
 .env
+
+# Secrets: only the *.example files are committed
+.env
+.env.*
+!.env.example
+*.pfx
+*.pem
+*.key
+
+# Node / Next.js (UI)
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+npm-debug.log*
+
+# Test and coverage output
+coverage/
+TestResults/
+*.trx
+*.coverage
+coverage.cjson
+lcov.info
+playwright-report/
+test-results/
+
+# Data the app writes while running locally (media files, encryption keys, SQL data)
+**/uploads/
+**/media-store/
+**/DataProtection-Keys/
+*.mdf
+*.ldf
+
+# Editor/scratch leftovers
+*.bak
+*.tmp
+*.swp

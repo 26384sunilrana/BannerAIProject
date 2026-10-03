@@ -3,7 +3,7 @@
 For the product owner who runs BannerAI for many shops: users, plans and subscriptions, places, ads and their prices, compliance reviews, takeovers
 and the activity log.
 
-This guide matches the application as built through bolt 042b (October 2026).
+This guide matches the application as built through bolt 049 (October 2026).
 
 ## Contents
 1. Signing in and the menu
@@ -20,12 +20,12 @@ This guide matches the application as built through bolt 042b (October 2026).
 12. Not available yet
 
 ## 1. Signing in and the menu
-Sign in with your administrator login. The menu: Home, Ads, Shops, Places, Ad rates, Ad report, Plans, Subscriptions, Users, Activity, Takeover.
+Sign in with your administrator login. In production the **two-step code from an authenticator app is required**: on first sign-in you are taken to **My account** to set it up and nothing else opens until you do; keep the recovery codes safe. Too many tries in a minute (for example many wrong passwords from one place) show a message to wait a minute; nothing is broken. The menu: Home, Ads, Shops, Places, Ad rates, Ad report, Plans, Subscriptions, Users, Activity, Takeover.
 Administrators do not belong to a shop. The bell shows messages for you.
 
 ## 2. Users
 **Users** lists logins with search (name, e-mail, shop). For each: **Deactivate / Activate**, **Unlock** (after five wrong passwords) and a link to their
-**activity**. You cannot deactivate yourself. **Move** sends a sales executive to another shop (that shop needs an active plan and a free place), and
+**activity**. You cannot deactivate yourself. **Reset two-step** switches off a person's two-step sign-in when they lost their phone and codes (they set it up again). Reset the last administrator from the server: `dotnet BannerService.dll --reset-two-factor <email>`. **Move** sends a sales executive to another shop (that shop needs an active plan and a free place), and
 **Make owner** makes a member of a shop its owner (the previous owner becomes an executive); everyone involved has to sign in again.
 
 ## 3. Plans and subscriptions
@@ -82,10 +82,12 @@ a written reason (for example, the papers were sent to you). Answer carefully: t
 100,000). Entries are kept six years by default (`Audit:RetentionDays`). Bodies are never stored.
 
 ## 10. Messages (the bell)
-You are told when an ad needs a review, when an owner overrides an ad of yours, and when a shop changes hands.
+You are told when an ad needs a review, when an owner overrides an ad of yours, and when a shop changes hands. Shop owners get a message when their screen has been offline for about 10 minutes.
+
+Shops pair their own television with a code under **Screens** (one screen per shop); you do not manage screens. Proof of play (hours on screen) is kept for 400 days.
 
 ## 11. Running the system
-See [deployment guide](../operations/deployment.md) for secrets, the `--migrate` job, the `--encrypt-existing` command, retention, media storage and the shop-screen notes, and
+Health and alerts: `/health/ready` for the load balancer, `/metrics` for Prometheus, alert rules in `deploy/monitoring`; the [runbook](../operations/runbook.md) says what to do for each alert. Abuse limits (sign-in, uploads, API) are on by default. See [deployment guide](../operations/deployment.md) for secrets, the `--migrate` job, the `--encrypt-existing` command, retention, media storage and the shop-screen notes, and
 `memory-bank/intents/002-requirements-gap-closure/hipaa-review.md` for the personal-data review and what a person still has to do.
 
 ## 12. Not available yet
