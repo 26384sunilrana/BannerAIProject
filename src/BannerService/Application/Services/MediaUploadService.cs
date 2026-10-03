@@ -20,6 +20,34 @@ public interface IMediaUploadService
     Task<MediaDownload?> OpenDownloadAsync(Guid mediaFileId, long expiresUnixSeconds, string? signature);
 }
 
+/// <summary>How much storage a shop may use: its plan's allowance, the starter allowance without a plan, or no limit.</summary>
+public static class StorageAllowance
+{
+    public const int StarterGigabytes = 1;
+
+    public static long? LimitBytes(Subscription? subscription)
+    {
+        var gigabytes = subscription == null ? StarterGigabytes : subscription.Plan?.Features?.MaxStorageGB ?? StarterGigabytes;
+        return gigabytes > 0 ? gigabytes * 1024L * 1024 * 1024 : null;
+    }
+}
+
+/// <summary>The shop's plan has no room left for a file. Carries the numbers so the screen can offer an upgrade.</summary>
+public sealed class StorageLimitExceededException : Exception
+{
+    public long UsedBytes { get; }
+    public long LimitBytes { get; }
+
+    public StorageLimitExceededException(long usedBytes, long limitBytes, long neededBytes)
+        : base($"Your plan has {FormatMb(Math.Max(0, limitBytes - usedBytes))} of storage left and this file needs {FormatMb(neededBytes)}. Delete files you no longer use, or upgrade your plan.")
+    {
+        UsedBytes = usedBytes;
+        LimitBytes = limitBytes;
+    }
+
+    private static string FormatMb(long bytes) => bytes >= 1024L * 1024 * 1024 ? $"{bytes / 1073741824.0:0.##} GB" : $"{bytes / 1048576.0:0.#} MB";
+}
+
 public sealed class MediaDownload : IAsyncDisposable
 {
     public required Stream Content { get; init; }
@@ -55,14 +83,17 @@ public class MediaUploadService : IMediaUploadService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IStorageProvider _storage;
     private readonly IMediaUrlSigner _signer;
+    private readonly ISubscriptionRepository _subscriptions;
 
     public MediaUploadService(
         IMediaFileRepository mediaFileRepository,
         IUploadChunkRepository chunkRepository,
         IUnitOfWork unitOfWork,
         IStorageProvider storage,
-        IMediaUrlSigner signer)
+        IMediaUrlSigner signer,
+        ISubscriptionRepository subscriptions)
     {
+        _subscriptions = subscriptions;
         _mediaFileRepository = mediaFileRepository;
         _chunkRepository = chunkRepository;
         _unitOfWork = unitOfWork;
@@ -90,6 +121,15 @@ public class MediaUploadService : IMediaUploadService
             throw new ArgumentException("Only PNG, JPEG, GIF, WebP images and MP4, WebM videos can be uploaded");
         if ((fileType == 2) != type.StartsWith("video/"))
             throw new ArgumentException("The file type does not match its content type");
+
+        // the plan's storage is a hard limit; a shop with no plan gets the starter allowance, and a plan limit of 0 means unlimited
+        var limit = StorageAllowance.LimitBytes(await _subscriptions.GetByShopIdAsync(shopId));
+        if (limit != null)
+        {
+            var reserved = await _mediaFileRepository.GetReservedBytesAsync(shopId);
+            if (reserved + totalSizeBytes > limit)
+                throw new StorageLimitExceededException(reserved, limit.Value, totalSizeBytes);
+        }
 
         var mediaFile = new MediaFile(shopId, fileName, type, totalSizeBytes, fileType, userId);
         await _mediaFileRepository.SaveAsync(mediaFile);

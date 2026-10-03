@@ -78,6 +78,11 @@ public class MediaController : ControllerBase
             _logger.LogWarning(ex, "Unauthorized");
             return Unauthorized();
         }
+        catch (StorageLimitExceededException ex)
+        {
+            return StatusCode(StatusCodes.Status413PayloadTooLarge,
+                new { message = ex.Message, code = "storage_limit", usedBytes = ex.UsedBytes, limitBytes = ex.LimitBytes });
+        }
         catch (ArgumentException ex)
         {
             _logger.LogWarning(ex, "Invalid request");

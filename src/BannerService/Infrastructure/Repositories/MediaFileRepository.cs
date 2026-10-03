@@ -94,6 +94,11 @@ public class MediaFileRepository : IMediaFileRepository
             rows.Where(r => r.Type == (int)MediaFileType.Video).Sum(r => r.Count));
     }
 
+    public async Task<long> GetReservedBytesAsync(Guid shopId) =>
+        await _context.MediaFiles.AsNoTracking()
+            .Where(m => m.ShopId == shopId && (m.Status == (int)MediaFileStatus.Active || m.Status == (int)MediaFileStatus.Pending))
+            .SumAsync(m => (long?)m.SizeBytes) ?? 0;
+
     public async Task<List<string>> FindUsingBannersAsync(Guid shopId, Guid mediaFileId)
     {
         var needle = mediaFileId.ToString();

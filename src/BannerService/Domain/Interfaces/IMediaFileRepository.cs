@@ -18,6 +18,9 @@ public interface IMediaFileRepository
     /// <summary>What the shop's usable files add up to.</summary>
     Task<MediaUsage> GetUsageAsync(Guid shopId);
 
+    /// <summary>Bytes taken by usable files plus uploads still in progress, which already hold their space.</summary>
+    Task<long> GetReservedBytesAsync(Guid shopId);
+
     /// <summary>Names of the shop's banners that show the file now, or kept it in an earlier version. Empty when nothing uses it.</summary>
     Task<List<string>> FindUsingBannersAsync(Guid shopId, Guid mediaFileId);
 

@@ -19,7 +19,6 @@ namespace BannerService.Application.Services
     {
         public const int MaxPageSize = 100;
         private const int LinkMinutes = 240;
-        private const long BytesPerGb = 1024L * 1024 * 1024;
 
         private readonly IMediaFileRepository _files;
         private readonly IUploadChunkRepository _chunks;
@@ -78,7 +77,6 @@ namespace BannerService.Application.Services
         {
             var usage = await _files.GetUsageAsync(shopId);
             var subscription = await _subscriptions.GetByShopIdAsync(shopId);
-            var gigabytes = subscription?.Plan?.Features?.MaxStorageGB;
 
             return new MediaUsageDto
             {
@@ -86,7 +84,7 @@ namespace BannerService.Application.Services
                 FileCount = usage.Files,
                 ImageCount = usage.Images,
                 VideoCount = usage.Videos,
-                LimitBytes = gigabytes is > 0 ? gigabytes.Value * BytesPerGb : null,
+                LimitBytes = StorageAllowance.LimitBytes(subscription),
             };
         }
 

@@ -98,6 +98,24 @@ describe('My files page', () => {
     expect(within(box).getByRole('progressbar', { name: 'Storage used' })).toHaveAttribute('aria-valuenow', '1')
   })
 
+  it('offers an upgrade when storage is nearly full or full, and not before', async () => {
+    const { unmount } = render(<MediaLibraryPage />)
+    await screen.findByTestId('storage-usage')
+    expect(screen.queryByTestId('storage-upgrade')).toBeNull()
+    unmount()
+
+    serve([hero], { usedBytes: 900_000_000, fileCount: 1, imageCount: 1, videoCount: 0, limitBytes: 1_000_000_000 })
+    const nearly = render(<MediaLibraryPage />)
+    const warning = await screen.findByTestId('storage-upgrade')
+    expect(warning).toHaveTextContent('almost full')
+    expect(within(warning).getByRole('link', { name: 'upgrade your plan' })).toHaveAttribute('href', '/subscription')
+    nearly.unmount()
+
+    serve([hero], { usedBytes: 1_000_000_000, fileCount: 1, imageCount: 1, videoCount: 0, limitBytes: 1_000_000_000 })
+    render(<MediaLibraryPage />)
+    expect(await screen.findByTestId('storage-upgrade')).toHaveTextContent('Your storage is full.')
+  })
+
   it('shows the amount alone when the shop has no plan', async () => {
     serve([hero], { usedBytes: 2_500_000, fileCount: 1, imageCount: 1, videoCount: 0, limitBytes: null as unknown as number })
     render(<MediaLibraryPage />)

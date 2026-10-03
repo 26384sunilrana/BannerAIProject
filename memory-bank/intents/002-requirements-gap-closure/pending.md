@@ -73,3 +73,7 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 - Restore of an old version should keep the last approved version live; `PublishWorkflow.Publish` IsPublished handling.
 - Calendar shows one week at a time; no month view or drag to reschedule.
 - A logo above about 400 KB is not kept offline.
+
+## Left after bolt 039
+- Banner-size limits or pricing (what "size" means is undecided); per-GB metered billing waits for providers (044).
+- Administrator view of storage per shop; alert at 80% by email; downgrade below current usage is allowed.

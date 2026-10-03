@@ -46,6 +46,7 @@ public class MediaUploadServiceTests
     private readonly Mock<IUnitOfWork> _mockUnitOfWork = new();
     private readonly InMemoryStorage _storage = new();
     private readonly MediaUrlSigner _signer;
+    private readonly Mock<ISubscriptionRepository> _mockSubscriptions = new();
     private readonly MediaUploadService _service;
 
     private readonly Guid _shopId = Guid.NewGuid();
@@ -79,7 +80,8 @@ public class MediaUploadServiceTests
             _mockChunkRepository.Object,
             _mockUnitOfWork.Object,
             _storage,
-            _signer);
+            _signer,
+            _mockSubscriptions.Object);
     }
 
     private static string Md5(byte[] bytes) => BitConverter.ToString(MD5.HashData(bytes)).Replace("-", "").ToLowerInvariant();
@@ -368,6 +370,48 @@ public class MediaUploadServiceTests
 
         Assert.True(_signer.Verify(id, unix, _signer.Sign(id, expires), DateTime.UtcNow));
         Assert.False(other.Verify(id, unix, _signer.Sign(id, expires), DateTime.UtcNow));
+    }
+
+    private void PlanWithGigabytes(int gigabytes) =>
+        _mockSubscriptions.Setup(r => r.GetByShopIdAsync(_shopId)).ReturnsAsync(new Subscription
+        {
+            Plan = new SubscriptionPlan { Features = new SubscriptionFeatures { MaxStorageGB = gigabytes } }
+        });
+
+    [Fact]
+    public async Task Initialize_RefusesAFileThatDoesNotFitThePlan_AndSaysHowMuchIsLeft()
+    {
+        PlanWithGigabytes(1);
+        _mockMediaFileRepository.Setup(r => r.GetReservedBytesAsync(_shopId)).ReturnsAsync(900L * 1024 * 1024);
+
+        var ex = await Assert.ThrowsAsync<StorageLimitExceededException>(() =>
+            _service.InitializeUploadAsync("big.png", "image/png", 200L * 1024 * 1024, 1, _shopId, _userId));
+
+        Assert.Equal(1024L * 1024 * 1024, ex.LimitBytes);
+        Assert.Contains("124 MB", ex.Message);
+        Assert.Contains("upgrade", ex.Message);
+        _mockMediaFileRepository.Verify(r => r.SaveAsync(It.IsAny<MediaFile>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Initialize_AllowsAFileThatExactlyFills_ThePlan()
+    {
+        PlanWithGigabytes(1);
+        _mockMediaFileRepository.Setup(r => r.GetReservedBytesAsync(_shopId)).ReturnsAsync(1024L * 1024 * 1024 - 1000);
+
+        var file = await _service.InitializeUploadAsync("a.png", "image/png", 1000, 1, _shopId, _userId);
+
+        Assert.Equal(1000, file.SizeBytes);
+    }
+
+    [Fact]
+    public async Task Initialize_GivesAShopWithNoPlanTheStarterAllowance_AndAPlanLimitOfZeroIsUnlimited()
+    {
+        _mockMediaFileRepository.Setup(r => r.GetReservedBytesAsync(_shopId)).ReturnsAsync(1024L * 1024 * 1024);
+        await Assert.ThrowsAsync<StorageLimitExceededException>(() => _service.InitializeUploadAsync("a.png", "image/png", 1000, 1, _shopId, _userId));
+
+        PlanWithGigabytes(0);
+        await _service.InitializeUploadAsync("b.png", "image/png", 1000, 1, _shopId, _userId);
     }
 
     #endregion

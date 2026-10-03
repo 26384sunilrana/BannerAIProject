@@ -150,4 +150,26 @@ public class MediaLibrarySmokeTests : IClassFixture<SmokeFactory>
             Assert.Equal((int)MediaFileStatus.Active, (await context.MediaFiles.FirstAsync(m => m.Id == hero)).Status);
         }
     }
+
+    [Fact]
+    public async Task Upload_StopsAtThePlanStorageLimit_AndAFreedUploadMakesRoom()
+    {
+        var (owner, _) = await RegisterOwnerAsync("storage-limit@example.com");
+        var usage = await owner.GetFromJsonAsync<JsonElement>("/api/media/usage");
+        Assert.True(usage.TryGetProperty("limitBytes", out var limit) && limit.ValueKind == JsonValueKind.Number, "the new shop's plan should have a storage limit");
+        var half = limit.GetInt64() / 2;
+
+        Task<HttpResponseMessage> Start(string name, long size) =>
+            owner.PostAsJsonAsync("/api/media/upload/initialize", new { fileName = name, contentType = "image/png", totalSizeBytes = size, fileType = 1 });
+
+        // declared sizes hold their space at once, so two uploads in progress cannot together pass the plan
+        Assert.Equal(HttpStatusCode.OK, (await Start("one.png", half)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await Start("two.png", half)).StatusCode);
+        var refused = await Start("three.png", 1000);
+
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, refused.StatusCode);
+        var body = await refused.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("storage_limit", body.GetProperty("code").GetString());
+        Assert.Contains("upgrade", body.GetProperty("message").GetString());
+    }
 }

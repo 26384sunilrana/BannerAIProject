@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Button, ConfirmDialog, Input, Select, Toast } from '@/components/Common'
@@ -121,7 +122,12 @@ function Library() {
       )}
       {upload.error && (
         <p role="alert" className="text-red-700">
-          {upload.error}
+          {upload.error}{' '}
+          {/storage left/.test(upload.error) && (
+            <Link href="/subscription" className="font-medium underline">
+              See plans
+            </Link>
+          )}
         </p>
       )}
 
@@ -132,6 +138,15 @@ function Library() {
             {usage.limitBytes ? ` of ${formatBytes(usage.limitBytes)} used` : ' used'} · {usage.imageCount} image{usage.imageCount === 1 ? '' : 's'} ·{' '}
             {usage.videoCount} video{usage.videoCount === 1 ? '' : 's'}
           </p>
+          {percent !== null && percent >= 80 && (
+            <p data-testid="storage-upgrade" className={`mt-2 text-sm ${percent >= 100 ? 'text-red-700' : 'text-amber-700'}`}>
+              {percent >= 100 ? 'Your storage is full.' : 'Your storage is almost full.'} Delete files you no longer use, or{' '}
+              <Link href="/subscription" className="font-medium underline">
+                upgrade your plan
+              </Link>
+              .
+            </p>
+          )}
           {percent !== null && (
             <div role="progressbar" aria-label="Storage used" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} className="mt-2 h-2 w-full rounded bg-gray-200">
               <div className={`h-2 rounded ${percent >= 90 ? 'bg-red-500' : percent >= 70 ? 'bg-amber-500' : 'bg-blue-600'}`} style={{ width: `${percent}%` }} />
