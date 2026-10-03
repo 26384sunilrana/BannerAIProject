@@ -71,6 +71,9 @@ namespace BannerService.Application.Services
         public int? ShopSharePercent { get; set; }
         public DateTime? StoppedAt { get; set; }
 
+        /// <summary>Why an administrator has to review the ad (health wording), or null.</summary>
+        public string? ComplianceNote { get; set; }
+
         /// <summary>What the caller may do with it right now: edit, submit, approve, reject, cancel, override.</summary>
         public List<string> Can { get; set; } = new();
     }
@@ -192,8 +195,15 @@ namespace BannerService.Application.Services
             }
 
             var auto = ad.Source is ShopAdSource.Admin or ShopAdSource.ShopOwner;
-            ad.Status = auto ? ShopAdStatus.Approved : ShopAdStatus.PendingApproval;
+            var review = ad.ComplianceNote != null && auto;
+            ad.Status = review ? ShopAdStatus.PendingCompliance : auto ? ShopAdStatus.Approved : ShopAdStatus.PendingApproval;
             ad.UpdatedAt = now;
+            if (review)
+            {
+                await _ads.SaveAsync(ad, Event(ad, actor, "Submitted", "Waiting for compliance review: " + ad.ComplianceNote));
+                await TellAdminsToReviewAsync(ad, shop);
+                return await ToDtoAsync(actor, ad, shop);
+            }
             if (auto)
             {
                 ad.DecidedByUserId = actor.UserId;
@@ -217,28 +227,51 @@ namespace BannerService.Application.Services
         {
             var now = nowUtc ?? DateTime.UtcNow;
             var ad = await LoadAsync(actor, adId);
-            EnsureCanDecide(actor, ad);
-            if (ad.Status != ShopAdStatus.PendingApproval) throw new InvalidOperationException("This ad is not waiting for approval.");
+            if (ad.Status == ShopAdStatus.PendingCompliance) EnsureCanReview(actor);
+            else EnsureCanDecide(actor, ad);
+            if (ad.Status is not (ShopAdStatus.PendingApproval or ShopAdStatus.PendingCompliance)) throw new InvalidOperationException("This ad is not waiting for approval.");
             if (ad.EndAt <= now) throw new InvalidOperationException("The ad would already be over. Send it back so the dates can be changed.");
 
             await EnsureSlotFreeAsync(ad);
+
+            // approved by the owner, but the wording still has to be reviewed by an administrator
+            if (ad.Status == ShopAdStatus.PendingApproval && ad.ComplianceNote != null)
+            {
+                ad.Status = ShopAdStatus.PendingCompliance;
+                ad.UpdatedAt = now;
+                await _ads.SaveAsync(ad, Event(ad, actor, "Approved", (string.IsNullOrWhiteSpace(note) ? string.Empty : note.Trim() + ". ") + "Waiting for compliance review: " + ad.ComplianceNote));
+                await TellAdminsToReviewAsync(ad, await _shops.GetByIdAsync(ad.ShopId));
+                return await ToDtoAsync(actor, ad);
+            }
+
+            var reviewed = ad.Status == ShopAdStatus.PendingCompliance;
             Decide(ad, actor, ShopAdStatus.Approved, note, now);
-            await _ads.SaveAsync(ad, Event(ad, actor, "Approved", note));
+            if (reviewed)
+            {
+                ad.ComplianceApprovedAt = now;
+                ad.ComplianceApprovedBy = actor.Name;
+            }
+            await _ads.SaveAsync(ad, Event(ad, actor, reviewed ? "Compliance approved" : "Approved", note));
             await _notifications.NotifyUsersAsync(new[] { ad.CreatedByUserId.ToString() }, "AdApproved", "Ad approved", $"\"{ad.Headline}\" was approved by {actor.Name}.", "/ads");
+            if (reviewed && ad.Source == ShopAdSource.Admin)
+                await _notifications.NotifyShopOwnersAsync(ad.ShopId, "AdBookedByAdmin", ad.Kind == ShopAdKind.Mega ? "A major ad was booked on your screen" : "An ad was booked on your screen",
+                    $"\"{ad.Headline}\" for {ad.AdvertiserName} runs on your screen from {ad.StartAt:d MMM yyyy} to {ad.EndAt:d MMM yyyy}.", "/ads");
             return await ToDtoAsync(actor, ad);
         }
 
         public async Task<ShopAdDto> RejectAsync(AdActor actor, Guid adId, string? reason, DateTime? nowUtc = null)
         {
             var ad = await LoadAsync(actor, adId);
-            EnsureCanDecide(actor, ad);
-            if (ad.Status != ShopAdStatus.PendingApproval) throw new InvalidOperationException("This ad is not waiting for approval.");
+            if (ad.Status == ShopAdStatus.PendingCompliance) EnsureCanReview(actor);
+            else EnsureCanDecide(actor, ad);
+            if (ad.Status is not (ShopAdStatus.PendingApproval or ShopAdStatus.PendingCompliance)) throw new InvalidOperationException("This ad is not waiting for approval.");
             if (string.IsNullOrWhiteSpace(reason)) throw new ArgumentException("Say why the ad is sent back.");
 
             reason = reason.Trim();
             if (reason.Length > 500) reason = reason[..500];
+            var wasReview = ad.Status == ShopAdStatus.PendingCompliance;
             Decide(ad, actor, ShopAdStatus.Rejected, reason, nowUtc ?? DateTime.UtcNow);
-            await _ads.SaveAsync(ad, Event(ad, actor, "Rejected", reason));
+            await _ads.SaveAsync(ad, Event(ad, actor, wasReview ? "Compliance rejected" : "Rejected", reason));
             await _notifications.NotifyUsersAsync(new[] { ad.CreatedByUserId.ToString() }, "AdRejected", "Ad sent back", $"\"{ad.Headline}\" was sent back: {reason}", "/ads");
             return await ToDtoAsync(actor, ad);
         }
@@ -247,6 +280,7 @@ namespace BannerService.Application.Services
         {
             var ad = await LoadAsync(actor, adId);
             if (ad.Status == ShopAdStatus.Cancelled) throw new InvalidOperationException("This ad is already cancelled.");
+            if (ad.Status == ShopAdStatus.Overridden) throw new InvalidOperationException("This ad was stopped by the shop and is already over.");
             if (actor.Source != ShopAdSource.Admin && ad.Source == ShopAdSource.Admin)
                 throw new UnauthorizedAccessException("This ad was booked by the administrator. Ask the administrator to cancel it, or override it if you have a better offer.");
             EnsureCanManage(actor, ad);
@@ -412,6 +446,15 @@ namespace BannerService.Application.Services
                 throw new UnauthorizedAccessException("This ad does not need your approval.");
         }
 
+        private static void EnsureCanReview(AdActor actor)
+        {
+            if (actor.Source != ShopAdSource.Admin) throw new UnauthorizedAccessException("Only the administrator reviews ads that mention health or personal information.");
+        }
+
+        private async Task TellAdminsToReviewAsync(ShopAd ad, Shop? shop) =>
+            await _notifications.NotifyAdminsAsync("AdNeedsReview", "Ad needs a compliance review",
+                $"\"{ad.Headline}\" for {ad.AdvertiserName} on {shop?.Name ?? "a shop"} uses health wording and waits for your review.", "/ads");
+
         private static void Decide(ShopAd ad, AdActor actor, ShopAdStatus status, string? note, DateTime now)
         {
             ad.Status = status;
@@ -455,6 +498,14 @@ namespace BannerService.Application.Services
             // trim and tidy before checking, so a headline of spaces is not accepted
             ShopAdRules.Normalise(ad);
             if (ShopAdRules.Validate(ad) is { } problem) throw new ArgumentException(problem);
+
+            // ads carry no personal or health information: contact and identity details are refused, health wording goes to an administrator
+            var found = AdContentScreen.Screen(("advertiser name", ad.AdvertiserName), ("headline", ad.Headline), ("text", ad.Body));
+            if (found.Blocks.Count > 0)
+                throw new ArgumentException(string.Join(" ", found.Blocks) + " Ads must not carry personal details such as phone numbers, e-mail addresses, identity or card numbers, or health information about people.");
+            ad.ComplianceNote = found.Reviews.Count == 0 ? null : string.Join(" ", found.Reviews);
+            ad.ComplianceApprovedAt = null;
+            ad.ComplianceApprovedBy = null;
         }
 
         private async Task EnsureSlotFreeAsync(ShopAd ad)
@@ -520,6 +571,7 @@ namespace BannerService.Application.Services
                 CreatedByUserId = ad.CreatedByUserId,
                 PricePerHour = ad.PricePerHour,
                 ShopSharePercent = ad.ShopSharePercent,
+                ComplianceNote = ad.ComplianceNote,
                 StoppedAt = ad.StoppedAt == null ? null : DateTime.SpecifyKind(ad.StoppedAt.Value, DateTimeKind.Utc),
                 Can = actor == null ? new List<string>() : Abilities(actor, ad),
             };
@@ -532,12 +584,17 @@ namespace BannerService.Application.Services
             try { EnsureCanManage(actor, ad); manage = true; } catch (UnauthorizedAccessException) { manage = false; }
 
             if (manage && ad.CanBeEdited) { can.Add("edit"); can.Add("submit"); }
-            if (manage && ad.Status != ShopAdStatus.Cancelled) can.Add("cancel");
+            if (manage && ad.Status is not (ShopAdStatus.Cancelled or ShopAdStatus.Overridden)) can.Add("cancel");
             if (actor.Source == ShopAdSource.ShopOwner && ad.Source == ShopAdSource.Admin && ad.Status == ShopAdStatus.Approved && ad.EndAt > DateTime.UtcNow)
                 can.Add("override");
             if (ad.Status == ShopAdStatus.PendingApproval)
             {
                 try { EnsureCanDecide(actor, ad); can.Add("approve"); can.Add("reject"); } catch (UnauthorizedAccessException) { }
+            }
+            else if (ad.Status == ShopAdStatus.PendingCompliance && actor.Source == ShopAdSource.Admin)
+            {
+                can.Add("approve");
+                can.Add("reject");
             }
             return can;
         }

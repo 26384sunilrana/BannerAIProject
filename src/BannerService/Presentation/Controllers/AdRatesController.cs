@@ -52,3 +52,20 @@ public class AdStatementsController : ControllerBase
         return ServiceErrors.Run(this, () => _statements.GetAsync(actor, month ?? string.Empty, shopId));
     }
 }
+
+/// <summary>Who booked how many ads, for administrators.</summary>
+[ApiController]
+[Route("api/ad-reports")]
+[Authorize(Roles = "Admin")]
+public class AdReportsController : ControllerBase
+{
+    private readonly AdReportService _reports;
+
+    public AdReportsController(AdReportService reports)
+    {
+        _reports = reports;
+    }
+
+    [HttpGet("users")]
+    public Task<IActionResult> Users([FromQuery] string month) => ServiceErrors.Run(this, () => _reports.UsersAsync(month ?? string.Empty));
+}

@@ -2,7 +2,7 @@ import { apiClient, API_ORIGIN } from './client'
 
 export type AdKind = 'Side' | 'Mega' | 'Popup' | 'Minor'
 export type AdPlacement = 'Left' | 'Right' | 'Top' | 'Bottom' | 'TopLeft' | 'TopRight' | 'BottomLeft' | 'BottomRight' | 'Center'
-export type AdStatus = 'Draft' | 'PendingApproval' | 'Approved' | 'Rejected' | 'Cancelled' | 'Overridden'
+export type AdStatus = 'Draft' | 'PendingApproval' | 'Approved' | 'Rejected' | 'Cancelled' | 'Overridden' | 'PendingCompliance'
 export type AdAction = 'edit' | 'submit' | 'cancel' | 'approve' | 'reject' | 'override'
 
 export interface ShopAd {
@@ -37,6 +37,8 @@ export interface ShopAd {
   pricePerHour: number | null
   shopSharePercent: number | null
   stoppedAt: string | null
+  /** Why an administrator has to review the ad (health wording), or null. */
+  complianceNote: string | null
   can: AdAction[]
 }
 
@@ -165,6 +167,7 @@ export interface ShopStatement {
   shopId: string
   shopName: string
   timeZoneId: string
+  cityName: string
   lines: StatementLine[]
   adminAdHours: number
   ownAdHours: number
@@ -181,4 +184,21 @@ export const statementService = {
   get(month: string, shopId?: string): Promise<AdStatement> {
     return apiClient.get<AdStatement>(`/ad-statements?month=${month}${shopId ? `&shopId=${shopId}` : ''}`)
   },
+}
+
+export interface UserReportRow {
+  userId: string
+  name: string
+  role: string
+  shopName: string
+  booked: number
+  approved: number
+  sentBack: number
+  cancelled: number
+  waiting: number
+  flagged: number
+}
+
+export const reportService = {
+  users: (month: string) => apiClient.get<{ month: string; rows: UserReportRow[] }>(`/ad-reports/users?month=${month}`),
 }

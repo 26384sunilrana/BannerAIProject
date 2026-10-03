@@ -28,6 +28,9 @@ namespace BannerService.Application.Services
         public Guid ShopId { get; set; }
         public string ShopName { get; set; } = string.Empty;
         public string TimeZoneId { get; set; } = string.Empty;
+
+        /// <summary>The shop's city, so the statement can be read by city. Empty when the shop has none.</summary>
+        public string CityName { get; set; } = string.Empty;
         public List<AdStatementLineDto> Lines { get; set; } = new();
         public decimal AdminAdHours { get; set; }
         public decimal OwnAdHours { get; set; }
@@ -49,9 +52,11 @@ namespace BannerService.Application.Services
     {
         private readonly IShopAdRepository _ads;
         private readonly IShopRepository _shops;
+        private readonly ILocationRepository? _locations;
 
-        public AdStatementService(IShopAdRepository ads, IShopRepository shops)
+        public AdStatementService(IShopAdRepository ads, IShopRepository shops, ILocationRepository? locations = null)
         {
+            _locations = locations;
             _ads = ads;
             _shops = shops;
         }
@@ -83,7 +88,8 @@ namespace BannerService.Application.Services
                 var monthStart = LocalMidnightToUtc(first, zone.Zone);
                 var monthEnd = LocalMidnightToUtc(first.AddMonths(1), zone.Zone);
 
-                var statement = new ShopAdStatementDto { ShopId = shop.Id, ShopName = shop.Name, TimeZoneId = zone.Id };
+                var cityName = shop.CityId != null && _locations != null ? (await _locations.FindCityAsync(shop.CityId.Value))?.Name ?? string.Empty : string.Empty;
+                var statement = new ShopAdStatementDto { ShopId = shop.Id, ShopName = shop.Name, TimeZoneId = zone.Id, CityName = cityName };
                 foreach (var ad in group.OrderBy(a => a.StartAt).ThenBy(a => a.Id))
                 {
                     var hours = HoursRan(ad, zone.Zone, monthStart, monthEnd, now);

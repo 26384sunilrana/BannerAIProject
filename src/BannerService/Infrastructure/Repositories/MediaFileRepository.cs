@@ -123,7 +123,7 @@ public class MediaFileRepository : IMediaFileRepository
         var now = DateTime.UtcNow;
         var ads = await _context.ShopAds
             .Where(ad => ad.ShopId == shopId && ad.MediaFileId == mediaFileId && ad.EndAt > now
-                         && (ad.Status == ShopAdStatus.PendingApproval || ad.Status == ShopAdStatus.Approved))
+                         && (ad.Status == ShopAdStatus.PendingApproval || ad.Status == ShopAdStatus.PendingCompliance || ad.Status == ShopAdStatus.Approved))
             .Select(ad => ad.Headline).ToListAsync();
         names.AddRange(ads.Select(h => $"the ad \"{h}\""));
 

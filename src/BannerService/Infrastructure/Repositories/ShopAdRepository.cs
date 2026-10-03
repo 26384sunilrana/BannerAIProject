@@ -31,7 +31,7 @@ public class ShopAdRepository : IShopAdRepository
 
     public Task<List<ShopAd>> FindSlotHoldersAsync(Guid shopId, DateTime fromUtc, DateTime toUtc) =>
         _context.ShopAds.AsNoTracking()
-            .Where(a => a.ShopId == shopId && (a.Status == ShopAdStatus.PendingApproval || a.Status == ShopAdStatus.Approved)
+            .Where(a => a.ShopId == shopId && (a.Status == ShopAdStatus.PendingApproval || a.Status == ShopAdStatus.PendingCompliance || a.Status == ShopAdStatus.Approved)
                         && a.StartAt < toUtc && a.EndAt > fromUtc)
             .ToListAsync();
 
@@ -41,7 +41,7 @@ public class ShopAdRepository : IShopAdRepository
         if (shopId != null) query = query.Where(a => a.ShopId == shopId);
         if (fromUtc != null) query = query.Where(a => a.EndAt > fromUtc);
         if (toUtc != null) query = query.Where(a => a.StartAt < toUtc);
-        if (holdingSlotOnly) query = query.Where(a => a.Status == ShopAdStatus.PendingApproval || a.Status == ShopAdStatus.Approved);
+        if (holdingSlotOnly) query = query.Where(a => a.Status == ShopAdStatus.PendingApproval || a.Status == ShopAdStatus.PendingCompliance || a.Status == ShopAdStatus.Approved);
         return await query.OrderByDescending(a => a.StartAt).ThenBy(a => a.Id).Take(500).ToListAsync();
     }
 
@@ -51,6 +51,9 @@ public class ShopAdRepository : IShopAdRepository
                         && (a.Status == ShopAdStatus.Approved || a.Status == ShopAdStatus.Cancelled || a.Status == ShopAdStatus.Overridden)
                         && a.StartAt < toUtc && a.EndAt > fromUtc)
             .ToListAsync();
+
+    public Task<List<ShopAd>> ListCreatedAsync(DateTime fromUtc, DateTime toUtc) =>
+        _context.ShopAds.AsNoTracking().Where(a => a.CreatedAt >= fromUtc && a.CreatedAt < toUtc).OrderBy(a => a.CreatedAt).Take(5000).ToListAsync();
 
     public Task<List<ShopAdEvent>> GetEventsAsync(Guid adId) =>
         _context.ShopAdEvents.AsNoTracking().Where(e => e.ShopAdId == adId).OrderBy(e => e.At).ToListAsync();

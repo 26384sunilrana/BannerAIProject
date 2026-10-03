@@ -22,6 +22,7 @@ const STATUS_LABEL: Record<string, string> = {
   Rejected: 'Sent back',
   Cancelled: 'Cancelled',
   Overridden: 'Stopped by the shop',
+  PendingCompliance: 'Waiting for compliance review',
 }
 const STATUS_STYLE: Record<string, string> = {
   Draft: 'bg-gray-100 text-gray-700',
@@ -30,6 +31,7 @@ const STATUS_STYLE: Record<string, string> = {
   Rejected: 'bg-red-100 text-red-800',
   Cancelled: 'bg-gray-100 text-gray-500',
   Overridden: 'bg-purple-100 text-purple-800',
+  PendingCompliance: 'bg-orange-100 text-orange-800',
 }
 const SOURCE_LABEL: Record<string, string> = { Admin: 'Booked by the administrator', ShopOwner: 'Booked by the owner', SalesExecutive: 'Booked by a sales executive' }
 
@@ -139,8 +141,8 @@ function Ads() {
     try {
       const result = await adService.act(ad.id, action, body)
       const text: Record<string, string> = {
-        submit: result.status === 'Approved' ? 'The ad is booked.' : 'The ad was sent to the owner for approval.',
-        approve: 'The ad was approved.',
+        submit: result.status === 'Approved' ? 'The ad is booked.' : result.status === 'PendingCompliance' ? 'The ad mentions health wording. An administrator reviews it before it can run.' : 'The ad was sent to the owner for approval.',
+        approve: ad.status === 'PendingCompliance' ? 'The ad passed the review and is booked.' : result.status === 'PendingCompliance' ? 'Approved. An administrator reviews the wording next.' : 'The ad was approved.',
         reject: 'The ad was sent back.',
         cancel: 'The ad was cancelled.',
         override: 'The ad was stopped. The administrator has been told.',
@@ -294,6 +296,14 @@ function Ads() {
                   </p>
                 )}
                 {ad.stoppedAt && ad.status !== 'Draft' && <p className="text-xs text-gray-500">Stopped {formatInZone(ad.stoppedAt, zone)}</p>}
+                {ad.complianceNote && (
+                  <p className="mt-1 text-sm text-orange-800" data-testid="ad-compliance">
+                    {ad.status === 'PendingCompliance'
+                      ? 'An administrator has to review this ad before it can run. '
+                      : 'This ad mentions health wording and is reviewed by an administrator. '}
+                    {ad.complianceNote}
+                  </p>
+                )}
                 {ad.decisionNote && ad.status !== 'Approved' && <p className="mt-1 text-sm text-gray-700">“{ad.decisionNote}”</p>}
               </div>
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[ad.status]}`}>{STATUS_LABEL[ad.status]}</span>

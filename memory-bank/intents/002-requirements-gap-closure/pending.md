@@ -92,3 +92,8 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 
 ## Left after bolt 041
 - See "Not done" in memory-bank/bolts/041-ad-rates-statement/bolt.md (location notify = 041b, HIPAA = 042, no statement export or payout marking, hours are scheduled not measured, currency not modelled).
+
+## Left after bolts 041b and 042a
+- 042b: audit retention and export, HIPAA/PHI review of the whole application, re-encrypting old plain data. Screening of banner text and the default-board message is not done.
+- 041b: campaign dates are read on the clock of the computer being used.
+- Gaps of the ad screening are listed in memory-bank/bolts/042a-ad-compliance/bolt.md.

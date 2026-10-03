@@ -401,4 +401,130 @@ public class ShopAdSmokeTests : IClassFixture<SmokeFactory>
         Assert.DoesNotContain((await Json(await elsewhere.GetAsync("/api/shop-ads"))).EnumerateArray(), a => a.GetProperty("headline").GetString() == "Festival sale");
         Assert.DoesNotContain((await Json(await busy.GetAsync("/api/shop-ads"))).EnumerateArray(), a => a.GetProperty("headline").GetString() == "Festival sale" && a.GetProperty("status").GetString() != "Cancelled");
     }
+
+    private static object Worded(string headline, string kind = "Minor", string placement = "TopLeft", int fromDay = -1, int days = 3) => new
+    {
+        advertiserName = "City Clinic", headline, body = (string?)null, background = "#ffffff", textColor = "#000000", kind, placement, spacePercent = 0,
+        popupSeconds = 0, popupEveryMinutes = 0, startAt = DateTime.UtcNow.Date.AddDays(fromDay), endAt = DateTime.UtcNow.Date.AddDays(fromDay + days),
+    };
+
+    [Fact]
+    public async Task PersonalDetailsAreRefused_WhenSaved()
+    {
+        var (owner, _) = await OwnerAsync("ads-pii1@example.com");
+
+        foreach (var text in new[] { "Call 9876543210 today", "Write to sam@example.com", "Card 4111 1111 1111 1111 accepted", "SSN 123-45-6789" })
+        {
+            var refused = await owner.PostAsJsonAsync("/api/shop-ads", Worded(text));
+            Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+            Assert.Contains("Ads must not carry personal details", (await Json(refused)).GetProperty("message").GetString());
+        }
+
+        // editing a draft into something refused is refused too
+        var id = await CreateAsync(owner, Worded("Fresh bread"));
+        Assert.Equal(HttpStatusCode.BadRequest, (await owner.PutAsJsonAsync($"/api/shop-ads/{id}", Worded("Mail me at a@b.com"))).StatusCode);
+    }
+
+    [Fact]
+    public async Task HealthWording_SendsAnOwnersAdToAnAdministrator_BeforeItCanRun()
+    {
+        var (owner, shopId) = await OwnerAsync("ads-phi1@example.com");
+        var admin = await AdminAsync();
+
+        var id = await CreateAsync(owner, Worded("Free flu shots for every patient"));
+        Assert.Equal("PendingCompliance", await StatusAfter(owner, id, "submit"));
+
+        // not on the screen, and the owner cannot clear it
+        Assert.Empty((await Json(await owner.GetAsync($"/api/shops/{shopId}/ads/live"))).EnumerateArray());
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.PostAsJsonAsync($"/api/shop-ads/{id}/approve", new { })).StatusCode);
+        var mine = (await Json(await owner.GetAsync("/api/shop-ads"))).EnumerateArray().Single(a => a.GetProperty("id").GetGuid() == id);
+        Assert.Contains("patient", mine.GetProperty("complianceNote").GetString());
+        Assert.DoesNotContain("approve", mine.GetProperty("can").EnumerateArray().Select(c => c.GetString()));
+
+        var told = await Json(await admin.GetAsync("/api/notifications"));
+        Assert.Contains(told.GetProperty("items").EnumerateArray(), n => n.GetProperty("kind").GetString() == "AdNeedsReview" && n.GetProperty("message").GetString()!.Contains("flu shots"));
+
+        var seenByAdmin = (await Json(await admin.GetAsync($"/api/shop-ads?shopId={shopId}"))).EnumerateArray().Single(a => a.GetProperty("id").GetGuid() == id);
+        Assert.Contains("approve", seenByAdmin.GetProperty("can").EnumerateArray().Select(c => c.GetString()));
+
+        Assert.Equal("Approved", await StatusAfter(admin, id, "approve", new { note = "A clinic offering vaccinations: fine" }));
+        Assert.Single((await Json(await owner.GetAsync($"/api/shops/{shopId}/ads/live"))).EnumerateArray());
+
+        var history = await Json(await admin.GetAsync($"/api/shop-ads/{id}/history"));
+        Assert.Equal(new[] { "Created", "Submitted", "Compliance approved" }, history.EnumerateArray().Select(e => e.GetProperty("action").GetString()!));
+        Assert.Contains("Waiting for compliance review", history[1].GetProperty("note").GetString());
+    }
+
+    [Fact]
+    public async Task AnExecutiveAdWithHealthWording_NeedsTheOwnerAndThenAnAdministrator_AndCanBeSentBack()
+    {
+        var (owner, shopId) = await OwnerAsync("ads-phi2@example.com");
+        var exec = await ExecutiveAsync(shopId, "ads-phi2-exec@example.com");
+        var admin = await AdminAsync();
+
+        var id = await CreateAsync(exec, Worded("Diabetes screening camp"));
+        Assert.Equal("PendingApproval", await StatusAfter(exec, id, "submit"));
+        Assert.Equal("PendingCompliance", await StatusAfter(owner, id, "approve"));
+
+        // still not live, and the owner cannot approve it a second time
+        Assert.Empty((await Json(await owner.GetAsync($"/api/shops/{shopId}/ads/live"))).EnumerateArray());
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.PostAsJsonAsync($"/api/shop-ads/{id}/approve", new { })).StatusCode);
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync($"/api/shop-ads/{id}/reject", new { })).StatusCode);
+        Assert.Equal("Rejected", await StatusAfter(admin, id, "reject", new { reason = "Please do not name a condition" }));
+        var told = await Json(await exec.GetAsync("/api/notifications"));
+        Assert.Contains(told.GetProperty("items").EnumerateArray(), n => n.GetProperty("kind").GetString() == "AdRejected");
+
+        var history = await Json(await admin.GetAsync($"/api/shop-ads/{id}/history"));
+        Assert.Equal("Compliance rejected", history.EnumerateArray().Last().GetProperty("action").GetString());
+
+        // reworded, it goes straight through the owner
+        var calmer = await exec.PutAsJsonAsync($"/api/shop-ads/{id}", Worded("Free fitness check-up camp"));
+        Assert.Equal(HttpStatusCode.OK, calmer.StatusCode);
+        Assert.Equal("PendingApproval", await StatusAfter(exec, id, "submit"));
+        Assert.Equal("Approved", await StatusAfter(owner, id, "approve"));
+    }
+
+    [Fact]
+    public async Task AnAdministratorAdWithHealthWording_WaitsForAReview_AndTheOwnersHearOnlyOnceItIsApproved()
+    {
+        var (owner, shopId) = await OwnerAsync("ads-phi3@example.com");
+        var admin = await AdminAsync();
+        await EnsureRateAsync(admin);
+
+        var json = JsonSerializer.Deserialize<Dictionary<string, object?>>(JsonSerializer.Serialize(Worded("Cancer screening week", "Minor", "BottomRight")))!;
+        json["shopId"] = shopId;
+        var created = await admin.PostAsJsonAsync("/api/shop-ads", json);
+        var id = (await Json(created)).GetProperty("id").GetGuid();
+
+        Assert.Equal("PendingCompliance", await StatusAfter(admin, id, "submit"));
+        Assert.DoesNotContain((await Json(await owner.GetAsync("/api/notifications"))).GetProperty("items").EnumerateArray(), n => n.GetProperty("kind").GetString() == "AdBookedByAdmin");
+
+        Assert.Equal("Approved", await StatusAfter(admin, id, "approve"));
+        Assert.Contains((await Json(await owner.GetAsync("/api/notifications"))).GetProperty("items").EnumerateArray(), n => n.GetProperty("kind").GetString() == "AdBookedByAdmin");
+    }
+
+    [Fact]
+    public async Task TheUserReport_IsForAdministrators_AndCountsWhoBookedWhat()
+    {
+        var (owner, shopId) = await OwnerAsync("ads-report1@example.com");
+        var admin = await AdminAsync();
+        var month = DateTime.UtcNow.ToString("yyyy-MM");
+
+        var ok = await CreateAsync(owner, Worded("Plain bread offer"));
+        await StatusAfter(owner, ok, "submit");
+        var flagged = await CreateAsync(owner, Worded("Patient care week", "Minor", "TopRight"));
+        await StatusAfter(owner, flagged, "submit");
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.GetAsync($"/api/ad-reports/users?month={month}")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.GetAsync("/api/ad-reports/users?month=soon")).StatusCode);
+
+        var report = await Json(await admin.GetAsync($"/api/ad-reports/users?month={month}"));
+        var row = report.GetProperty("rows").EnumerateArray().Single(r => r.GetProperty("shopName").GetString()!.Contains("ads-report1"));
+        Assert.Equal("Shop owner", row.GetProperty("role").GetString());
+        Assert.Equal(2, row.GetProperty("booked").GetInt32());
+        Assert.Equal(1, row.GetProperty("approved").GetInt32());
+        Assert.Equal(1, row.GetProperty("waiting").GetInt32());
+        Assert.Equal(1, row.GetProperty("flagged").GetInt32());
+    }
 }

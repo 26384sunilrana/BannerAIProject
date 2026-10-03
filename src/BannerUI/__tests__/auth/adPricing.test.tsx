@@ -39,6 +39,7 @@ import { AdRate, ShopAd } from '@/api/adService'
 import AdsPage from '@/app/ads/page'
 import StatementPage from '@/app/ads/statement/page'
 import AdRatesPage from '@/app/admin/ad-rates/page'
+import AdReportsPage from '@/app/admin/ad-reports/page'
 
 const api = apiClient as jest.Mocked<typeof apiClient>
 
@@ -46,7 +47,7 @@ const ad = (overrides: Partial<ShopAd> = {}): ShopAd => ({
   id: 'a1', shopId: 'shop-1', shopName: 'Olive Mart', source: 'Admin', advertiserName: 'City Bank', headline: 'Save more', body: null,
   mediaFileId: null, mediaUrl: null, background: '#ffffff', textColor: '#000000', kind: 'Side', placement: 'Left', spacePercent: 25,
   popupSeconds: 0, popupEveryMinutes: 0, startAt: '2035-01-08T00:00:00Z', endAt: '2035-01-15T00:00:00Z', dailyStartMinutes: null, dailyEndMinutes: null,
-  activeDays: 127, status: 'Approved', decidedByName: 'Admin', decidedAt: null, decisionNote: null, createdByUserId: 'admin', pricePerHour: 50, shopSharePercent: 70,
+  activeDays: 127, status: 'Approved', decidedByName: 'Admin', decidedAt: null, decisionNote: null, createdByUserId: 'admin', pricePerHour: 50, shopSharePercent: 70, complianceNote: null,
   stoppedAt: null, can: ['override'], ...overrides,
 })
 
@@ -301,5 +302,104 @@ describe('Booking for a whole place', () => {
     await screen.findByText(/No ads yet/)
 
     expect(screen.queryByRole('button', { name: 'Book for a whole place' })).toBeNull()
+  })
+})
+
+describe('Compliance review and the user report', () => {
+  it('explains why an ad waits for a review, and lets only the administrator clear it', async () => {
+    mockRoles = ['Admin']
+    api.get.mockImplementation(async (path: string) => {
+      if (path.startsWith('/shops?')) return { items: [{ id: 'shop-9', name: 'Olive Mart' }] }
+      if (path.endsWith('/time-zone')) return { timeZoneId: 'UTC' }
+      return [ad({ id: 'c1', headline: 'Flu shots', source: 'ShopOwner', status: 'PendingCompliance', complianceNote: 'The headline uses the health wording "patient".', can: ['approve', 'reject'], pricePerHour: null })]
+    })
+    api.post.mockResolvedValue(ad({ status: 'Approved' }))
+    render(<AdsPage />)
+    await screen.findByRole('option', { name: 'Olive Mart' })
+    await userEvent.selectOptions(screen.getByLabelText('Shop'), 'shop-9')
+    const row = await screen.findByTestId('ad-row-Flu shots')
+
+    expect(row).toHaveTextContent('Waiting for compliance review')
+    expect(within(row).getByTestId('ad-compliance')).toHaveTextContent('An administrator has to review this ad before it can run. The headline uses the health wording "patient".')
+
+    await userEvent.click(within(row).getByRole('button', { name: 'Approve' }))
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/shop-ads/c1/approve', {}))
+    expect(await screen.findByText('The ad passed the review and is booked.')).toBeInTheDocument()
+  })
+
+  it('shows the owner a waiting ad with no approve button', async () => {
+    api.get.mockResolvedValue([ad({ id: 'c2', headline: 'Flu shots', source: 'ShopOwner', status: 'PendingCompliance', complianceNote: 'The headline uses the health wording "patient".', can: ['cancel'], pricePerHour: null })])
+    render(<AdsPage />)
+    const row = await screen.findByTestId('ad-row-Flu shots')
+
+    expect(within(row).queryByRole('button', { name: 'Approve' })).toBeNull()
+    expect(within(row).getByRole('button', { name: 'Cancel ad' })).toBeInTheDocument()
+  })
+
+  it('tells the owner when sending in an ad sent it to review', async () => {
+    api.get.mockResolvedValue([ad({ id: 'c3', headline: 'Flu shots', source: 'ShopOwner', status: 'Draft', can: ['edit', 'submit', 'cancel'], pricePerHour: null })])
+    api.post.mockResolvedValue(ad({ status: 'PendingCompliance' }))
+    render(<AdsPage />)
+
+    await userEvent.click(within(await screen.findByTestId('ad-row-Flu shots')).getByRole('button', { name: 'Send in' }))
+
+    expect(await screen.findByText(/An administrator reviews it before it can run/)).toBeInTheDocument()
+  })
+
+  it('shows who booked what in the month, with totals', async () => {
+    mockRoles = ['Admin']
+    api.get.mockResolvedValue({
+      month: '2030-01',
+      rows: [
+        { userId: 'u1', name: 'Olive Owner', role: 'Shop owner', shopName: 'Olive Mart', booked: 4, approved: 2, sentBack: 1, cancelled: 0, waiting: 1, flagged: 2 },
+        { userId: 'u2', name: 'Ops Admin', role: 'Administrator', shopName: '', booked: 3, approved: 3, sentBack: 0, cancelled: 0, waiting: 0, flagged: 0 },
+      ],
+    })
+    render(<AdReportsPage />)
+
+    const owner = await screen.findByTestId('report-Olive Owner')
+    expect(owner).toHaveTextContent('Shop owner')
+    expect(owner).toHaveTextContent('Olive Mart')
+    expect(within(screen.getByTestId('report-Ops Admin')).getByText('—')).toBeInTheDocument()
+    const total = within(screen.getByTestId('report-total'))
+    expect(total.getByText('7')).toBeInTheDocument() // booked
+    expect(total.getByText('5')).toBeInTheDocument() // went live
+    expect(api.get).toHaveBeenCalledWith(expect.stringMatching(/^\/ad-reports\/users\?month=\d{4}-\d{2}$/))
+  })
+
+  it('asks for another month, says when nothing was booked, and shows errors', async () => {
+    mockRoles = ['Admin']
+    api.get.mockResolvedValue({ month: '2030-02', rows: [] })
+    render(<AdReportsPage />)
+    expect(await screen.findByTestId('report-empty')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Month'), { target: { value: '2030-02' } })
+    await waitFor(() => expect(api.get).toHaveBeenCalledWith('/ad-reports/users?month=2030-02'))
+
+    api.get.mockRejectedValue({ response: { data: { message: 'Choose a month, for example 2030-01.' } } })
+    fireEvent.change(screen.getByLabelText('Month'), { target: { value: '2030-03' } })
+    expect(await screen.findByRole('alert')).toHaveTextContent('Choose a month')
+  })
+
+  it('groups the statement by city for the administrator', async () => {
+    mockRoles = ['Admin']
+    api.get.mockImplementation(async (path: string) =>
+      path.startsWith('/shops?')
+        ? { items: [] }
+        : {
+            month: '2030-01', totalPayout: 30,
+            shops: [
+              { shopId: 'a', shopName: 'Olive Mart', timeZoneId: 'UTC', cityName: 'Mumbai', lines: [], adminAdHours: 1, ownAdHours: 0, payout: 10 },
+              { shopId: 'b', shopName: 'Bread Shop', timeZoneId: 'UTC', cityName: 'Mumbai', lines: [], adminAdHours: 1, ownAdHours: 0, payout: 5 },
+              { shopId: 'c', shopName: 'Cafe', timeZoneId: 'UTC', cityName: 'Pune', lines: [], adminAdHours: 1, ownAdHours: 0, payout: 15 },
+            ],
+          }
+    )
+    render(<StatementPage />)
+
+    const cities = await screen.findByTestId('statement-cities')
+    expect(cities).toHaveTextContent('Mumbai: 2 shops, paid 15.00')
+    expect(cities).toHaveTextContent('Pune: 1 shop, paid 15.00')
   })
 })

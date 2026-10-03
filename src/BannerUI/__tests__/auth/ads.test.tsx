@@ -43,7 +43,7 @@ const ad = (overrides: Partial<ShopAd> = {}): ShopAd => ({
   id: 'a1', shopId: 'shop-1', shopName: 'Olive Mart', source: 'ShopOwner', advertiserName: 'Olive Cafe', headline: 'Two for one', body: null,
   mediaFileId: null, mediaUrl: null, background: '#ffeecc', textColor: '#112233', kind: 'Side', placement: 'Left', spacePercent: 25,
   popupSeconds: 0, popupEveryMinutes: 0, startAt: '2035-01-08T03:30:00Z', endAt: '2035-01-15T03:30:00Z', dailyStartMinutes: null, dailyEndMinutes: null,
-  activeDays: 127, status: 'Draft', decidedByName: null, decidedAt: null, decisionNote: null, createdByUserId: 'u1', pricePerHour: null, shopSharePercent: null, stoppedAt: null, can: ['edit', 'submit', 'cancel'], ...overrides,
+  activeDays: 127, status: 'Draft', decidedByName: null, decidedAt: null, decisionNote: null, createdByUserId: 'u1', pricePerHour: null, shopSharePercent: null, stoppedAt: null, complianceNote: null, can: ['edit', 'submit', 'cancel'], ...overrides,
 })
 
 beforeEach(() => {

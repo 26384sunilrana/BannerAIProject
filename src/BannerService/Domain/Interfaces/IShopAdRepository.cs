@@ -17,5 +17,8 @@ public interface IShopAdRepository
     /// <summary>Ads that were approved at some point (running, cancelled or overridden) and touch the period. One shop, or every shop.</summary>
     Task<List<ShopAd>> ListApprovedAsync(Guid? shopId, DateTime fromUtc, DateTime toUtc);
 
+    /// <summary>Ads created in the period, for the reports. At most 5000.</summary>
+    Task<List<ShopAd>> ListCreatedAsync(DateTime fromUtc, DateTime toUtc);
+
     Task<List<ShopAdEvent>> GetEventsAsync(Guid adId);
 }

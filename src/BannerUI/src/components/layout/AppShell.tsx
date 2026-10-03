@@ -29,6 +29,7 @@ const NAV: NavItem[] = [
   { href: '/shops', label: 'Shops', roles: [Roles.Admin] },
   { href: '/admin/locations', label: 'Places', roles: [Roles.Admin] },
   { href: '/admin/ad-rates', label: 'Ad rates', roles: [Roles.Admin] },
+  { href: '/admin/ad-reports', label: 'Ad report', roles: [Roles.Admin] },
   { href: '/admin/subscription-plans', label: 'Plans', roles: [Roles.Admin] },
   { href: '/admin/subscriptions', label: 'Subscriptions', roles: [Roles.Admin] },
   { href: '/admin/users', label: 'Users', roles: [Roles.Admin] },

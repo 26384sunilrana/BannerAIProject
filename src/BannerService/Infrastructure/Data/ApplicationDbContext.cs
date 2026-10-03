@@ -568,6 +568,8 @@ public class ApplicationDbContext : DbContext
             e.Property(x => x.TextColor).HasMaxLength(7).IsRequired();
             e.Property(x => x.DecidedByName).HasMaxLength(200);
             e.Property(x => x.DecisionNote).HasMaxLength(500);
+            e.Property(x => x.ComplianceNote).HasMaxLength(1000);
+            e.Property(x => x.ComplianceApprovedBy).HasMaxLength(200);
             e.Property(x => x.PricePerHour).HasPrecision(18, 2);
             e.HasIndex(x => new { x.ShopId, x.Status, x.StartAt });
             e.HasIndex(x => new { x.Status, x.StartAt });

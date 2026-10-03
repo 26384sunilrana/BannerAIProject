@@ -62,6 +62,15 @@ function Statement() {
     }
   }, [month, shopId, isAdmin])
 
+  // the administrator can read the statement by city
+  const cities = Object.values(
+    (statement?.shops ?? []).reduce<Record<string, { name: string; shops: number; payout: number }>>((all, shop) => {
+      const name = shop.cityName || 'No city'
+      all[name] = { name, shops: (all[name]?.shops ?? 0) + 1, payout: (all[name]?.payout ?? 0) + shop.payout }
+      return all
+    }, {})
+  ).sort((x, y) => x.name.localeCompare(y.name))
+
   return (
     <div className="space-y-6">
       <header>
@@ -98,10 +107,23 @@ function Statement() {
         </p>
       )}
 
+      {isAdmin && cities.length > 1 && (
+        <ul className="flex flex-wrap gap-3 text-sm text-gray-700" aria-label="By city" data-testid="statement-cities">
+          {cities.map((c) => (
+            <li key={c.name} className="rounded-full bg-gray-100 px-3 py-1">
+              {c.name}: {c.shops} shop{c.shops === 1 ? '' : 's'}, paid {money(c.payout)}
+            </li>
+          ))}
+        </ul>
+      )}
+
       {statement?.shops.map((shop) => (
         <section key={shop.shopId} data-testid={`statement-${shop.shopName}`} className="rounded-xl border border-gray-200 bg-white p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="text-lg font-semibold text-gray-900">{shop.shopName}</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              {shop.shopName}
+              {shop.cityName && <span className="ml-2 text-sm font-normal text-gray-500">{shop.cityName}</span>}
+            </h2>
             <p className="text-sm text-gray-600">
               Administrator ads {shop.adminAdHours} h · own ads {shop.ownAdHours} h · <span className="font-semibold text-gray-900">paid {money(shop.payout)}</span>
             </p>

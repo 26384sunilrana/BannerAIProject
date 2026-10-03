@@ -128,7 +128,7 @@ export function AdForm({ ad, zone, allowPicture, busy, error, onSubmit, onCancel
     id: 'preview', shopId: '', shopName: '', source: '', advertiserName: advertiser || 'Advertiser', headline: headline || 'Your headline',
     body: body || null, mediaFileId: picture?.id ?? null, mediaUrl: picture?.url ?? null, background, textColor, kind, placement,
     spacePercent: percent, popupSeconds, popupEveryMinutes: popupEvery, startAt: '', endAt: '', dailyStartMinutes: null, dailyEndMinutes: null,
-    activeDays: ALL_DAYS, status: 'Draft', decidedByName: null, decidedAt: null, decisionNote: null, createdByUserId: '', pricePerHour: null, shopSharePercent: null, stoppedAt: null, can: [],
+    activeDays: ALL_DAYS, status: 'Draft', decidedByName: null, decidedAt: null, decisionNote: null, createdByUserId: '', pricePerHour: null, shopSharePercent: null, stoppedAt: null, complianceNote: null, can: [],
   } as ShopAd
 
   return (

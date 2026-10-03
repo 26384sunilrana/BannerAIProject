@@ -123,6 +123,7 @@ builder.Services.AddScoped<IShopAdRepository, ShopAdRepository>();
 builder.Services.AddScoped<IAdRateRepository, AdRateRepository>();
 builder.Services.AddScoped<AdRateService>();
 builder.Services.AddScoped<AdStatementService>();
+builder.Services.AddScoped<AdReportService>();
 builder.Services.AddScoped<ShopAdService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<MediaCleanupService>();

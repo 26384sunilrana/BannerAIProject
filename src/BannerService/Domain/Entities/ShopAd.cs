@@ -41,6 +41,9 @@ public enum ShopAdStatus
 
     /// <summary>An administrator ad the shop owner stopped (for a better local offer). It ran until it was stopped.</summary>
     Overridden = 6,
+
+    /// <summary>Approved by whoever approves it, but the text mentions health or personal-information wording, so an administrator has to review it before it can run.</summary>
+    PendingCompliance = 7,
 }
 
 /// <summary>Who booked the ad. It decides who approves it and who may change it.</summary>
@@ -106,6 +109,11 @@ public class ShopAd
     /// <summary>When an approved ad was cancelled or overridden: it stopped running here.</summary>
     public DateTime? StoppedAt { get; set; }
 
+    /// <summary>Why the screening wants an administrator to look at the ad (health wording); null when the text is clean.</summary>
+    public string? ComplianceNote { get; set; }
+    public DateTime? ComplianceApprovedAt { get; set; }
+    public string? ComplianceApprovedBy { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
@@ -123,7 +131,7 @@ public class ShopAd
     }
 
     /// <summary>Holds its place on the screen: waiting for approval or approved.</summary>
-    public bool HoldsSlot => Status is ShopAdStatus.PendingApproval or ShopAdStatus.Approved;
+    public bool HoldsSlot => Status is ShopAdStatus.PendingApproval or ShopAdStatus.PendingCompliance or ShopAdStatus.Approved;
 
     public bool CanBeEdited => Status is ShopAdStatus.Draft or ShopAdStatus.Rejected;
 }
