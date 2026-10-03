@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
+import Link from 'next/link'
 import { Button, Select, Toast } from '@/components/Common'
 import { AdForm } from '@/components/ads/AdForm'
 import { useAuth } from '@/context/AuthContext'
@@ -19,6 +20,7 @@ const STATUS_LABEL: Record<string, string> = {
   Approved: 'Approved',
   Rejected: 'Sent back',
   Cancelled: 'Cancelled',
+  Overridden: 'Stopped by the shop',
 }
 const STATUS_STYLE: Record<string, string> = {
   Draft: 'bg-gray-100 text-gray-700',
@@ -26,6 +28,7 @@ const STATUS_STYLE: Record<string, string> = {
   Approved: 'bg-green-100 text-green-800',
   Rejected: 'bg-red-100 text-red-800',
   Cancelled: 'bg-gray-100 text-gray-500',
+  Overridden: 'bg-purple-100 text-purple-800',
 }
 const SOURCE_LABEL: Record<string, string> = { Admin: 'Booked by the administrator', ShopOwner: 'Booked by the owner', SalesExecutive: 'Booked by a sales executive' }
 
@@ -57,6 +60,7 @@ function Ads() {
   const [formError, setFormError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [rejecting, setRejecting] = useState<string | null>(null)
+  const [overriding, setOverriding] = useState<string | null>(null)
   const [reason, setReason] = useState('')
   const [history, setHistory] = useState<{ id: string; entries: AdHistoryEntry[] } | null>(null)
 
@@ -111,7 +115,7 @@ function Ads() {
     }
   }
 
-  const act = async (ad: ShopAd, action: 'submit' | 'approve' | 'reject' | 'cancel', body: { reason?: string } = {}) => {
+  const act = async (ad: ShopAd, action: 'submit' | 'approve' | 'reject' | 'cancel' | 'override', body: { reason?: string } = {}) => {
     setBusy(true)
     try {
       const result = await adService.act(ad.id, action, body)
@@ -120,9 +124,11 @@ function Ads() {
         approve: 'The ad was approved.',
         reject: 'The ad was sent back.',
         cancel: 'The ad was cancelled.',
+        override: 'The ad was stopped. The administrator has been told.',
       }
       toast.success(text[action])
       setRejecting(null)
+      setOverriding(null)
       setReason('')
       await load()
     } catch (err) {
@@ -156,16 +162,23 @@ function Ads() {
               : 'Book an ad on your shop screen for an advertiser who has come to you. It sits beside your banner, over it, or in a corner, for the dates you choose.'}
           </p>
         </div>
-        {canBook && !editing && (
-          <Button
-            onClick={() => {
-              setFormError(null)
-              setEditing('new')
-            }}
-          >
-            Book an ad
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          {(isAdmin || hasRole(Roles.ShopOwner)) && (
+            <Link href="/ads/statement" className="text-sm font-medium text-blue-700 hover:underline">
+              Monthly statement
+            </Link>
+          )}
+          {canBook && !editing && (
+            <Button
+              onClick={() => {
+                setFormError(null)
+                setEditing('new')
+              }}
+            >
+              Book an ad
+            </Button>
+          )}
+        </div>
       </header>
 
       {isAdmin && (
@@ -225,6 +238,12 @@ function Ads() {
                   {ad.dailyStartMinutes != null && <span> · {describeDaily(ad.dailyStartMinutes, ad.dailyEndMinutes, ad.activeDays)}</span>}
                 </p>
                 <p className="text-xs text-gray-500">{SOURCE_LABEL[ad.source] ?? ad.source}</p>
+                {ad.pricePerHour != null && (
+                  <p className="text-xs text-gray-500" data-testid="ad-price">
+                    {ad.pricePerHour.toFixed(2)} an hour, the shop is paid {ad.shopSharePercent ?? 100}% of it
+                  </p>
+                )}
+                {ad.stoppedAt && ad.status !== 'Draft' && <p className="text-xs text-gray-500">Stopped {formatInZone(ad.stoppedAt, zone)}</p>}
                 {ad.decisionNote && ad.status !== 'Approved' && <p className="mt-1 text-sm text-gray-700">“{ad.decisionNote}”</p>}
               </div>
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[ad.status]}`}>{STATUS_LABEL[ad.status]}</span>
@@ -258,6 +277,11 @@ function Ads() {
                   Send back
                 </Button>
               )}
+              {ad.can.includes('override') && (
+                <Button size="sm" variant="secondary" disabled={busy} onClick={() => setOverriding(overriding === ad.id ? null : ad.id)}>
+                  Override this ad
+                </Button>
+              )}
               {ad.can.includes('cancel') && (
                 <Button size="sm" variant="ghost" disabled={busy} onClick={() => act(ad, 'cancel')}>
                   Cancel ad
@@ -267,6 +291,29 @@ function Ads() {
                 {history?.id === ad.id ? 'Hide history' : 'History'}
               </Button>
             </div>
+
+            {overriding === ad.id && (
+              <div className="mt-3 space-y-2 rounded-lg bg-amber-50 p-3">
+                <p className="text-sm text-amber-900">
+                  The administrator booked this ad. If you have a better offer for this time you can stop it now: the space is free at once, the shop is
+                  paid for the hours it ran, and the administrator is told.
+                </p>
+                <label htmlFor={`override-${ad.id}`} className="text-sm font-medium text-gray-700">
+                  Reason (optional)
+                </label>
+                <textarea
+                  id={`override-${ad.id}`}
+                  rows={2}
+                  maxLength={500}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="w-full rounded-lg border-2 border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-none focus:border-blue-500"
+                />
+                <Button size="sm" disabled={busy} onClick={() => act(ad, 'override', { reason })}>
+                  Yes, stop this ad
+                </Button>
+              </div>
+            )}
 
             {rejecting === ad.id && (
               <div className="mt-3 space-y-2 rounded-lg bg-gray-50 p-3">

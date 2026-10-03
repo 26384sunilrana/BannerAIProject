@@ -38,6 +38,9 @@ public enum ShopAdStatus
     Approved = 3,
     Rejected = 4,
     Cancelled = 5,
+
+    /// <summary>An administrator ad the shop owner stopped (for a better local offer). It ran until it was stopped.</summary>
+    Overridden = 6,
 }
 
 /// <summary>Who booked the ad. It decides who approves it and who may change it.</summary>
@@ -92,6 +95,16 @@ public class ShopAd
     public string? DecidedByName { get; set; }
     public DateTime? DecidedAt { get; set; }
     public string? DecisionNote { get; set; }
+
+    /// <summary>
+    /// Administrator ads only: what an hour of this ad is worth (already cut down to the share of the screen), and the part of it the shop is paid.
+    /// Fixed when the ad is sent in, so a later change of rates does not touch ads already booked.
+    /// </summary>
+    public decimal? PricePerHour { get; set; }
+    public int? ShopSharePercent { get; set; }
+
+    /// <summary>When an approved ad was cancelled or overridden: it stopped running here.</summary>
+    public DateTime? StoppedAt { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

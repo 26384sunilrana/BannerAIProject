@@ -89,3 +89,6 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 
 ## Left after bolt 040b
 - See "Not done" in memory-bank/bolts/040b-ad-bookings/bolt.md (rates and statement, override, location notify, HIPAA checks, admin pictures, month view, conservative strip check).
+
+## Left after bolt 041
+- See "Not done" in memory-bank/bolts/041-ad-rates-statement/bolt.md (location notify = 041b, HIPAA = 042, no statement export or payout marking, hours are scheduled not measured, currency not modelled).

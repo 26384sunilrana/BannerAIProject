@@ -62,6 +62,11 @@ public class ShopAdsController : ControllerBase
     [HttpPost("api/shop-ads/{id:guid}/cancel")]
     public Task<IActionResult> Cancel(Guid id) => ServiceErrors.Run(this, () => _ads.CancelAsync(Actor(), id));
 
+    /// <summary>The shop owner stops an administrator ad for a better local offer; the administrators are told.</summary>
+    [HttpPost("api/shop-ads/{id:guid}/override")]
+    public Task<IActionResult> Override(Guid id, [FromBody] DecideShopAdRequest? request) =>
+        ServiceErrors.Run(this, () => _ads.OverrideAsync(Actor(), id, request?.Reason));
+
     [HttpGet("api/shop-ads/{id:guid}/history")]
     public Task<IActionResult> History(Guid id) => ServiceErrors.Run(this, () => _ads.HistoryAsync(Actor(), id));
 

@@ -65,6 +65,13 @@ public class ShopAdSmokeTests : IClassFixture<SmokeFactory>
         return await LoginAsync("admin@example.com", "AdminPass123!");
     }
 
+    /// <summary>Administrator ads are priced by a rate; make sure one exists for every shop (a conflict means it is there already).</summary>
+    private static async Task EnsureRateAsync(HttpClient admin)
+    {
+        var response = await admin.PostAsJsonAsync("/api/ad-rates", new { level = "All", pricePerHour = 100, shopSharePercent = 70 });
+        Assert.True(response.StatusCode is HttpStatusCode.OK or HttpStatusCode.Conflict);
+    }
+
     private static object Ad(string headline, string kind = "Side", string placement = "Left", int percent = 20, int fromDay = 1, int days = 7, object? daily = null, Guid? shopId = null) => new
     {
         shopId, advertiserName = "Olive Cafe", headline, body = "Fresh coffee", background = "#ffeecc", textColor = "#112233",
@@ -179,16 +186,17 @@ public class ShopAdSmokeTests : IClassFixture<SmokeFactory>
         // the admin has to name the shop, and cannot attach a picture (the admin has no files of the shop)
         Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/api/shop-ads", Ad("No shop"))).StatusCode);
 
+        await EnsureRateAsync(admin);
         var adminAd = await CreateAsync(admin, Ad("Admin deal", "Side", "Right", 20, shopId: shopId));
         Assert.Equal("Approved", await StatusAfter(admin, adminAd, "submit"));
 
         var told = await Json(await owner.GetAsync("/api/notifications"));
         Assert.Contains(told.GetProperty("items").EnumerateArray(), n => n.GetProperty("kind").GetString() == "AdBookedByAdmin");
 
-        // the owner sees it but cannot change or cancel it (an override comes in the next bolt)
+        // the owner sees it but can only override it, not change or cancel it
         var ownerList = await Json(await owner.GetAsync("/api/shop-ads"));
         var seen = ownerList.EnumerateArray().Single(a => a.GetProperty("id").GetGuid() == adminAd);
-        Assert.Empty(seen.GetProperty("can").EnumerateArray());
+        Assert.Equal(new[] { "override" }, seen.GetProperty("can").EnumerateArray().Select(c => c.GetString()!));
         Assert.Equal(HttpStatusCode.Forbidden, (await owner.PostAsJsonAsync($"/api/shop-ads/{adminAd}/cancel", new { })).StatusCode);
 
         // the owner books another slot; the admin sees both as booked
@@ -245,5 +253,94 @@ public class ShopAdSmokeTests : IClassFixture<SmokeFactory>
 
         await StatusAfter(owner, id, "cancel");
         Assert.True((await owner.DeleteAsync($"/api/media/{mediaId}")).IsSuccessStatusCode);
+    }
+
+    [Fact]
+    public async Task TheOwnerCanOverrideAnAdminAd_TheAdminIsToldAndTheSlotIsFree()
+    {
+        var (owner, shopId) = await OwnerAsync("ads-owner11@example.com");
+        var exec = await ExecutiveAsync(shopId, "ads-exec11@example.com");
+        var admin = await AdminAsync();
+        await EnsureRateAsync(admin);
+
+        var adminAd = await CreateAsync(admin, Ad("Admin deal", "Mega", "Left", 60, fromDay: 1, shopId: shopId));
+        await StatusAfter(admin, adminAd, "submit");
+
+        // the owner has a better local offer for the same time, but the screen is taken
+        var local = await CreateAsync(owner, Ad("Local deal", "Mega", "Right", 60));
+        Assert.Equal(HttpStatusCode.Conflict, (await owner.PostAsJsonAsync($"/api/shop-ads/{local}/submit", new { })).StatusCode);
+
+        // an executive cannot override, an owner of another shop cannot see it
+        Assert.Equal(HttpStatusCode.Forbidden, (await exec.PostAsJsonAsync($"/api/shop-ads/{adminAd}/override", new { reason = "x" })).StatusCode);
+        var (other, _) = await OwnerAsync("ads-owner12@example.com");
+        Assert.Equal(HttpStatusCode.NotFound, (await other.PostAsJsonAsync($"/api/shop-ads/{adminAd}/override", new { })).StatusCode);
+
+        var seen = (await Json(await owner.GetAsync("/api/shop-ads"))).EnumerateArray().Single(a => a.GetProperty("id").GetGuid() == adminAd);
+        Assert.Contains("override", seen.GetProperty("can").EnumerateArray().Select(c => c.GetString()));
+        Assert.Equal(60m, (await Json(await admin.GetAsync($"/api/shop-ads?shopId={shopId}"))).EnumerateArray().Single(a => a.GetProperty("id").GetGuid() == adminAd).GetProperty("pricePerHour").GetDecimal()); // 60% of 100
+
+        Assert.Equal("Overridden", await StatusAfter(owner, adminAd, "override", new { reason = "A local shop pays more" }));
+
+        var told = await Json(await admin.GetAsync("/api/notifications"));
+        var message = told.GetProperty("items").EnumerateArray().First(n => n.GetProperty("kind").GetString() == "AdOverridden");
+        Assert.Contains("A local shop pays more", message.GetProperty("message").GetString());
+        Assert.Contains("Admin deal", message.GetProperty("message").GetString());
+
+        Assert.Equal("Approved", await StatusAfter(owner, local, "submit"));
+        var history = await Json(await admin.GetAsync($"/api/shop-ads/{adminAd}/history"));
+        Assert.Equal("Overridden", history.EnumerateArray().Last().GetProperty("action").GetString());
+
+        // it cannot be overridden twice
+        Assert.Equal(HttpStatusCode.Conflict, (await owner.PostAsJsonAsync($"/api/shop-ads/{adminAd}/override", new { })).StatusCode);
+    }
+
+    [Fact]
+    public async Task AdRates_AreTheAdministratorsAlone_AreCheckedAndNeverDeleted()
+    {
+        var (owner, _) = await OwnerAsync("ads-owner13@example.com");
+        var admin = await AdminAsync();
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.GetAsync("/api/ad-rates")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.PostAsJsonAsync("/api/ad-rates", new { level = "All", pricePerHour = 1 })).StatusCode);
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/api/ad-rates", new { level = "All", pricePerHour = -5 })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/api/ad-rates", new { level = "City", pricePerHour = 5 })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/api/ad-rates", new { level = "City", cityId = 999999, pricePerHour = 5 })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/api/ad-rates", new { level = "Country", countryCode = "ZZ", pricePerHour = 5 })).StatusCode);
+
+        // a rate for one kind in one place, once
+        var kind = "Minor";
+        var first = await admin.PostAsJsonAsync("/api/ad-rates", new { level = "All", kind, pricePerHour = 15.5, shopSharePercent = 60 });
+        if (first.StatusCode == HttpStatusCode.OK)
+        {
+            var id = (await Json(first)).GetProperty("id").GetGuid();
+            Assert.Equal(HttpStatusCode.Conflict, (await admin.PostAsJsonAsync("/api/ad-rates", new { level = "All", kind, pricePerHour = 20 })).StatusCode);
+
+            var changed = await Json(await admin.PutAsJsonAsync($"/api/ad-rates/{id}", new { level = "All", kind, pricePerHour = 18, shopSharePercent = 65 }));
+            Assert.Equal(18m, changed.GetProperty("pricePerHour").GetDecimal());
+
+            var off = await Json(await admin.DeleteAsync($"/api/ad-rates/{id}"));
+            Assert.False(off.GetProperty("isActive").GetBoolean());
+            Assert.Contains((await Json(await admin.GetAsync("/api/ad-rates"))).EnumerateArray(), r => r.GetProperty("id").GetGuid() == id);
+        }
+    }
+
+    [Fact]
+    public async Task TheMonthlyStatement_IsForOwnersAndAdmins_WithARealMonth()
+    {
+        var (owner, shopId) = await OwnerAsync("ads-owner14@example.com");
+        var exec = await ExecutiveAsync(shopId, "ads-exec14@example.com");
+        var admin = await AdminAsync();
+        var month = DateTime.UtcNow.ToString("yyyy-MM");
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await exec.GetAsync($"/api/ad-statements?month={month}")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await owner.GetAsync("/api/ad-statements?month=soon")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.GetAsync($"/api/ad-statements?month={month}&shopId={Guid.NewGuid()}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _factory.CreateClient().GetAsync($"/api/ad-statements?month={month}")).StatusCode);
+
+        var own = await Json(await owner.GetAsync($"/api/ad-statements?month={month}"));
+        Assert.Equal(month, own.GetProperty("month").GetString());
+        Assert.Equal(0m, own.GetProperty("totalPayout").GetDecimal());
+
+        Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync($"/api/ad-statements?month={month}")).StatusCode);
     }
 }

@@ -66,7 +66,12 @@ namespace BannerService.Application.Services
         public string? DecisionNote { get; set; }
         public Guid CreatedByUserId { get; set; }
 
-        /// <summary>What the caller may do with it right now: edit, submit, approve, reject, cancel.</summary>
+        /// <summary>Administrator ads: what an hour is worth, and the part of it the shop is paid.</summary>
+        public decimal? PricePerHour { get; set; }
+        public int? ShopSharePercent { get; set; }
+        public DateTime? StoppedAt { get; set; }
+
+        /// <summary>What the caller may do with it right now: edit, submit, approve, reject, cancel, override.</summary>
         public List<string> Can { get; set; } = new();
     }
 
@@ -91,9 +96,11 @@ namespace BannerService.Application.Services
         private readonly IMediaFileRepository _media;
         private readonly IMediaUrlSigner _signer;
         private readonly NotificationService _notifications;
+        private readonly AdRateService _rates;
 
-        public ShopAdService(IShopAdRepository ads, IShopRepository shops, IMediaFileRepository media, IMediaUrlSigner signer, NotificationService notifications)
+        public ShopAdService(IShopAdRepository ads, IShopRepository shops, IMediaFileRepository media, IMediaUrlSigner signer, NotificationService notifications, AdRateService rates)
         {
+            _rates = rates;
             _ads = ads;
             _shops = shops;
             _media = media;
@@ -146,6 +153,17 @@ namespace BannerService.Application.Services
             await EnsureSlotFreeAsync(ad);
 
             var shop = await _shops.GetByIdAsync(ad.ShopId);
+
+            // an administrator ad is priced by the rate for the shop's place, fixed now
+            if (ad.Source == ShopAdSource.Admin)
+            {
+                var rate = shop == null ? null : await _rates.FindForAsync(shop, ad.Kind);
+                if (rate == null)
+                    throw new InvalidOperationException("No rate is set for this shop's place and this kind of ad. Set one under Ad rates first.");
+                ad.PricePerHour = AdRateRules.HourlyPrice(rate, ad);
+                ad.ShopSharePercent = rate.ShopSharePercent;
+            }
+
             var auto = ad.Source is ShopAdSource.Admin or ShopAdSource.ShopOwner;
             ad.Status = auto ? ShopAdStatus.Approved : ShopAdStatus.PendingApproval;
             ad.UpdatedAt = now;
@@ -203,13 +221,42 @@ namespace BannerService.Application.Services
             var ad = await LoadAsync(actor, adId);
             if (ad.Status == ShopAdStatus.Cancelled) throw new InvalidOperationException("This ad is already cancelled.");
             if (actor.Source != ShopAdSource.Admin && ad.Source == ShopAdSource.Admin)
-                throw new UnauthorizedAccessException("This ad was booked by the administrator. Ask the administrator to cancel it.");
+                throw new UnauthorizedAccessException("This ad was booked by the administrator. Ask the administrator to cancel it, or override it if you have a better offer.");
             EnsureCanManage(actor, ad);
 
+            var now = DateTime.UtcNow;
+            if (ad.Status == ShopAdStatus.Approved) ad.StoppedAt = now; // it ran until now
             ad.Status = ShopAdStatus.Cancelled;
-            ad.UpdatedAt = DateTime.UtcNow;
+            ad.UpdatedAt = now;
             await _ads.SaveAsync(ad, Event(ad, actor, "Cancelled"));
             return await ToDtoAsync(actor, ad);
+        }
+
+        /// <summary>
+        /// A shop owner stops an approved administrator ad because a better local offer came. The slot is free at once, the ad is paid for the
+        /// hours it ran, and the administrators are told inside the application.
+        /// </summary>
+        public async Task<ShopAdDto> OverrideAsync(AdActor actor, Guid adId, string? note, DateTime? nowUtc = null)
+        {
+            var now = nowUtc ?? DateTime.UtcNow;
+            var ad = await LoadAsync(actor, adId);
+            if (actor.Source != ShopAdSource.ShopOwner) throw new UnauthorizedAccessException("Only the shop owner can override an administrator ad.");
+            if (ad.Source != ShopAdSource.Admin) throw new InvalidOperationException("Only an ad booked by the administrator needs to be overridden. You can cancel your own ads.");
+            if (ad.Status != ShopAdStatus.Approved) throw new InvalidOperationException("Only an ad that is booked can be overridden.");
+            if (ad.EndAt <= now) throw new InvalidOperationException("This ad is already over.");
+
+            note = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
+            if (note is { Length: > 500 }) note = note[..500];
+
+            ad.Status = ShopAdStatus.Overridden;
+            ad.StoppedAt = now;
+            ad.UpdatedAt = now;
+            await _ads.SaveAsync(ad, Event(ad, actor, "Overridden", note));
+
+            var shop = await _shops.GetByIdAsync(ad.ShopId);
+            await _notifications.NotifyAdminsAsync("AdOverridden", "An ad was overridden by the shop",
+                $"{actor.Name} stopped \"{ad.Headline}\" ({ad.AdvertiserName}) on {shop?.Name ?? "a shop"}." + (note == null ? string.Empty : $" Reason: {note}"), "/ads");
+            return await ToDtoAsync(actor, ad, shop);
         }
 
         // ----- looking
@@ -404,6 +451,9 @@ namespace BannerService.Application.Services
                 DecidedAt = ad.DecidedAt == null ? null : DateTime.SpecifyKind(ad.DecidedAt.Value, DateTimeKind.Utc),
                 DecisionNote = ad.DecisionNote,
                 CreatedByUserId = ad.CreatedByUserId,
+                PricePerHour = ad.PricePerHour,
+                ShopSharePercent = ad.ShopSharePercent,
+                StoppedAt = ad.StoppedAt == null ? null : DateTime.SpecifyKind(ad.StoppedAt.Value, DateTimeKind.Utc),
                 Can = actor == null ? new List<string>() : Abilities(actor, ad),
             };
         }
@@ -416,6 +466,8 @@ namespace BannerService.Application.Services
 
             if (manage && ad.CanBeEdited) { can.Add("edit"); can.Add("submit"); }
             if (manage && ad.Status != ShopAdStatus.Cancelled) can.Add("cancel");
+            if (actor.Source == ShopAdSource.ShopOwner && ad.Source == ShopAdSource.Admin && ad.Status == ShopAdStatus.Approved && ad.EndAt > DateTime.UtcNow)
+                can.Add("override");
             if (ad.Status == ShopAdStatus.PendingApproval)
             {
                 try { EnsureCanDecide(actor, ad); can.Add("approve"); can.Add("reject"); } catch (UnauthorizedAccessException) { }

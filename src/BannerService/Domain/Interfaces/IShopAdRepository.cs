@@ -14,5 +14,8 @@ public interface IShopAdRepository
     /// <summary>Ads of one shop, or of every shop, that touch the period, newest start first.</summary>
     Task<List<ShopAd>> ListAsync(Guid? shopId, DateTime? fromUtc, DateTime? toUtc, bool holdingSlotOnly);
 
+    /// <summary>Ads that were approved at some point (running, cancelled or overridden) and touch the period. One shop, or every shop.</summary>
+    Task<List<ShopAd>> ListApprovedAsync(Guid? shopId, DateTime fromUtc, DateTime toUtc);
+
     Task<List<ShopAdEvent>> GetEventsAsync(Guid adId);
 }

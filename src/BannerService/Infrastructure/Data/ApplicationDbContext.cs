@@ -48,6 +48,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<InAppNotification> InAppNotifications { get; set; } = null!;
     public DbSet<ShopAd> ShopAds { get; set; } = null!;
     public DbSet<ShopAdEvent> ShopAdEvents { get; set; } = null!;
+    public DbSet<AdRate> AdRates { get; set; } = null!;
 
     // Publish workflow, advertising and dashboards
     public DbSet<PublishWorkflow> PublishWorkflows { get; set; } = null!;
@@ -567,8 +568,17 @@ public class ApplicationDbContext : DbContext
             e.Property(x => x.TextColor).HasMaxLength(7).IsRequired();
             e.Property(x => x.DecidedByName).HasMaxLength(200);
             e.Property(x => x.DecisionNote).HasMaxLength(500);
+            e.Property(x => x.PricePerHour).HasPrecision(18, 2);
             e.HasIndex(x => new { x.ShopId, x.Status, x.StartAt });
             e.HasIndex(x => new { x.Status, x.StartAt });
+        });
+
+        modelBuilder.Entity<AdRate>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.CountryCode).HasMaxLength(8);
+            e.Property(x => x.PricePerHour).HasPrecision(18, 2);
+            e.HasIndex(x => new { x.Level, x.CountryCode, x.StateId, x.CityId, x.Kind });
         });
 
         modelBuilder.Entity<ShopAdEvent>(e =>

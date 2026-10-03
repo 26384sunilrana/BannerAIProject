@@ -45,6 +45,13 @@ public class ShopAdRepository : IShopAdRepository
         return await query.OrderByDescending(a => a.StartAt).ThenBy(a => a.Id).Take(500).ToListAsync();
     }
 
+    public Task<List<ShopAd>> ListApprovedAsync(Guid? shopId, DateTime fromUtc, DateTime toUtc) =>
+        _context.ShopAds.AsNoTracking()
+            .Where(a => (shopId == null || a.ShopId == shopId) && a.DecidedAt != null
+                        && (a.Status == ShopAdStatus.Approved || a.Status == ShopAdStatus.Cancelled || a.Status == ShopAdStatus.Overridden)
+                        && a.StartAt < toUtc && a.EndAt > fromUtc)
+            .ToListAsync();
+
     public Task<List<ShopAdEvent>> GetEventsAsync(Guid adId) =>
         _context.ShopAdEvents.AsNoTracking().Where(e => e.ShopAdId == adId).OrderBy(e => e.At).ToListAsync();
 }
