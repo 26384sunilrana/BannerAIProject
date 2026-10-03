@@ -84,6 +84,20 @@ public class AdminUsersController : ControllerBase
         return Ok(new { items, total, page, pageSize });
     }
 
+    /// <summary>
+    /// The same entries as a CSV file, up to 100,000 rows, for keeping or for an investigation. The export is itself an API call and
+    /// so is written to the audit log. Cells that a spreadsheet could run as a formula are defused.
+    /// </summary>
+    [HttpGet("audit-logs/export")]
+    public async Task<IActionResult> ExportAuditLogs(
+        [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] string? userId, [FromQuery] Guid? shopId, [FromQuery] int? minStatusCode)
+    {
+        var (items, total) = await _audit.QueryAsync(from, to, userId, shopId, minStatusCode, 1, 100_000);
+        var csv = AuditCsv.Build(items);
+        Response.Headers["X-Total-Entries"] = total.ToString();
+        return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv; charset=utf-8", $"audit-log-{DateTime.UtcNow:yyyyMMdd-HHmm}.csv");
+    }
+
     private async Task<IActionResult> Run<T>(Func<Task<T>> action)
     {
         try
@@ -98,5 +112,33 @@ public class AdminUsersController : ControllerBase
         {
             return Conflict(new { message = ex.Message });
         }
+    }
+}
+
+/// <summary>Writes audit entries as CSV.</summary>
+public static class AuditCsv
+{
+    public static string Build(IEnumerable<Domain.Entities.AuditLog> entries)
+    {
+        var text = new System.Text.StringBuilder();
+        text.AppendLine("OccurredAtUtc,UserId,UserEmail,ShopId,Method,Path,StatusCode,IpAddress,DurationMs");
+        foreach (var e in entries)
+        {
+            text.AppendJoin(',', new[]
+            {
+                Cell(e.OccurredAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")), Cell(e.UserId), Cell(e.UserEmail), Cell(e.ShopId?.ToString()), Cell(e.Method),
+                Cell(e.Path), Cell(e.StatusCode.ToString()), Cell(e.IpAddress), Cell(e.DurationMs.ToString()),
+            });
+            text.AppendLine();
+        }
+        return text.ToString();
+    }
+
+    /// <summary>Quotes a cell, and puts a quote mark in front of one a spreadsheet would read as a formula.</summary>
+    public static string Cell(string? value)
+    {
+        value ??= string.Empty;
+        if (value.Length > 0 && value[0] is '=' or '+' or '-' or '@' or '\t' or '\r') value = "'" + value;
+        return value.IndexOfAny(new[] { ',', '"', '\n', '\r' }) >= 0 ? "\"" + value.Replace("\"", "\"\"") + "\"" : value;
     }
 }

@@ -55,7 +55,7 @@ namespace BannerService.Application.Services
             var host = _configuration["Email:Smtp:Host"];
             if (string.IsNullOrWhiteSpace(host))
             {
-                _logger.LogWarning("Email not sent to {Email} ({Subject}): Email:Smtp:Host is not configured", toEmail, subject);
+                _logger.LogWarning("Email not sent to {Email} ({Subject}): Email:Smtp:Host is not configured", Mask(toEmail), subject);
                 return false;
             }
 
@@ -74,14 +74,22 @@ namespace BannerService.Application.Services
                 using var message = new System.Net.Mail.MailMessage(from, toEmail, subject, body) { IsBodyHtml = isHtml };
 
                 await client.SendMailAsync(message);
-                _logger.LogInformation("Email sent to {Email}: {Subject}", toEmail, subject);
+                _logger.LogInformation("Email sent to {Email}: {Subject}", Mask(toEmail), subject);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending email to {Email}", toEmail);
+                _logger.LogError(ex, "Error sending email to {Email}", Mask(toEmail));
                 return false;
             }
         }
+    
+    /// <summary>Keeps the first letter and the domain, so a log line never carries a whole address.</summary>
+    public static string Mask(string? email)
+    {
+        if (string.IsNullOrEmpty(email)) return "(none)";
+        var at = email.IndexOf('@');
+        return at <= 0 ? "***" : email[0] + "***" + email[at..];
     }
+}
 }

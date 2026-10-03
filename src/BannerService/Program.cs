@@ -239,7 +239,36 @@ if (migrateOnly)
     return;
 }
 
+// dotnet BannerService.dll --encrypt-existing   encrypts personal values saved before field encryption was on, then exits
+if (args.Contains("--encrypt-existing"))
+{
+    using var scope = app.Services.CreateScope();
+    var count = await new BannerService.Infrastructure.Security.EncryptionBackfill(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>()).RunAsync();
+    Log.Information("Encrypted {Count} stored values", count);
+    Log.CloseAndFlush();
+    return;
+}
+
 // Middleware pipeline
+
+// Headers that make browsers treat the API's answers carefully: no guessing of content types, no framing, no referrer, and nothing
+// from an API call kept in a shared cache (media downloads are signed links and set their own caching)
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        var headers = context.Response.Headers;
+        headers["X-Content-Type-Options"] = "nosniff";
+        headers["X-Frame-Options"] = "DENY";
+        headers["Referrer-Policy"] = "no-referrer";
+        if (context.Request.Path.StartsWithSegments("/api") && !headers.ContainsKey("Cache-Control") && !context.Request.Path.Value!.Contains("/download"))
+            headers["Cache-Control"] = "no-store";
+        return Task.CompletedTask;
+    });
+    await next();
+});
+if (app.Environment.IsProduction())
+    app.UseHsts();
 if (!app.Environment.IsProduction() || app.Configuration.GetValue("Swagger:Enabled", false))
 {
     app.UseSwagger();

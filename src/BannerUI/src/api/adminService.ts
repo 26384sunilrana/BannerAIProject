@@ -71,6 +71,20 @@ export const adminService = {
     return apiClient.post<LifecycleReport>('/subscriptions/admin/run-lifecycle', {})
   },
 
+  /** The activity log as a CSV file (up to 100,000 rows), with the same filters as the list. */
+  exportAuditLogs(filter: AuditFilter): Promise<Blob> {
+    return apiClient.get<Blob>(
+      `/admin/audit-logs/export${toQuery({
+        from: filter.fromIso,
+        to: filter.toIso,
+        userId: filter.userId,
+        shopId: filter.shopId,
+        minStatusCode: filter.failuresOnly ? 400 : undefined,
+      })}`,
+      { responseType: 'blob' }
+    )
+  },
+
   listAuditLogs(filter: AuditFilter): Promise<Page<AuditEntry>> {
     return apiClient.get<Page<AuditEntry>>(
       `/admin/audit-logs${toQuery({

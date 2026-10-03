@@ -186,6 +186,10 @@ namespace BannerService.Application.Services
                 return (false, SubscriptionEndedMessage, null);
 
             user.ResetLoginAttempts();
+
+            // a hash made with older, weaker settings is replaced now that the password is known
+            if (_passwordHashService.NeedsRehash(user.PasswordHash))
+                user.PasswordHash = _passwordHashService.HashPassword(request.Password);
             await _userRepository.UpdateAsync(user);
 
             var (accessToken, jwtId) = _jwtTokenService.GenerateAccessToken(user);

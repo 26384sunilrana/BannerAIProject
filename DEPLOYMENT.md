@@ -145,3 +145,12 @@ Manifests are in `deploy/k8s` (kustomize).
 - Time zone names are IANA names. The API image needs time zone data (`tzdata`); a slim Linux image without it cannot read the zones. Install it in the image.
 - A shop uses its own zone, else its city's, else its country's, else UTC. Set the country and city zones in Admin, Places.
 - The shop screen keeps the default board design (and the logo, up to about 400 KB) in the machine's browser storage, so it still shows with no connection.
+
+## Personal data: encryption, audit retention, passwords
+- After switching field encryption on for a database that already has data, run once: `dotnet BannerService.dll --encrypt-existing`
+  (a Kubernetes Job like `--migrate`). It encrypts phone numbers, addresses, postal codes and payment references saved before; running it again changes nothing.
+  Back up the key ring (`Security:KeyDirectory`) apart from the database: without it encrypted values cannot be read.
+- Activity log: kept `Audit:RetentionDays` days (default 2190, six years); `0` keeps it for ever. Administrators can export it as CSV from Activity.
+- Passwords are re-hashed with the current strength at the next sign-in, so no migration step is needed.
+- The API sends security headers (no content-type guessing, no framing, no referrer, no caching of API answers, HSTS in production); the web app sets its own in `next.config.js`.
+- See `memory-bank/intents/002-requirements-gap-closure/hipaa-review.md` for the review and what a person still has to do.

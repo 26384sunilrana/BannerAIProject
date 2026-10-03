@@ -14,6 +14,9 @@ public class AuditLogRepository : IAuditLogRepository
         _context = context;
     }
 
+    public async Task<int> PurgeAsync(DateTime olderThanUtc) =>
+        await _context.AuditLogs.Where(a => a.OccurredAt < olderThanUtc).ExecuteDeleteAsync();
+
     public async Task AddAsync(AuditLog entry)
     {
         _context.AuditLogs.Add(entry);

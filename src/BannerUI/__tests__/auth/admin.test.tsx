@@ -25,6 +25,7 @@ jest.mock('@/api/adminService', () => {
       listSubscriptions: jest.fn(),
       runLifecycle: jest.fn(),
       listAuditLogs: jest.fn(),
+      exportAuditLogs: jest.fn(),
     },
   }
 })
@@ -236,5 +237,37 @@ describe('AuditPanel', () => {
     await userEvent.click(screen.getByLabelText(/Failures only/))
 
     await waitFor(() => expect(admin.listAuditLogs).toHaveBeenLastCalledWith(expect.objectContaining({ failuresOnly: true, userId: 'u1' })))
+  })
+
+  it('exports the log with the same filters and saves it as a file', async () => {
+    search = 'userId=u1'
+    admin.listAuditLogs.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 50 } as never)
+    admin.exportAuditLogs.mockResolvedValue(new Blob(['a,b'], { type: 'text/csv' }) as never)
+    const created = jest.fn(() => 'blob:csv')
+    const revoked = jest.fn()
+    Object.assign(URL, { createObjectURL: created, revokeObjectURL: revoked })
+    const click = jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+    render(<AuditPanel />)
+    await screen.findByText('Nothing recorded for these filters.')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Export as CSV' }))
+
+    await waitFor(() => expect(admin.exportAuditLogs).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u1' })))
+    expect(created).toHaveBeenCalled()
+    expect(click).toHaveBeenCalled()
+    expect(revoked).toHaveBeenCalledWith('blob:csv')
+    click.mockRestore()
+  })
+
+  it('says so when the export fails', async () => {
+    search = ''
+    admin.listAuditLogs.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 50 } as never)
+    admin.exportAuditLogs.mockRejectedValue({ response: { data: { message: 'Not allowed' } } })
+    render(<AuditPanel />)
+    await screen.findByText('Nothing recorded for these filters.')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Export as CSV' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Not allowed')
   })
 })

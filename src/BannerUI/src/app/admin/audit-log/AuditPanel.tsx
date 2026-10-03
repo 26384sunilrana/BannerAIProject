@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Input } from '@/components/Common'
+import { Button, Input } from '@/components/Common'
 import { Pagination } from '@/components/admin/Pagination'
 import { adminService } from '@/api/adminService'
 import { getErrorMessage } from '@/api/client'
@@ -58,6 +58,36 @@ export function AuditPanel() {
     setPage(1)
   }, [from, to, userId, shopId, failuresOnly])
 
+  const [exporting, setExporting] = useState(false)
+
+  const exportCsv = async () => {
+    setExporting(true)
+    try {
+      const file = await adminService.exportAuditLogs({
+        fromIso: fromLocalInput(from) ?? undefined,
+        toIso: fromLocalInput(to) ?? undefined,
+        userId,
+        shopId,
+        failuresOnly,
+        page: 1,
+        pageSize: PAGE_SIZE,
+      })
+      const url = URL.createObjectURL(file)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `activity-log-${new Date().toISOString().slice(0, 10)}.csv`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+      setError(null)
+    } catch (err) {
+      setError(getErrorMessage(err, 'The activity log could not be exported.'))
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const filtered = !!userId || !!shopId
 
   return (
@@ -89,6 +119,9 @@ export function AuditPanel() {
           <input type="checkbox" checked={failuresOnly} onChange={(e) => setFailuresOnly(e.target.checked)} />
           Failures only (status 400 and up)
         </label>
+        <Button variant="secondary" onClick={exportCsv} isLoading={exporting}>
+          Export as CSV
+        </Button>
       </div>
 
       {error && (

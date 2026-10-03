@@ -97,3 +97,6 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 - 042b: audit retention and export, HIPAA/PHI review of the whole application, re-encrypting old plain data. Screening of banner text and the default-board message is not done.
 - 041b: campaign dates are read on the clock of the computer being used.
 - Gaps of the ad screening are listed in memory-bank/bolts/042a-ad-compliance/bolt.md.
+
+## Left after bolt 042b
+- HIPAA review open items 7-15 in hipaa-review.md (CSP, screening banner text, e-mail encryption, Key Vault, encrypted media, e-mail verification and reset, audit tamper protection, alerts).

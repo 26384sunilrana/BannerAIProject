@@ -38,6 +38,14 @@ public class MediaCleanupWorker : BackgroundService
                 using var scope = _scopes.CreateScope();
                 await scope.ServiceProvider.GetRequiredService<MediaCleanupService>().RunAsync(DateTime.UtcNow);
                 await scope.ServiceProvider.GetRequiredService<NotificationService>().PurgeAsync(DateTime.UtcNow);
+
+                // audit entries are kept for Audit:RetentionDays (default 2190, six years, the HIPAA documentation period); 0 keeps them for ever
+                var retention = _configuration.GetValue("Audit:RetentionDays", 2190);
+                if (retention > 0)
+                {
+                    var removed = await scope.ServiceProvider.GetRequiredService<Domain.Interfaces.IAuditLogRepository>().PurgeAsync(DateTime.UtcNow.AddDays(-retention));
+                    if (removed > 0) _logger.LogInformation("Removed {Count} audit entries older than {Days} days", removed, retention);
+                }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
