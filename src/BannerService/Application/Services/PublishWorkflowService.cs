@@ -10,13 +10,16 @@ namespace BannerService.Application.Services
         private readonly IShopRepository _shopRepository;
         private readonly IBannerRepository _bannerRepository;
         private readonly IVersionControlService _versionControl;
+        private readonly NotificationService? _notifications;
 
         public PublishWorkflowService(
             IPublishWorkflowRepository repository,
             IShopRepository shopRepository,
             IBannerRepository bannerRepository,
-            IVersionControlService versionControl)
+            IVersionControlService versionControl,
+            NotificationService? notifications = null)
         {
+            _notifications = notifications;
             _repository = repository;
             _shopRepository = shopRepository;
             _bannerRepository = bannerRepository;
@@ -67,7 +70,11 @@ namespace BannerService.Application.Services
             await _versionControl.CreateSnapshotAsync(banner, "Submitted for approval", userId);
 
             workflow.SubmitForApproval(userId, userName);
-            return await _repository.UpdateAsync(workflow);
+            var submitted = await _repository.UpdateAsync(workflow);
+            if (_notifications != null)
+                await _notifications.NotifyShopOwnersAsync(workflow.ShopId, "WorkflowSubmitted", "Banner waiting for approval",
+                    $"{userName} sent \"{banner.Name}\" for approval.", "/approvals");
+            return submitted;
         }
 
         public async Task<PublishWorkflow> ApproveAsync(Guid workflowId, Guid reviewerId, string reviewerName, string? comment = null)
@@ -82,7 +89,9 @@ namespace BannerService.Application.Services
             await EnsureCanApproveAsync(workflow.ShopId, reviewerId);
 
             workflow.Approve(reviewerId, reviewerName, comment);
-            return await _repository.UpdateAsync(workflow);
+            var approved = await _repository.UpdateAsync(workflow);
+            await TellSubmitterAsync(workflow, "WorkflowApproved", "Banner approved", $"{reviewerName} approved your banner.");
+            return approved;
         }
 
         public async Task<PublishWorkflow> RejectAsync(Guid workflowId, Guid reviewerId, string reviewerName, string reason)
@@ -97,7 +106,17 @@ namespace BannerService.Application.Services
             await EnsureCanApproveAsync(workflow.ShopId, reviewerId);
 
             workflow.Reject(reviewerId, reviewerName, reason);
-            return await _repository.UpdateAsync(workflow);
+            var rejected = await _repository.UpdateAsync(workflow);
+            await TellSubmitterAsync(workflow, "WorkflowRejected", "Banner sent back", $"{reviewerName} sent your banner back: {reason}");
+            return rejected;
+        }
+
+        private async Task TellSubmitterAsync(PublishWorkflow workflow, string kind, string title, string message)
+        {
+            if (_notifications == null || workflow.SubmittedByUserId == Guid.Empty) return;
+            var banner = await _bannerRepository.GetByIdAsync(workflow.BannerId, workflow.ShopId);
+            var text = banner == null ? message : $"{message} (\"{banner.Name}\")";
+            await _notifications.NotifyUsersAsync(new[] { workflow.SubmittedByUserId.ToString() }, kind, title, text, "/dashboard");
         }
 
         public async Task<PublishWorkflow> PublishAsync(Guid workflowId, Guid userId, string userName)

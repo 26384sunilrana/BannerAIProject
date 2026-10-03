@@ -45,6 +45,7 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
     public DbSet<SubscriptionNotification> SubscriptionNotifications { get; set; } = null!;
+    public DbSet<InAppNotification> InAppNotifications { get; set; } = null!;
 
     // Publish workflow, advertising and dashboards
     public DbSet<PublishWorkflow> PublishWorkflows { get; set; } = null!;
@@ -552,6 +553,17 @@ public class ApplicationDbContext : DbContext
             e.Property(x => x.Kind).HasMaxLength(40).IsRequired();
             e.Property(x => x.Error).HasMaxLength(500);
             e.HasIndex(x => new { x.SubscriptionId, x.Kind, x.Channel, x.Day }).IsUnique();
+        });
+
+        modelBuilder.Entity<InAppNotification>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.UserId).HasMaxLength(64).IsRequired();
+            e.Property(x => x.Kind).HasMaxLength(40).IsRequired();
+            e.Property(x => x.Title).HasMaxLength(120).IsRequired();
+            e.Property(x => x.Message).HasMaxLength(500).IsRequired();
+            e.Property(x => x.LinkUrl).HasMaxLength(300);
+            e.HasIndex(x => new { x.UserId, x.ReadAt, x.CreatedAt });
         });
 
         modelBuilder.Entity<AuditLog>(e =>

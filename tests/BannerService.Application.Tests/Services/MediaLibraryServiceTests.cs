@@ -82,11 +82,11 @@ public class MediaLibraryServiceTests
     }
 
     [Fact]
-    public async Task Usage_WithoutAPlan_HasNoLimit()
+    public async Task Usage_WithoutAPlan_GetsTheStarterAllowance()
     {
         _files.Setup(f => f.GetUsageAsync(_shop)).ReturnsAsync(new MediaUsage(0, 0, 0, 0));
 
-        Assert.Null((await _library.GetUsageAsync(_shop)).LimitBytes);
+        Assert.Equal(1024L * 1024 * 1024, (await _library.GetUsageAsync(_shop)).LimitBytes);
     }
 
     // ----- deleting

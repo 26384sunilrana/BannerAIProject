@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { Roles } from '@/lib/session'
+import { NotificationBell } from './NotificationBell'
 
 interface NavItem {
   href: string
@@ -88,6 +89,7 @@ function Frame({ children }: { children: React.ReactNode }) {
             </ul>
           </div>
           <div className="flex items-center gap-4 text-sm">
+            <NotificationBell />
             <Link href="/account" className="text-gray-700 hover:text-gray-900" data-testid="signed-in-as" title="My account">
               {user?.name || user?.email}
             </Link>

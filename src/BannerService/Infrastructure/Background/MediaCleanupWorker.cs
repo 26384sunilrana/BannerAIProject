@@ -37,6 +37,7 @@ public class MediaCleanupWorker : BackgroundService
             {
                 using var scope = _scopes.CreateScope();
                 await scope.ServiceProvider.GetRequiredService<MediaCleanupService>().RunAsync(DateTime.UtcNow);
+                await scope.ServiceProvider.GetRequiredService<NotificationService>().PurgeAsync(DateTime.UtcNow);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

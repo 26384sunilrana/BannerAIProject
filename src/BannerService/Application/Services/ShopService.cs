@@ -150,10 +150,14 @@ namespace BannerService.Application.Services
             if (!isValid)
                 return (false, errorMessage!);
 
-            // Check name uniqueness (excluding current shop)
-            var existingShop = await _shopRepository.GetByNameAsync(name);
-            if (existingShop != null && existingShop.Id != shopId)
-                return (false, "A shop with this name already exists");
+            // Check name uniqueness only when the name changes: sign-up does not check it, so a shop may already share its
+            // name with another, and saving other details must still work
+            if (!string.Equals(shop.Name, name, StringComparison.OrdinalIgnoreCase))
+            {
+                var existingShop = await _shopRepository.GetByNameAsync(name);
+                if (existingShop != null && existingShop.Id != shopId)
+                    return (false, "A shop with this name already exists");
+            }
 
             // Validate status transition
             var (validTransition, transitionError) = ShopValidator.ValidateStatusTransition(shop.Status, status);

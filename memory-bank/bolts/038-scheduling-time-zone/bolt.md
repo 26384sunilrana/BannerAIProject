@@ -1,6 +1,6 @@
 # Bolt 038 - Time zone, daily hours, calendar, default board
 
-Status: complete (browser run not done, see below)
+Status: complete (browser run done in bolt 040a)
 
 ## Built
 - **Shop time zone**, found as shop, then city, then country, then UTC. Editable on the shop form, in Places (country and city) and by API. India defaults to Asia/Kolkata.
@@ -14,6 +14,6 @@ Status: complete (browser run not done, see below)
 - Two integration tests were fragile on a shared real database (a shared state, an unordered pick of the clashing banner): fixed.
 
 ## Not done
-- Not driven in Chrome against the real API (time zone, hours, calendar, designer, offline board). The earlier browser scripts were not re-run.
+- Chrome run was done later, with bolt 040a (13/13).
 - Re-running the SQL-mode integration tests on a database that already holds an earlier run fails (fixed e-mail addresses); use a fresh database each time.
 - Restore-version keeping the last approved version live is still open (pending.md).

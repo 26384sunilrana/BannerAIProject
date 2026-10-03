@@ -69,7 +69,7 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
   - Shown links to the pictures and videos of a rotation are made when the banner opens (one request per file); a very long list means that many requests.
 
 ## Left after bolt 038
-- Chrome run of the scheduling screens, calendar and default board designer against the real API.
+- (done in 040a) Chrome run of the scheduling screens.
 - Restore of an old version should keep the last approved version live; `PublishWorkflow.Publish` IsPublished handling.
 - Calendar shows one week at a time; no month view or drag to reschedule.
 - A logo above about 400 KB is not kept offline.
@@ -77,3 +77,7 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 ## Left after bolt 039
 - Banner-size limits or pricing (what "size" means is undecided); per-GB metered billing waits for providers (044).
 - Administrator view of storage per shop; alert at 80% by email; downgrade below current usage is allowed.
+
+## Left after bolt 040a
+- Notification history page, e-mail/SMS copy (044), opt-out per kind; more producers to come with ads.
+- Sign-up allows two shops with the same name (updates only check on rename). Decide whether sign-up should refuse it.
