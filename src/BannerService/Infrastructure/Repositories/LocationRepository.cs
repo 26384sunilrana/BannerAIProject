@@ -142,6 +142,15 @@ namespace BannerService.Infrastructure.Repositories
         public Task<List<Shop>> ShopsInCityAsync(int cityId) =>
             _context.Shops.Where(s => s.CityId == cityId).OrderBy(s => s.Name).ToListAsync();
 
+        public Task<List<Shop>> ActiveShopsInPlaceAsync(string? countryCode, int? stateId, int? cityId)
+        {
+            var query = _context.Shops.Where(s => s.Status == ShopStatus.Active);
+            if (cityId != null) query = query.Where(s => s.CityId == cityId);
+            else if (stateId != null) query = query.Where(s => s.StateId == stateId);
+            else if (!string.IsNullOrWhiteSpace(countryCode)) query = query.Where(s => s.CountryCode == countryCode);
+            return query.OrderBy(s => s.Name).Take(501).ToListAsync();
+        }
+
         public async Task<int> BackfillUniqueIdsAsync(Func<string, string> next)
         {
             var changed = 0;

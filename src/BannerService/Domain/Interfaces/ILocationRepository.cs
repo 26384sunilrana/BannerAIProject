@@ -42,6 +42,9 @@ namespace BannerService.Domain.Interfaces
         Task<List<Shop>> ShopsInGroupAsync(int groupId);
         Task<List<Shop>> ShopsInCityAsync(int cityId);
 
+        /// <summary>Active shops in a place: the deepest of city, state and country that is given; every active shop when none is.</summary>
+        Task<List<Shop>> ActiveShopsInPlaceAsync(string? countryCode, int? stateId, int? cityId);
+
         /// <summary>Fills in the identifiers of countries and states created before identifiers existed. Returns how many rows changed.</summary>
         Task<int> BackfillUniqueIdsAsync(Func<string, string> next);
     }

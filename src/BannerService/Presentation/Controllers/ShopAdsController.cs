@@ -44,6 +44,12 @@ public class ShopAdsController : ControllerBase
     public Task<IActionResult> Create([FromBody] CreateShopAdRequest request) =>
         ServiceErrors.Run(this, () => _ads.CreateAsync(Actor(), request.ShopId, request));
 
+    /// <summary>The administrator books one ad on every active shop in a place; shops it cannot go on are listed with the reason.</summary>
+    [HttpPost("api/shop-ads/campaign")]
+    [Authorize(Roles = "Admin")]
+    public Task<IActionResult> Campaign([FromBody] CampaignInput request) =>
+        ServiceErrors.Run(this, () => _ads.CampaignAsync(Actor(), request));
+
     [HttpPut("api/shop-ads/{id:guid}")]
     public Task<IActionResult> Update(Guid id, [FromBody] ShopAdInput request) =>
         ServiceErrors.Run(this, () => _ads.UpdateAsync(Actor(), id, request));

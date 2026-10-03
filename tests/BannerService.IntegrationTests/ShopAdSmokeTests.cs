@@ -6,6 +6,7 @@ using System.Text.Json;
 using BannerService.Domain.Entities;
 using BannerService.Domain.Services;
 using BannerService.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -342,5 +343,62 @@ public class ShopAdSmokeTests : IClassFixture<SmokeFactory>
         Assert.Equal(0m, own.GetProperty("totalPayout").GetDecimal());
 
         Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync($"/api/ad-statements?month={month}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task ACampaign_BooksEveryShopInACity_SkipsTheOnesItCannotGoOn_AndTellsTheOwners()
+    {
+        int stateId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            await _factory.SeedAsync();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            if (!await context.Countries.AnyAsync(c => c.ISOCode == "IN")) context.Countries.Add(new Country { ISOCode = "IN", Name = "India" });
+            var state = await context.States.FirstOrDefaultAsync(x => x.CountryCode == "IN" && x.Code == "ZT");
+            if (state == null) context.States.Add(state = new State { CountryCode = "IN", Code = "ZT", Name = "Zone Test State" });
+            await context.SaveChangesAsync();
+            stateId = state.Id;
+        }
+
+        var admin = await AdminAsync();
+        await EnsureRateAsync(admin);
+        var city = await Json(await admin.PostAsJsonAsync("/api/locations/cities", new { stateId, name = "Campaign City " + Guid.NewGuid().ToString("N")[..6] }));
+        var cityId = int.Parse(city.GetProperty("id").GetString()!);
+
+        var (free, freeShop) = await OwnerAsync("camp-free@example.com");
+        var (busy, busyShop) = await OwnerAsync("camp-busy@example.com");
+        var (elsewhere, elsewhereShop) = await OwnerAsync("camp-elsewhere@example.com");
+        await free.PutAsJsonAsync($"/api/locations/shops/{freeShop}", new { cityId });
+        await busy.PutAsJsonAsync($"/api/locations/shops/{busyShop}", new { cityId });
+
+        // one shop already has a mega ad at that time
+        var taken = await CreateAsync(busy, Ad("Already here", "Mega", "Left", 60));
+        await StatusAfter(busy, taken, "submit");
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await free.PostAsJsonAsync("/api/shop-ads/campaign", Ad("Nope", "Mega", "Right", 60))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/api/shop-ads/campaign", new { cityId = 999999, advertiserName = "Big Brand", headline = "Hi", background = "#ffffff", textColor = "#000000", kind = "Side", placement = "Left", spacePercent = 20, startAt = DateTime.UtcNow.AddDays(1), endAt = DateTime.UtcNow.AddDays(5) })).StatusCode);
+
+        var body = new Dictionary<string, object?>
+        {
+            ["cityId"] = cityId, ["advertiserName"] = "Big Brand", ["headline"] = "Festival sale", ["background"] = "#ffeecc", ["textColor"] = "#112233",
+            ["kind"] = "Mega", ["placement"] = "Right", ["spacePercent"] = 60, ["startAt"] = DateTime.UtcNow.Date.AddDays(1), ["endAt"] = DateTime.UtcNow.Date.AddDays(8),
+        };
+        var response = await admin.PostAsJsonAsync("/api/shop-ads/campaign", body);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await Json(response);
+
+        Assert.Equal(2, result.GetProperty("shops").GetInt32());
+        Assert.Equal(1, result.GetProperty("booked").GetInt32());
+        var skipped = Assert.Single(result.GetProperty("skipped").EnumerateArray());
+        Assert.Equal(busyShop, skipped.GetProperty("shopId").GetGuid());
+        Assert.Contains("Already here", skipped.GetProperty("reason").GetString());
+
+        // the booked shop got the ad and a message saying it is a major ad; the other places were left alone
+        var ads = await Json(await free.GetAsync("/api/shop-ads"));
+        Assert.Equal("Approved", ads.EnumerateArray().Single(a => a.GetProperty("headline").GetString() == "Festival sale").GetProperty("status").GetString());
+        var told = await Json(await free.GetAsync("/api/notifications"));
+        Assert.Contains(told.GetProperty("items").EnumerateArray(), n => n.GetProperty("kind").GetString() == "AdBookedByAdmin" && n.GetProperty("title").GetString()!.StartsWith("A major ad"));
+        Assert.DoesNotContain((await Json(await elsewhere.GetAsync("/api/shop-ads"))).EnumerateArray(), a => a.GetProperty("headline").GetString() == "Festival sale");
+        Assert.DoesNotContain((await Json(await busy.GetAsync("/api/shop-ads"))).EnumerateArray(), a => a.GetProperty("headline").GetString() == "Festival sale" && a.GetProperty("status").GetString() != "Cancelled");
     }
 }

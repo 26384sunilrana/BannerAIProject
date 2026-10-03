@@ -254,3 +254,52 @@ describe('Ad rates page', () => {
     await waitFor(() => expect(api.delete).toHaveBeenCalledWith('/ad-rates/r1'))
   })
 })
+
+describe('Booking for a whole place', () => {
+  beforeEach(() => {
+    mockRoles = ['Admin']
+    api.get.mockImplementation(async (path: string) => (path.startsWith('/shops?') ? { items: [] } : []))
+  })
+
+  const fill = async () => {
+    await userEvent.type(screen.getByLabelText('Advertiser (business name)'), 'Big Brand')
+    await userEvent.type(screen.getByLabelText('Headline'), 'Festival sale')
+    fireEvent.change(screen.getByLabelText('Starts'), { target: { value: '2035-01-08T09:00' } })
+    fireEvent.change(screen.getByLabelText('Ends'), { target: { value: '2035-01-15T09:00' } })
+  }
+
+  it('books on every shop of the chosen city and lists the shops it skipped', async () => {
+    api.post.mockResolvedValue({ shops: 3, booked: 2, skipped: [{ shopId: 's3', shopName: 'Busy Mart', reason: 'The screen is already taken at that time by "Already here".' }] })
+    render(<AdsPage />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Book for a whole place' }))
+    await userEvent.click(screen.getByRole('button', { name: 'choose Mumbai' }))
+    await fill()
+    await userEvent.click(screen.getByRole('button', { name: 'Book on all these shops' }))
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/shop-ads/campaign', expect.objectContaining({ headline: 'Festival sale', countryCode: 'IN', stateId: 7, cityId: 70 })))
+    const result = await screen.findByTestId('campaign-result')
+    expect(result).toHaveTextContent('Booked on 2 of 3 shops.')
+    expect(result).toHaveTextContent('Busy Mart: The screen is already taken')
+  })
+
+  it('shows why a campaign was refused and keeps the form', async () => {
+    api.post.mockRejectedValue({ response: { data: { message: 'There is no active shop in that place.' } } })
+    render(<AdsPage />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Book for a whole place' }))
+    await fill()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Book on all these shops' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('no active shop in that place')
+    expect(screen.getByLabelText('Headline')).toHaveValue('Festival sale')
+  })
+
+  it('is only for the administrator', async () => {
+    mockRoles = ['ShopOwner']
+    render(<AdsPage />)
+    await screen.findByText(/No ads yet/)
+
+    expect(screen.queryByRole('button', { name: 'Book for a whole place' })).toBeNull()
+  })
+})

@@ -47,7 +47,7 @@ public class AdPricingServiceTests
 
         var notifications = new NotificationService(_notificationStore.Object, NullLogger<NotificationService>.Instance);
         var rates = new AdRateService(_rateStore.Object, _locations.Object);
-        _service = new ShopAdService(_ads.Object, _shops.Object, _media.Object, _signer.Object, notifications, rates);
+        _service = new ShopAdService(_ads.Object, _shops.Object, _media.Object, _signer.Object, notifications, rates, _locations.Object);
         _statements = new AdStatementService(_ads.Object, _shops.Object);
     }
 

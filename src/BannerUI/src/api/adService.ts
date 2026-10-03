@@ -66,6 +66,18 @@ export interface AdInput {
   daily: { startMinutes: number; endMinutes: number; days: number } | null
 }
 
+export interface CampaignResult {
+  shops: number
+  booked: number
+  skipped: { shopId: string; shopName: string; reason: string }[]
+}
+
+export interface CampaignInput extends AdInput {
+  countryCode?: string
+  stateId?: number
+  cityId?: number
+}
+
 const absolute = (ad: ShopAd): ShopAd => ({
   ...ad,
   mediaUrl: ad.mediaUrl ? (/^https?:\/\//i.test(ad.mediaUrl) ? ad.mediaUrl : `${API_ORIGIN}${ad.mediaUrl}`) : null,
@@ -79,6 +91,11 @@ export const adService = {
 
   async create(input: AdInput): Promise<ShopAd> {
     return absolute(await apiClient.post<ShopAd>('/shop-ads', input))
+  },
+
+  /** The administrator books one ad on every active shop in a place. */
+  campaign(input: CampaignInput): Promise<CampaignResult> {
+    return apiClient.post<CampaignResult>('/shop-ads/campaign', input)
   },
 
   async update(id: string, input: AdInput): Promise<ShopAd> {

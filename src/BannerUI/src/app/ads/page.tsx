@@ -8,7 +8,8 @@ import { AdForm } from '@/components/ads/AdForm'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/hooks/useToast'
 import { useShopTimeZone } from '@/hooks/useShopTimeZone'
-import { adService, AdHistoryEntry, AdInput, ShopAd } from '@/api/adService'
+import { adService, AdHistoryEntry, AdInput, CampaignResult, ShopAd } from '@/api/adService'
+import { PickedLocation } from '@/components/location/LocationPicker'
 import { apiClient, getErrorMessage } from '@/api/client'
 import { describeDaily, formatInZone, BROWSER_ZONE } from '@/lib/timeZones'
 import { Roles } from '@/lib/session'
@@ -56,7 +57,9 @@ function Ads() {
   const [shopZone, setShopZone] = useState<string>(BROWSER_ZONE)
   const [ads, setAds] = useState<ShopAd[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [editing, setEditing] = useState<ShopAd | 'new' | null>(null)
+  const [editing, setEditing] = useState<ShopAd | 'new' | 'campaign' | null>(null)
+  const [campaignPlace, setCampaignPlace] = useState<PickedLocation>({})
+  const [campaignResult, setCampaignResult] = useState<CampaignResult | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [rejecting, setRejecting] = useState<string | null>(null)
@@ -99,11 +102,27 @@ function Ads() {
     load()
   }, [load])
 
+  const saveCampaign = async (input: AdInput) => {
+    setBusy(true)
+    setFormError(null)
+    try {
+      const result = await adService.campaign({ ...input, countryCode: campaignPlace.countryCode, stateId: campaignPlace.stateId, cityId: campaignPlace.cityId })
+      setCampaignResult(result)
+      setEditing(null)
+      toast.success(`The ad was booked on ${result.booked} of ${result.shops} shops.`)
+      await load()
+    } catch (err) {
+      setFormError(getErrorMessage(err, 'The campaign could not be booked.'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const save = async (input: AdInput) => {
     setBusy(true)
     setFormError(null)
     try {
-      if (editing && editing !== 'new') await adService.update(editing.id, input)
+      if (editing && editing !== 'new' && editing !== 'campaign') await adService.update(editing.id, input)
       else await adService.create(isAdmin ? { ...input, shopId } : input)
       setEditing(null)
       toast.success('The ad was saved as a draft. Send it in when it is ready.')
@@ -168,6 +187,19 @@ function Ads() {
               Monthly statement
             </Link>
           )}
+          {isAdmin && !editing && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setFormError(null)
+                setCampaignResult(null)
+                setCampaignPlace({})
+                setEditing('campaign')
+              }}
+            >
+              Book for a whole place
+            </Button>
+          )}
           {canBook && !editing && (
             <Button
               onClick={() => {
@@ -201,15 +233,33 @@ function Ads() {
 
       {editing && (
         <AdForm
-          key={editing === 'new' ? 'new' : editing.id}
-          ad={editing === 'new' ? undefined : editing}
+          key={typeof editing === 'string' ? editing : editing.id}
+          ad={typeof editing === 'string' ? undefined : editing}
+          place={editing === 'campaign' ? { value: campaignPlace, onChange: setCampaignPlace } : undefined}
           zone={zone}
           allowPicture={!isAdmin}
           busy={busy}
           error={formError}
-          onSubmit={save}
+          onSubmit={editing === 'campaign' ? saveCampaign : save}
           onCancel={() => setEditing(null)}
         />
+      )}
+
+      {campaignResult && (
+        <section className="rounded-xl border border-gray-200 bg-white p-4" data-testid="campaign-result">
+          <p className="font-medium text-gray-900">
+            Booked on {campaignResult.booked} of {campaignResult.shops} shops.
+          </p>
+          {campaignResult.skipped.length > 0 && (
+            <ul className="mt-2 space-y-1 text-sm text-gray-700">
+              {campaignResult.skipped.map((s) => (
+                <li key={s.shopId}>
+                  <span className="font-medium">{s.shopName}</span>: {s.reason}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       )}
 
       {loadError && (

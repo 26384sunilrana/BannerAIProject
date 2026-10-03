@@ -3,6 +3,7 @@
 import React, { FormEvent, useState } from 'react'
 import { Button, Input, Select } from '@/components/Common'
 import { AdTile } from '@/components/Display/AdLayout'
+import { LocationPicker, PickedLocation } from '@/components/location/LocationPicker'
 import { MediaPickerDialog } from '@/components/media/MediaPickerDialog'
 import { MediaLibraryItem } from '@/api/mediaService'
 import { AdInput, AdKind, AdPlacement, ShopAd } from '@/api/adService'
@@ -45,11 +46,13 @@ interface Props {
   busy: boolean
   error: string | null
   onSubmit: (input: AdInput) => void
+  /** Administrators booking on a whole place: shows the place chooser and the button says so. */
+  place?: { value: PickedLocation; onChange: (next: PickedLocation) => void }
   onCancel: () => void
 }
 
 /** The form for booking an ad. The preview on the right is the ad as it will look. */
-export function AdForm({ ad, zone, allowPicture, busy, error, onSubmit, onCancel }: Props) {
+export function AdForm({ ad, zone, allowPicture, busy, error, onSubmit, onCancel, place }: Props) {
   const [advertiser, setAdvertiser] = useState(ad?.advertiserName ?? '')
   const [headline, setHeadline] = useState(ad?.headline ?? '')
   const [body, setBody] = useState(ad?.body ?? '')
@@ -137,6 +140,16 @@ export function AdForm({ ad, zone, allowPicture, busy, error, onSubmit, onCancel
           </div>
         )}
 
+        {place && (
+          <fieldset className="space-y-2 rounded-lg border border-gray-200 p-3">
+            <legend className="px-1 text-sm font-medium text-gray-700">Shops in</legend>
+            <p className="text-xs text-gray-500">
+              The ad is booked on every active shop in the place you choose, each at its own rate. Leave it empty for every shop. Shops where it cannot go
+              (the screen is taken, no rate) are skipped and listed.
+            </p>
+            <LocationPicker value={place.value} onChange={(next) => place.onChange({ ...next, groupId: undefined })} />
+          </fieldset>
+        )}
         <Input id="ad-advertiser" label="Advertiser (business name)" value={advertiser} maxLength={80} onChange={(e) => setAdvertiser(e.target.value)} />
         <Input id="ad-headline" label="Headline" value={headline} maxLength={80} onChange={(e) => setHeadline(e.target.value)} />
         <div>
@@ -221,7 +234,7 @@ export function AdForm({ ad, zone, allowPicture, busy, error, onSubmit, onCancel
 
         <div className="flex gap-3">
           <Button type="submit" isLoading={busy}>
-            {ad ? 'Save changes' : 'Save as draft'}
+            {ad ? 'Save changes' : place ? 'Book on all these shops' : 'Save as draft'}
           </Button>
           <Button type="button" variant="secondary" onClick={onCancel} disabled={busy}>
             Cancel

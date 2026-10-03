@@ -75,6 +75,28 @@ namespace BannerService.Application.Services
         public List<string> Can { get; set; } = new();
     }
 
+    /// <summary>An ad booked on every shop in a place at once.</summary>
+    public class CampaignInput : ShopAdInput
+    {
+        public string? CountryCode { get; set; }
+        public int? StateId { get; set; }
+        public int? CityId { get; set; }
+    }
+
+    public class CampaignSkippedDto
+    {
+        public Guid ShopId { get; set; }
+        public string ShopName { get; set; } = string.Empty;
+        public string Reason { get; set; } = string.Empty;
+    }
+
+    public class CampaignResultDto
+    {
+        public int Shops { get; set; }
+        public int Booked { get; set; }
+        public List<CampaignSkippedDto> Skipped { get; set; } = new();
+    }
+
     public class ShopAdEventDto
     {
         public string Action { get; set; } = string.Empty;
@@ -91,15 +113,20 @@ namespace BannerService.Application.Services
     {
         private const int LinkMinutes = 240;
 
+        /// <summary>The most shops one campaign may reach; a larger place has to be split.</summary>
+        public const int MaxCampaignShops = 500;
+
         private readonly IShopAdRepository _ads;
         private readonly IShopRepository _shops;
         private readonly IMediaFileRepository _media;
         private readonly IMediaUrlSigner _signer;
         private readonly NotificationService _notifications;
         private readonly AdRateService _rates;
+        private readonly ILocationRepository _locations;
 
-        public ShopAdService(IShopAdRepository ads, IShopRepository shops, IMediaFileRepository media, IMediaUrlSigner signer, NotificationService notifications, AdRateService rates)
+        public ShopAdService(IShopAdRepository ads, IShopRepository shops, IMediaFileRepository media, IMediaUrlSigner signer, NotificationService notifications, AdRateService rates, ILocationRepository locations)
         {
+            _locations = locations;
             _rates = rates;
             _ads = ads;
             _shops = shops;
@@ -180,7 +207,7 @@ namespace BannerService.Application.Services
                 await _notifications.NotifyShopOwnersAsync(ad.ShopId, "AdSubmitted", "Ad waiting for approval",
                     $"{actor.Name} booked \"{ad.Headline}\" for {ad.AdvertiserName}.", "/ads");
             else if (ad.Source == ShopAdSource.Admin)
-                await _notifications.NotifyShopOwnersAsync(ad.ShopId, "AdBookedByAdmin", "An ad was booked on your screen",
+                await _notifications.NotifyShopOwnersAsync(ad.ShopId, "AdBookedByAdmin", ad.Kind == ShopAdKind.Mega ? "A major ad was booked on your screen" : "An ad was booked on your screen",
                     $"\"{ad.Headline}\" for {ad.AdvertiserName} runs on your screen from {ad.StartAt:d MMM yyyy} to {ad.EndAt:d MMM yyyy}.", "/ads");
 
             return await ToDtoAsync(actor, ad, shop);
@@ -257,6 +284,46 @@ namespace BannerService.Application.Services
             await _notifications.NotifyAdminsAsync("AdOverridden", "An ad was overridden by the shop",
                 $"{actor.Name} stopped \"{ad.Headline}\" ({ad.AdvertiserName}) on {shop?.Name ?? "a shop"}." + (note == null ? string.Empty : $" Reason: {note}"), "/ads");
             return await ToDtoAsync(actor, ad, shop);
+        }
+
+        /// <summary>
+        /// The administrator books one ad on every active shop in a place (a city, a state, a country or everywhere). Each shop is booked on its own
+        /// and priced by its own rate; a shop where the ad cannot go (the screen is taken, no rate) is skipped with the reason, and the rest are
+        /// booked. Every shop owner is told in the application.
+        /// </summary>
+        public async Task<CampaignResultDto> CampaignAsync(AdActor actor, CampaignInput input, DateTime? nowUtc = null)
+        {
+            if (actor.Source != ShopAdSource.Admin) throw new UnauthorizedAccessException("Only the administrator can book an ad on a whole place.");
+            if (input.MediaFileId != null) throw new ArgumentException("Ads booked by the administrator are text only for now.");
+
+            var shops = await _locations.ActiveShopsInPlaceAsync(input.CountryCode, input.StateId, input.CityId);
+            if (shops.Count == 0) throw new ArgumentException("There is no active shop in that place.");
+            if (shops.Count > MaxCampaignShops)
+                throw new ArgumentException($"That place has more than {MaxCampaignShops} shops. Choose a smaller place, such as a city.");
+
+            // check the shape of the ad once before touching any shop
+            var probe = new ShopAd { ShopId = shops[0].Id, Source = ShopAdSource.Admin };
+            await ApplyAsync(actor, probe, input);
+
+            var result = new CampaignResultDto { Shops = shops.Count };
+            foreach (var shop in shops)
+            {
+                Guid? draftId = null;
+                try
+                {
+                    var created = await CreateAsync(actor, shop.Id, input);
+                    draftId = created.Id;
+                    await SubmitAsync(actor, created.Id, nowUtc);
+                    result.Booked++;
+                }
+                catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or KeyNotFoundException)
+                {
+                    // do not leave a stray draft behind on the shop
+                    if (draftId != null) await CancelAsync(actor, draftId.Value);
+                    result.Skipped.Add(new CampaignSkippedDto { ShopId = shop.Id, ShopName = shop.Name, Reason = ex.Message });
+                }
+            }
+            return result;
         }
 
         // ----- looking
