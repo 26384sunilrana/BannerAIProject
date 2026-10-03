@@ -52,6 +52,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         });
 
         builder.UseEnvironment("Testing");
+        builder.UseSetting("RateLimiting:Enabled", "false");
     }
 
     /// <summary>

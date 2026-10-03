@@ -162,3 +162,8 @@ Manifests are in `deploy/k8s` (kustomize).
 - Several API pods may run: the daily subscription reminders and the media clean-up are safe to run twice (unique claims and repeatable steps); migrations belong to the `banner-migrate` Job only.
 - Verified later (Docker Desktop running): both images build; `docker compose up` starts SQL Server, the API (migrations applied) and the web app; the browser scripts pass against the containers (scheduling 13/13, takeover 16/16, media 11/11, subscription lifecycle 20/20, ads 21/21, compliance 11/11); `--migrate` and `--encrypt-existing` run from the image.
 - NOT done: running in a Kubernetes cluster, two API pods at once, and a real MP4 playback check (no video encoder on this machine; the media scripts use a hand-made MP4 header).
+
+## Abuse limits (rate limiting)
+- Per minute: sign-in and sign-up 20 per IP address (`RateLimiting__AuthPerMinute`), session refresh 60, upload pieces 600 per user, everything else 1200 per user (or per address when nobody is signed in). Turn off with `RateLimiting__Enabled=false`. Refusals answer 429 with `Retry-After` and are written to the activity log.
+- Behind an ingress or load balancer set `Proxy__TrustForwardedHeaders=true` (the Kubernetes configmap does) so the real caller's address is used. Never set it when the API is reachable directly: the header can be forged.
+- Many shop screens behind one office or mall address share the 1200 limit only when not signed in; signed-in screens are counted per user.

@@ -41,6 +41,7 @@ public class SmokeFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("MediaService:LocalStoragePath", _mediaFolder);
+        builder.UseSetting("RateLimiting:Enabled", "false"); // tests sign up many people from one address; one test turns it on
         builder.UseSetting("Subscriptions:LifecycleEnabled", "false");   // the tests run the lifecycle themselves
         builder.UseSetting("Media:Cleanup:Enabled", "false");   // and the media clean-up
         // nothing secret ships in appsettings.json, so the tests bring their own placeholders (the real database is replaced below)

@@ -187,6 +187,9 @@ builder.Services.AddAuthentication("Bearer")
 
 builder.Services.AddAuthorization();
 
+// Limits on how fast one caller can use the API (see RateLimiting:* in configuration)
+builder.Services.AddAppRateLimiting(builder.Configuration);
+
 // Keys for field-level encryption. Production should keep them in a protected store (Azure Blob + Key Vault);
 // see Security:KeyDirectory and Security:EncryptionEnabled in configuration.
 if (builder.Configuration.GetValue("Security:EncryptionEnabled", true))
@@ -269,6 +272,19 @@ if (args.Contains("--encrypt-existing"))
 
 // Middleware pipeline
 
+// Behind an ingress or load balancer the caller's address arrives in X-Forwarded-For. Trust it only when told to (Proxy:TrustForwardedHeaders=true),
+// because anyone could otherwise send a made-up header and slip past the limits and the audit log.
+if (app.Configuration.GetValue("Proxy:TrustForwardedHeaders", false))
+{
+    var forwarded = new Microsoft.AspNetCore.Builder.ForwardedHeadersOptions
+    {
+        ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto,
+    };
+    forwarded.KnownNetworks.Clear();
+    forwarded.KnownProxies.Clear();
+    app.UseForwardedHeaders(forwarded);
+}
+
 // Headers that make browsers treat the API's answers carefully: no guessing of content types, no framing, no referrer, and nothing
 // from an API call kept in a shared cache (media downloads are signed links and set their own caching)
 app.Use(async (context, next) =>
@@ -304,6 +320,7 @@ app.UseMiddleware<AuditLoggingMiddleware>();
 
 // Authentication must run before ShopContextMiddleware, which reads the validated token's claims
 app.UseAuthentication();
+app.UseRateLimiter(); // after authentication, so a signed-in caller is limited by user and not by address
 app.UseMiddleware<ShopContextMiddleware>();
 app.UseAuthorization();
 

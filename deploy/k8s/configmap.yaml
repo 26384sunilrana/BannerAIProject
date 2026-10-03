@@ -8,6 +8,8 @@ data:
   # TLS ends at the ingress
   Security__RequireHttpsRedirect: "false"
   Security__KeyDirectory: /keys
+  # Only the ingress reaches the pods, so its X-Forwarded-For is the real caller (needed for the sign-in limits and the activity log)
+  Proxy__TrustForwardedHeaders: "true"
   # Uploaded images and videos; shared by every API pod
   MediaService__LocalStoragePath: /media
   # Migrations run in the banner-migrate Job, not in every pod
