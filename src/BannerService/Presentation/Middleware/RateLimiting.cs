@@ -16,6 +16,9 @@ public enum RateClass
     /// <summary>Session refresh. By IP address.</summary>
     Refresh,
 
+    /// <summary>A screen asking for a pairing code or waiting for it (every few seconds). By IP address.</summary>
+    Pairing,
+
     /// <summary>Pieces of uploaded files. Many requests in a minute are normal for a big video.</summary>
     Upload,
 
@@ -29,6 +32,7 @@ public static class RateLimitRules
     {
         path ??= string.Empty;
         if (path.StartsWith("/health", StringComparison.OrdinalIgnoreCase) || path.StartsWith("/metrics", StringComparison.OrdinalIgnoreCase)) return RateClass.None;
+        if (path.StartsWith("/api/screens/pairing", StringComparison.OrdinalIgnoreCase) || path.StartsWith("/api/screens/token", StringComparison.OrdinalIgnoreCase)) return RateClass.Pairing;
         if (path.StartsWith("/api/authentication/refresh", StringComparison.OrdinalIgnoreCase)) return RateClass.Refresh;
         if (path.StartsWith("/api/authentication", StringComparison.OrdinalIgnoreCase)) return RateClass.Authentication;
         if (path.StartsWith("/api/media/upload", StringComparison.OrdinalIgnoreCase)
@@ -51,6 +55,7 @@ public static class RateLimiting
         var auth = Math.Max(1, configuration.GetValue("RateLimiting:AuthPerMinute", 20));
         var refresh = Math.Max(1, configuration.GetValue("RateLimiting:RefreshPerMinute", 60));
         var upload = Math.Max(1, configuration.GetValue("RateLimiting:UploadPerMinute", 600));
+        var pairing = Math.Max(1, configuration.GetValue("RateLimiting:PairingPerMinute", 120));
         var api = Math.Max(1, configuration.GetValue("RateLimiting:ApiPerMinute", 1200));
 
         services.AddRateLimiter(options =>
@@ -80,6 +85,7 @@ public static class RateLimiting
                 {
                     RateClass.Authentication => ($"auth:{ip}", auth),
                     RateClass.Refresh => ($"refresh:{ip}", refresh),
+                    RateClass.Pairing => ($"pairing:{ip}", pairing),
                     RateClass.Upload => ($"upload:{user ?? ip}", upload),
                     _ => ($"api:{user ?? ip}", api),
                 };

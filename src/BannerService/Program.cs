@@ -121,6 +121,8 @@ builder.Services.AddScoped<IMediaUploadService, MediaUploadService>();
 builder.Services.AddScoped<MediaLibraryService>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<TwoFactorService>();
+builder.Services.AddScoped<IScreenRepository, ScreenRepository>();
+builder.Services.AddScoped<ScreenService>();
 builder.Services.AddScoped<IShopAdRepository, ShopAdRepository>();
 builder.Services.AddScoped<IShopTakeoverRepository, ShopTakeoverRepository>();
 builder.Services.AddScoped<ShopTakeoverService>();
@@ -358,6 +360,7 @@ app.UseMiddleware<AuditLoggingMiddleware>();
 
 // Authentication must run before ShopContextMiddleware, which reads the validated token's claims
 app.UseAuthentication();
+app.UseMiddleware<ScreenRestrictionMiddleware>(); // a screen token may only read what a screen shows
 app.UseRateLimiter(); // after authentication, so a signed-in caller is limited by user and not by address
 app.UseMiddleware<TwoFactorSetupMiddleware>();
 app.UseMiddleware<ShopContextMiddleware>();

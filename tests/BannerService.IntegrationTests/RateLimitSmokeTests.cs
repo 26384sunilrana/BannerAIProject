@@ -69,6 +69,8 @@ public class RateLimitSmokeTests : IClassFixture<LimitedFactory>
     [InlineData("/api/authentication/login", "POST", RateClass.Authentication)]
     [InlineData("/api/authentication/register", "POST", RateClass.Authentication)]
     [InlineData("/api/authentication/refresh", "POST", RateClass.Refresh)]
+    [InlineData("/api/screens/pairing/poll", "POST", RateClass.Pairing)]
+    [InlineData("/api/screens/token", "POST", RateClass.Pairing)]
     [InlineData("/api/media/upload/initialize", "POST", RateClass.Upload)]
     [InlineData("/api/media/3f2c/chunks/4", "PUT", RateClass.Upload)]
     [InlineData("/api/media/3f2c/chunks/4", "GET", RateClass.Api)]

@@ -49,6 +49,11 @@ public class MediaCleanupWorker : BackgroundService
                     var removed = await scope.ServiceProvider.GetRequiredService<Domain.Interfaces.IAuditLogRepository>().PurgeAsync(DateTime.UtcNow.AddDays(-retention));
                     if (removed > 0) _logger.LogInformation("Removed {Count} audit entries older than {Days} days", removed, retention);
                 }
+                // codes that were never typed in, and proof-of-play rows older than Screens:PlayHistoryDays (default 400)
+                var screens = scope.ServiceProvider.GetRequiredService<Domain.Interfaces.IScreenRepository>();
+                await screens.PurgePairingsAsync(DateTime.UtcNow.AddHours(-1));
+                var keepDays = _configuration.GetValue("Screens:PlayHistoryDays", 400);
+                if (keepDays > 0) await screens.PurgeStatsAsync(DateTime.UtcNow.AddDays(-keepDays));
                 JobHeartbeats.Succeeded("media-cleanup");
             }
             catch (Exception ex) when (ex is not OperationCanceledException)

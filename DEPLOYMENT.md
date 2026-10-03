@@ -180,3 +180,11 @@ Manifests are in `deploy/k8s` (kustomize).
 - `GET /metrics` (Prometheus): request counts and durations, shops, ads waiting, locked logins, refused sign-ins, rate-limit refusals, background job last success. On by default except in production, where it is on only when `Metrics__Token` is set (send it as `Authorization: Bearer <token>`); `Metrics__Enabled` overrides.
 - A watchdog tells administrators in the bell about a spike of refused sign-ins (`Monitoring__FailedSignInsPer5Minutes`, default 30) and about a stopped background job, at most once an hour each; `Monitoring__WatchdogEnabled=false` switches it off.
 - Alert rules for Prometheus: `deploy/monitoring/prometheus-alerts.yaml`; what to do for each: `docs/RUNBOOK.md`.
+
+## Shop screens (bolt 049)
+
+A shop has one managed screen. Open `https://<your-site>/player` on the television or Android tablet (Chrome, or a kiosk browser such as Fully Kiosk). It shows a six-character code; the shop owner types it under **Screens**. The screen keeps a long secret in the browser (only its SHA-256 hash is stored on the server), trades it for a 1-hour token, and can only read what it needs to show banners and ads. Open `/player?reset=1` to make a screen forget its shop.
+
+Settings: `Screens:PlayHistoryDays` (default 400, how long proof-of-play is kept), `Monitoring:ScreenOfflineMinutes` (default 10, then the owner is told), `RateLimiting:PairingPerMinute` (default 120). Gauges `bannerai_screens_online` / `bannerai_screens_offline`.
+
+Checked: .NET integration tests and Jest tests. Not checked: a real Android device, a browser run against the compose stack, SQL-mode run of the new tests.

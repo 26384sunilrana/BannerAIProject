@@ -12,6 +12,9 @@ namespace BannerService.Domain.Services
         (string accessToken, string jwtId) GenerateAccessToken(User user);
         string GenerateRefreshToken();
 
+        /// <summary>An hour-long token for a paired screen: the role "Screen" and the shop, and nothing of a person.</summary>
+        string GenerateScreenToken(Guid screenId, Guid shopId, string name);
+
         /// <summary>A short-lived proof that the password was right, to be traded for a session together with the one-time code.</summary>
         string GenerateTwoFactorChallenge(string userId);
 
@@ -78,6 +81,25 @@ namespace BannerService.Domain.Services
             var accessToken = tokenHandler.WriteToken(token);
 
             return (accessToken, jwtId);
+        }
+
+        public string GenerateScreenToken(Guid screenId, Guid shopId, string name)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, screenId.ToString()),
+                new Claim(ClaimTypes.Name, name),
+                new Claim("shop_id", shopId.ToString()),
+                new Claim("ShopId", shopId.ToString()),
+                new Claim(ClaimTypes.Role, "Screen"),
+            };
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(1),
+                signingCredentials: _signingCredentials);
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         public const string TwoFactorSetupClaim = "two_factor_setup_required";

@@ -76,8 +76,20 @@ public class ShopAdsController : ControllerBase
     [HttpGet("api/shop-ads/{id:guid}/history")]
     public Task<IActionResult> History(Guid id) => ServiceErrors.Run(this, () => _ads.HistoryAsync(Actor(), id));
 
-    /// <summary>What is on the screen right now. Any login of the shop may read it: the shop screen needs it.</summary>
+}
+
+/// <summary>What is on a shop's screen right now. Any signed-in member of the shop may read it, and so may the shop's own paired screen.</summary>
+[ApiController]
+[Authorize]
+public class ShopAdsLiveController : ControllerBase
+{
+    private readonly ShopAdService _ads;
+
+    public ShopAdsLiveController(ShopAdService ads)
+    {
+        _ads = ads;
+    }
+
     [HttpGet("api/shops/{shopId:guid}/ads/live")]
-    [Authorize]
     public Task<IActionResult> Live(Guid shopId) => ServiceErrors.Run(this, () => _ads.LiveAsync(shopId));
 }

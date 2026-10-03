@@ -12,7 +12,8 @@ import { bannerListService } from '@/api/workflowService'
 import { useAuth } from '@/context/AuthContext'
 import { defaultBoardService } from '@/api/defaultBoardService'
 import { BoardLook } from '@/components/Display/DefaultBoard'
-import { MAX_CACHED_LOGO_CHARS, loadDisplayCache, saveDisplayCache } from '@/lib/displayCache'
+import { loadDisplayCache, saveDisplayCache } from '@/lib/displayCache'
+import { toDataAddress } from '@/lib/deviceScreen'
 import { Banner } from '@/types/banner'
 
 const POLL_MS = 30_000
@@ -182,22 +183,4 @@ export default function DisplayPage() {
       </div>
     </div>
   )
-}
-
-/** Fetches a picture and returns it as a data address, or null when it cannot be fetched or is too big to keep. */
-async function toDataAddress(url: string): Promise<string | null> {
-  try {
-    const response = await fetch(url)
-    if (!response.ok) return null
-    const blob = await response.blob()
-    const data = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(String(reader.result))
-      reader.onerror = () => reject(reader.error)
-      reader.readAsDataURL(blob)
-    })
-    return data.length <= MAX_CACHED_LOGO_CHARS ? data : null
-  } catch {
-    return null
-  }
 }

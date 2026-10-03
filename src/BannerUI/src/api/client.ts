@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosError, AxiosResponse } from 'axios'
 import { ErrorResponse } from '@/types/api'
 import { clearSession, getAccessToken, saveTokens } from '@/lib/session'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 
 /** Scheme and host of the API, for links the API returns as paths. */
 export const API_ORIGIN = (() => {
@@ -54,11 +54,12 @@ export function getErrorMessage(error: unknown, fallback = 'Something went wrong
 
 const AUTH_PATH = '/authentication/'
 
-const onShopScreen = () => typeof window !== 'undefined' && window.location.pathname.startsWith('/display')
+const onShopScreen = () => typeof window !== 'undefined' && (window.location.pathname.startsWith('/display') || window.location.pathname.startsWith('/player'))
 
 class ApiClient {
   private client: AxiosInstance
   private refreshing: Promise<boolean> | null = null
+  private deviceRefresher: (() => Promise<boolean>) | null = null
 
   constructor() {
     this.client = axios.create({
@@ -109,6 +110,8 @@ class ApiClient {
 
   /** One refresh at a time, shared by every request that failed with 401 meanwhile. */
   private tryRefresh(): Promise<boolean> {
+    // a paired screen has no refresh cookie: it trades its own secret for a new token instead
+    if (this.deviceRefresher) return this.deviceRefresher()
     if (!this.refreshing) {
       this.refreshing = axios
         .post(
@@ -128,6 +131,11 @@ class ApiClient {
         })
     }
     return this.refreshing
+  }
+
+  /** For the player on a television: how to get a new access token (with the screen's secret) instead of the refresh cookie. */
+  useDeviceRefresher(refresher: (() => Promise<boolean>) | null): void {
+    this.deviceRefresher = refresher
   }
 
   /** Gets a new access token with the refresh cookie; false when there is no valid session. */

@@ -114,6 +114,8 @@ public static class BusinessMetrics
     private static readonly Gauge ShopsActive = Metrics.CreateGauge("bannerai_shops_active", "Active shops.");
     private static readonly Gauge AdsPending = Metrics.CreateGauge("bannerai_ads_waiting", "Ads waiting for someone to decide.", "kind");
     private static readonly Gauge UsersLocked = Metrics.CreateGauge("bannerai_users_locked_out", "Logins locked after too many wrong passwords or codes.");
+    private static readonly Gauge ScreensOnline = Metrics.CreateGauge("bannerai_screens_online", "Paired screens heard from in the last three minutes.");
+    private static readonly Gauge ScreensOffline = Metrics.CreateGauge("bannerai_screens_offline", "Paired screens not heard from for three minutes.");
     private static readonly Gauge FailedSignIns = Metrics.CreateGauge("bannerai_failed_sign_ins_5m", "Refused sign-in attempts in the last five minutes.");
     private static readonly Gauge JobSuccess = Metrics.CreateGauge("bannerai_job_last_success_timestamp_seconds", "When a background job last finished well.", "job");
     private static readonly Gauge JobLate = Metrics.CreateGauge("bannerai_job_late", "1 when a background job is late.", "job");
@@ -137,6 +139,10 @@ public static class BusinessMetrics
                 AdsPending.WithLabels("compliance").Set(await context.ShopAds.CountAsync(a => a.Status == ShopAdStatus.PendingCompliance, cancellation));
                 UsersLocked.Set(await context.Users.CountAsync(u => u.IsLockedOut, cancellation));
                 FailedSignIns.Set(await Watchdog.CountFailedSignInsAsync(context, DateTime.UtcNow, cancellation));
+                var window = DateTime.UtcNow - ScreenService.OnlineWindow;
+                var online = await context.Screens.CountAsync(s => s.Status == ScreenStatus.Active && s.LastSeenAt != null && s.LastSeenAt >= window, cancellation);
+                ScreensOnline.Set(online);
+                ScreensOffline.Set(await context.Screens.CountAsync(s => s.Status == ScreenStatus.Active, cancellation) - online);
             }
             catch
             {
@@ -204,6 +210,22 @@ public class OpsWatchdog : BackgroundService
         if (WatchdogRules.IsSpike(failures, _configuration.GetValue("Monitoring:FailedSignInsPer5Minutes", 30)) && MayAlert("signins", now))
             await notifications.NotifyAdminsAsync("SecurityAlert", "Many failed sign-ins",
                 $"{failures} sign-in attempts were refused in the last five minutes. Someone may be guessing passwords. See Activity, failures only.", "/admin/audit-log");
+
+        // a screen that went quiet: its owner is told once per outage (not again for six hours)
+        var offlineAfter = TimeSpan.FromMinutes(Math.Max(3, _configuration.GetValue("Monitoring:ScreenOfflineMinutes", 10)));
+        var screens = scope.ServiceProvider.GetRequiredService<Domain.Interfaces.IScreenRepository>();
+        foreach (var screen in await screens.ListActiveAsync())
+        {
+            var reference = screen.LastSeenAt ?? screen.CreatedAt;
+            if (now - reference < offlineAfter) { screen.OfflineNoticeAt = null; continue; }
+            if (!WatchdogRules.MaySend(screen.OfflineNoticeAt, now, TimeSpan.FromHours(6))) continue;
+
+            screen.OfflineNoticeAt = now;
+            await screens.SaveAsync();
+            await notifications.NotifyShopOwnersAsync(screen.ShopId, "ScreenOffline", "Your shop screen is offline",
+                $"\"{screen.Name}\" has not been heard from since {reference:d MMM HH:mm} (UTC). Check that it is switched on and online. It shows the default board meanwhile.", "/screens");
+        }
+        await screens.SaveAsync();
 
         foreach (var (name, job) in JobHeartbeats.Snapshot().Where(j => JobHeartbeats.IsLate(j.Value, now)))
             if (MayAlert("job:" + name, now))

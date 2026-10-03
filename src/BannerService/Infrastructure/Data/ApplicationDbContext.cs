@@ -50,6 +50,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<ShopAdEvent> ShopAdEvents { get; set; } = null!;
     public DbSet<AdRate> AdRates { get; set; } = null!;
     public DbSet<ShopTakeover> ShopTakeovers { get; set; } = null!;
+    public DbSet<Screen> Screens { get; set; } = null!;
+    public DbSet<ScreenPairing> ScreenPairings { get; set; } = null!;
+    public DbSet<ScreenPlayStat> ScreenPlayStats { get; set; } = null!;
 
     // Publish workflow, advertising and dashboards
     public DbSet<PublishWorkflow> PublishWorkflows { get; set; } = null!;
@@ -575,6 +578,36 @@ public class ApplicationDbContext : DbContext
             e.Property(x => x.PricePerHour).HasPrecision(18, 2);
             e.HasIndex(x => new { x.ShopId, x.Status, x.StartAt });
             e.HasIndex(x => new { x.Status, x.StartAt });
+        });
+
+        modelBuilder.Entity<Screen>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(60).IsRequired();
+            e.Property(x => x.DeviceSecretHash).HasMaxLength(64).IsRequired();
+            e.Property(x => x.LastSeenIp).HasMaxLength(64);
+            e.Property(x => x.UserAgent).HasMaxLength(300);
+            e.Property(x => x.AppVersion).HasMaxLength(40);
+            e.HasIndex(x => x.DeviceSecretHash).IsUnique();
+            e.HasIndex(x => new { x.ShopId, x.Status });
+        });
+
+        modelBuilder.Entity<ScreenPairing>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Code).HasMaxLength(8).IsRequired();
+            e.Property(x => x.DeviceSecretHash).HasMaxLength(64).IsRequired();
+            e.HasIndex(x => x.Code);
+            e.HasIndex(x => x.DeviceSecretHash);
+        });
+
+        modelBuilder.Entity<ScreenPlayStat>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Label).HasMaxLength(80).IsRequired();
+            e.Property(x => x.Day).HasColumnType("date");
+            e.HasIndex(x => new { x.ScreenId, x.Day, x.Kind, x.RefId }).IsUnique();
+            e.HasIndex(x => new { x.ShopId, x.Day });
         });
 
         modelBuilder.Entity<ShopTakeover>(e =>
