@@ -197,6 +197,11 @@ public class BannerService : IBannerService
 
         if ((ComponentType)request.ComponentType == ComponentType.Video)
             _validationService.ValidateVideoPlaylist(request.Properties);
+
+        if ((ComponentType)request.ComponentType == ComponentType.Image)
+            ComponentSettingsValidator.ValidateImageSlides(request.Properties);
+
+        ComponentSettingsValidator.ValidateEffect(request.Properties);
     }
 
     private BannerResponseDto MapToResponseDto(Banner banner)

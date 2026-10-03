@@ -7,6 +7,7 @@ import { useSelection } from '@/hooks/useSelection'
 import { useComponentDrag } from '@/hooks/useComponentDrag'
 import { useResize } from '@/hooks/useResize'
 import { Button } from '@/components/Common'
+import { ComponentContent } from '@/components/Display/ComponentContent'
 import styles from './Canvas.module.css'
 
 export interface CanvasProps {
@@ -125,47 +126,7 @@ export const Canvas = React.forwardRef<HTMLDivElement, CanvasProps>(
                   }}
                   className={styles.component}
                 >
-                  {component.type === 'text' && (
-                    <div
-                      style={{
-                        color: (component.data as any).color,
-                        fontSize: `${(component.data as any).fontSize}px`,
-                        fontFamily: (component.data as any).fontFamily,
-                      }}
-                    >
-                      {(component.data as any).content}
-                    </div>
-                  )}
-                  {component.type === 'image' && (
-                    <img
-                      src={(component.data as any).mediaUrl}
-                      alt={(component.data as any).alt}
-                      style={{ width: '100%', height: '100%', objectFit: (component.data as any).objectFit }}
-                    />
-                  )}
-                  {component.type === 'video' && (component.data as any).mediaUrl && (
-                  <video
-                    src={(component.data as any).mediaUrl}
-                    muted={(component.data as any).muted !== false}
-                    loop={Boolean((component.data as any).loop)}
-                    autoPlay={Boolean((component.data as any).autoPlay)}
-                    playsInline
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
-                  />
-                )}
-                {component.type === 'graphics' && (
-                    <div
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        backgroundColor: (component.data as any).fillColor,
-                        borderStyle: 'solid',
-                        borderRadius: (component.data as any).shapeType === 'circle' ? '50%' : undefined,
-                        borderColor: (component.data as any).strokeColor,
-                        borderWidth: (component.data as any).strokeWidth,
-                      }}
-                    />
-                  )}
+                  <ComponentContent component={component} mode="play" />
                 </div>
               ))}
           </div>
@@ -243,59 +204,7 @@ export const Canvas = React.forwardRef<HTMLDivElement, CanvasProps>(
                   drag.startDrag(component.id, e.clientX / canvas.scale, e.clientY / canvas.scale)
                 }}
               >
-                {component.type === 'text' && (
-                  <div
-                    style={{
-                      color: (component.data as any).color,
-                      fontSize: `${(component.data as any).fontSize}px`,
-                      fontFamily: (component.data as any).fontFamily,
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    {(component.data as any).content}
-                  </div>
-                )}
-                {component.type === 'image' && (
-                  <img
-                    src={(component.data as any).mediaUrl}
-                    alt={(component.data as any).alt}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: (component.data as any).objectFit,
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
-                {component.type === 'video' && (component.data as any).mediaUrl && (
-                  <video
-                    src={(component.data as any).mediaUrl}
-                    muted={(component.data as any).muted !== false}
-                    loop={Boolean((component.data as any).loop)}
-                    autoPlay={Boolean((component.data as any).autoPlay)}
-                    playsInline
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
-                  />
-                )}
-                {component.type === 'graphics' && (
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      backgroundColor: (component.data as any).fillColor,
-                        borderStyle: 'solid',
-                        borderRadius: (component.data as any).shapeType === 'circle' ? '50%' : undefined,
-                      borderColor: (component.data as any).strokeColor,
-                      borderWidth: `${(component.data as any).strokeWidth}px`,
-                    }}
-                  />
-                )}
+                <ComponentContent component={component} mode="edit" />
 
                 {selectedComponentId === component.id && (
                   <div className={styles.selectionBox}>

@@ -8,6 +8,10 @@ export interface MediaFile {
   contentType: string
   sizeBytes: number
   status: number
+  width?: number | null
+  height?: number | null
+  /** Video length in seconds, read from the file when the upload completed. */
+  durationSeconds?: number | null
 }
 
 /** One file in the library. fileType: 1 image, 2 video. */

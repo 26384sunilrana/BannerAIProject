@@ -10,9 +10,6 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 | **Bolt 023** Advertising | 4.14-4.21: ad space as a percentage of the banner, mega advertisement (sides switch for a period), popup ads (size irrelevant), minor ad as a chargeable component, major ad notification to shops by location, charge rules by locality / area / banner size with shop-level override, space returns to the shop banner when an ad ends | Today: an `Advertisement` entity with type, budget, target and metrics exists; no layout, popup, charge rules or notifications |
 | Pricing by storage / banner size | 1h: subscription cost based on banner size and storage | Plans carry a storage limit; usage is never measured or enforced |
 | Reporting and HIPAA/PHI | 5viii: per-user and overall reporting with HIPAA/PHI in mind | Dashboards, analytics and an audit log exist; no formal HIPAA review, retention or export |
-| Hero / carousel in the editor and screen | 4.4, 4.7: rotating background components | Backend carousel exists; editor has no controls and the screen does not play it |
-| Visual effects in the editor | 4.3: effect per component | Backend effects exist; editor has no controls |
-| Video playlists in the editor | 4.5-4.6 | Backend (bolt 020) done; no editor controls, screen does not play playlists, durations are not read from uploaded videos |
 
 ## B. Money, messages and external services (stand-ins today)
 
@@ -33,7 +30,7 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 
 ## D. Editor and media
 
-- Undo/redo buttons inert; no background colour (the API has none) [027].
+- [037 done] Undo/redo (moves, resizes, settings; 50 steps) and keyboard Ctrl+Z / Ctrl+Y / Ctrl+S. Left: undo does not take back adding or deleting a component or a layer change (those are stored straight away, so history starts afresh after them); no banner-wide background colour (use a full-size shape or picture on the lowest layer with "Fit to banner") [027].
 - Restoring a version replaces component ids (carousel / effect links are lost); a restored banner goes off air while awaiting approval instead of keeping the last approved one live; versions hold content only (not schedule or ads) [019].
 - Media [034 done: library, delete, clean-up, usage, size and length]: files in a folder are not found by the clean-up if they have no record (no listing in the storage interface); no thumbnails or resizing; uploads cannot resume; storage limit is shown but **not enforced** (bolt 039); an uploaded video with no readable header just has no length; WebM/MP4 with unusual layouts (fragmented MP4, very long headers) are not tested with real encoder output; 4K/8K limited only by the 500 MB cap; no per-shop view of storage for the administrator; no folders/tags.
 - Schedule: browser time zone only (shops have no time zone), no calendar view, one window per banner, no repeating daily hours [029].
@@ -61,3 +58,12 @@ items that were fixed afterwards removed. Source bolt in brackets. Nothing here 
 
 - Password storage uses PBKDF2-SHA256 with 10 000 rounds, far below today's guidance (600 000). Raise it with a versioned hash format so existing passwords are upgraded when people next sign in [036].
 - Several people share a Sales Executive login in practice? Nothing stops two devices using one login; there is no limit on sessions per login [036].
+
+- Editor and screen, left after bolt 037 [037]:
+  - Rotating lists exist for pictures (image components) and videos (video components). Text and shapes cannot hold a list of items that rotate with an effect (requirement 4.7 is met for pictures and videos only).
+  - One transition and timing for a whole picture list (no effect per slide); no transition between videos; the entrance effect plays when the banner appears, not again on every rotation.
+  - Rotation does not pause when the tab is hidden; no reduced-motion option.
+  - Autoplay with sound: a browser blocks it without a click, so the screen falls back to muted. A kiosk browser needs `--autoplay-policy=no-user-gesture-required` (documented in DEPLOYMENT.md).
+  - Video lengths come from the file header; files without one (some recorded WebM) play to their end, and "seconds each" still works.
+  - The older separate Effects and Carousel API (`/api/banners/{id}/components/{id}/effects`, `/carousels`) is still in the API but nothing uses it: settings now live in the component itself so they are saved, versioned, previewed and approved with the banner. Remove it with the next clean-up of the API.
+  - Shown links to the pictures and videos of a rotation are made when the banner opens (one request per file); a very long list means that many requests.

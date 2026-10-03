@@ -34,6 +34,13 @@ SMOKE_SQL="Server=(localdb)\MSSQLLocalDB;Database=BannerAI_Smoke;Trusted_Connect
   apply the differences by script, and only then insert the `InitialCreate` and later migration ids into `__EFMigrationsHistory`.
   This path has not been tried on a database with data; try it on a copy first.
 
+## Shop screen playback
+- A banner plays through `/display`: visual effects, rotating pictures and rotating videos run exactly as in Preview.
+- Videos with sound: Chrome and Edge refuse to start a video with sound on a page nobody has clicked. The screen then plays the video **muted**
+  rather than not at all. On a machine that only runs the screen, start the browser with `--autoplay-policy=no-user-gesture-required`
+  (for example `chrome.exe --kiosk --autoplay-policy=no-user-gesture-required http://your-site/display`) to allow sound.
+- Links to pictures and videos last 4 hours; the screen asks for fresh ones after 3 hours without a visit to the server.
+
 ## Sign-in session (cookie)
 - The web app keeps the short-lived access token (15 minutes) in the page's memory only. The long-lived refresh token (7 days) is an
   **HttpOnly cookie** (`banner_refresh`, path `/api/authentication`) that scripts cannot read. A page reload or a new tab gets a new

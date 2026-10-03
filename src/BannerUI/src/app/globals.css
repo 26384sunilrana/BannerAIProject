@@ -63,3 +63,12 @@ button:focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: -2px;
 }
+
+/* Visual effects of banner components (see lib/componentSettings.ts). Entrance effects play once, pulse and float repeat. */
+@keyframes banner-fx-fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes banner-fx-slideLeft { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes banner-fx-slideRight { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes banner-fx-slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes banner-fx-zoomIn { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes banner-fx-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes banner-fx-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }

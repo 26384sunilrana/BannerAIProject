@@ -14,6 +14,10 @@ public enum VideoRotationMode
 
 public class VideoPlaylistItem
 {
+    /// <summary>The uploaded file. Links to files expire, so the web app stores the id and makes a fresh link whenever the banner opens.</summary>
+    public string MediaFileId { get; set; } = string.Empty;
+
+    /// <summary>A link to the video; optional when MediaFileId is given.</summary>
     public string MediaUrl { get; set; } = string.Empty;
 
     /// <summary>Length of the video in seconds when known (from the media metadata).</summary>
@@ -24,6 +28,7 @@ public class VideoPlaylistItem
 public class VideoPlayStep
 {
     public int Index { get; set; }
+    public string MediaFileId { get; set; } = string.Empty;
     public string MediaUrl { get; set; } = string.Empty;
 
     /// <summary>Seconds to show this video; null means "until it ends" (length unknown).</summary>
@@ -92,8 +97,10 @@ public class VideoPlaylist
 
         foreach (var item in Playlist)
         {
-            if (!Uri.TryCreate(item.MediaUrl, UriKind.Absolute, out _))
-                throw new ArgumentException("Every playlist video needs a valid mediaUrl");
+            var hasFile = !string.IsNullOrWhiteSpace(item.MediaFileId) && item.MediaFileId.Length <= 64;
+            var hasLink = Uri.TryCreate(item.MediaUrl, UriKind.Absolute, out _);
+            if (!hasFile && !hasLink)
+                throw new ArgumentException("Every playlist video needs a mediaFileId or a valid mediaUrl");
             if (item.DurationSeconds is <= 0)
                 throw new ArgumentException("A video's durationSeconds must be positive");
         }
@@ -124,6 +131,7 @@ public class VideoPlaylist
             Steps = Playlist.Select((item, index) => new VideoPlayStep
             {
                 Index = index,
+                MediaFileId = item.MediaFileId,
                 MediaUrl = item.MediaUrl,
                 PlaySeconds = PlaySecondsFor(item)
             }).ToList()

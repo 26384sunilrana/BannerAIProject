@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { BannerComponent } from '@/types/banner'
 import { Input, Select, Button } from '@/components/Common'
 import { validation } from '@/utils/validation'
+import { EffectControls, PlaylistControls, SlideControls } from './RotationControls'
 
 export interface PropertyPanelProps {
   selectedComponent: BannerComponent | null
@@ -11,6 +12,8 @@ export interface PropertyPanelProps {
   onDeleteComponent: () => void
   /** Uploads a chosen file and puts it in the selected component. */
   onUploadMedia?: (file: File) => void
+  /** The banner's size, for "Fit to banner". */
+  bannerSize?: { width: number; height: number }
   /** Opens the shop's own files to pick one that is already uploaded. */
   onChooseFromLibrary?: () => void
   /** 0-100 while a file is uploading, otherwise null. */
@@ -78,6 +81,7 @@ export function PropertyPanel({
   onDeleteComponent,
   onUploadMedia,
   onChooseFromLibrary,
+  bannerSize,
   uploadProgress,
   uploadError,
 }: PropertyPanelProps) {
@@ -180,6 +184,23 @@ export function PropertyPanel({
             onChange={(e) => handlePropertyChange('height', Number(e.target.value))}
             error={errors.height}
           />
+
+          {bannerSize && (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                // a background that covers the whole banner
+                onPropertyChange('x', 0)
+                onPropertyChange('y', 0)
+                onPropertyChange('width', bannerSize.width)
+                onPropertyChange('height', bannerSize.height)
+              }}
+            >
+              Fit to banner
+            </Button>
+          )}
         </div>
 
         {/* Layer & Appearance Section */}
@@ -308,6 +329,8 @@ export function PropertyPanel({
                 { value: 'fill', label: 'Stretch' },
               ]}
             />
+
+            <SlideControls data={selectedComponent.data as any} onChange={onPropertyChange} />
           </div>
         )}
 
@@ -345,6 +368,8 @@ export function PropertyPanel({
                 </span>
               </label>
             ))}
+
+            <PlaylistControls data={selectedComponent.data as any} onChange={onPropertyChange} />
           </div>
         )}
 
@@ -376,6 +401,8 @@ export function PropertyPanel({
             />
           </div>
         )}
+
+        <EffectControls data={selectedComponent.data as any} onChange={onPropertyChange} />
 
         {/* Visibility & Actions */}
         <div className="space-y-3 pt-4 border-t border-gray-200">

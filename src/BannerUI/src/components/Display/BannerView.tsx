@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { Banner, BannerComponent } from '@/types/banner'
+import { ComponentContent } from './ComponentContent'
 
 interface BannerViewProps {
   banner: Banner
@@ -50,8 +51,6 @@ export function BannerView({ banner }: BannerViewProps) {
 }
 
 function ComponentView({ component }: { component: BannerComponent }) {
-  const data = component.data as unknown as Record<string, any>
-
   return (
     <div
       data-component-id={component.id}
@@ -66,53 +65,7 @@ function ComponentView({ component }: { component: BannerComponent }) {
         transform: `rotate(${component.rotation}deg)`,
       }}
     >
-      {component.type === 'text' && (
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: data.textAlign === 'center' ? 'center' : data.textAlign === 'right' ? 'flex-end' : 'flex-start',
-            color: data.color,
-            fontSize: `${data.fontSize}px`,
-            fontFamily: data.fontFamily,
-            fontWeight: data.fontWeight,
-            lineHeight: data.lineHeight,
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-          }}
-        >
-          {data.content}
-        </div>
-      )}
-      {component.type === 'image' && data.mediaUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={data.mediaUrl} alt={data.alt ?? ''} style={{ width: '100%', height: '100%', objectFit: data.objectFit ?? 'cover' }} />
-      )}
-      {component.type === 'video' && data.mediaUrl && (
-        <video
-          src={data.mediaUrl}
-          muted={data.muted !== false}
-          loop={data.loop !== false}
-          autoPlay
-          playsInline
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
-      )}
-      {component.type === 'graphics' && (
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            backgroundColor: data.fillColor,
-            borderStyle: 'solid',
-            borderColor: data.strokeColor,
-            borderWidth: data.strokeWidth,
-            borderRadius: data.shapeType === 'circle' ? '50%' : undefined,
-          }}
-        />
-      )}
+      <ComponentContent component={component} mode="play" />
     </div>
   )
 }

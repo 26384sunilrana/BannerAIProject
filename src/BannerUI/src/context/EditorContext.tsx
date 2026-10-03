@@ -33,9 +33,16 @@ const initialState: EditorState = {
   canvasHeight: parseInt(process.env.NEXT_PUBLIC_CANVAS_HEIGHT || '600'),
   scale: 1,
   isPreviewMode: false,
-  history: [],
-  historyIndex: -1,
+  past: [],
+  future: [],
+  lastEdit: null,
 }
+
+/** Edits to the same component closer together than this are one undo step. */
+export const UNDO_MERGE_MS = 700
+export const MAX_UNDO_STEPS = 50
+
+const noHistory = { past: [], future: [], lastEdit: null }
 
 function editorReducer(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
@@ -45,6 +52,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         banner: action.payload,
         components: action.payload.components,
         isLoading: false,
+        ...noHistory,
       }
 
     case 'SELECT_COMPONENT':
@@ -58,16 +66,24 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         ...state,
         components: [...state.components, action.payload],
         isDirty: true,
+        // added on the server straight away, so earlier states no longer match what is stored
+        ...noHistory,
       }
 
-    case 'UPDATE_COMPONENT':
+    case 'UPDATE_COMPONENT': {
+      const at = action.payload.at ?? Date.now()
+      const merge = state.lastEdit !== null && state.lastEdit.id === action.payload.id && at - state.lastEdit.at < UNDO_MERGE_MS
       return {
         ...state,
         components: state.components.map((c) =>
           c.id === action.payload.id ? { ...c, ...action.payload.updates } : c
         ),
         isDirty: true,
+        past: merge ? state.past : [...state.past, state.components].slice(-MAX_UNDO_STEPS),
+        future: [],
+        lastEdit: { id: action.payload.id, at },
       }
+    }
 
     case 'DELETE_COMPONENT':
       return {
@@ -76,12 +92,14 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         selectedComponentId:
           state.selectedComponentId === action.payload ? null : state.selectedComponentId,
         isDirty: true,
+        ...noHistory,
       }
 
     case 'SET_COMPONENTS':
       return {
         ...state,
         components: action.payload,
+        ...noHistory,
       }
 
     case 'SET_DIRTY':
@@ -120,33 +138,31 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         isPreviewMode: action.payload,
       }
 
-    case 'PUSH_HISTORY':
+    case 'UNDO': {
+      if (state.past.length === 0) return state
+      const previous = state.past[state.past.length - 1]
       return {
         ...state,
-        history: [
-          ...state.history.slice(0, state.historyIndex + 1),
-          action.payload,
-        ],
-        historyIndex: state.history.length,
+        components: previous,
+        past: state.past.slice(0, -1),
+        future: [state.components, ...state.future],
+        lastEdit: null,
+        isDirty: true,
       }
+    }
 
-    case 'UNDO':
-      if (state.historyIndex <= 0) return state
-      const previousEntry = state.history[state.historyIndex - 1]
+    case 'REDO': {
+      if (state.future.length === 0) return state
+      const [next, ...rest] = state.future
       return {
         ...state,
-        components: previousEntry.state,
-        historyIndex: state.historyIndex - 1,
+        components: next,
+        past: [...state.past, state.components].slice(-MAX_UNDO_STEPS),
+        future: rest,
+        lastEdit: null,
+        isDirty: true,
       }
-
-    case 'REDO':
-      if (state.historyIndex >= state.history.length - 1) return state
-      const nextEntry = state.history[state.historyIndex + 1]
-      return {
-        ...state,
-        components: nextEntry.state,
-        historyIndex: state.historyIndex + 1,
-      }
+    }
 
     default:
       return state
@@ -172,7 +188,7 @@ export function EditorProvider({ children }: EditorProviderProps) {
 
   const updateComponent = useCallback(
     (id: string, updates: Partial<BannerComponent>) => {
-      dispatch({ type: 'UPDATE_COMPONENT', payload: { id, updates } })
+      dispatch({ type: 'UPDATE_COMPONENT', payload: { id, updates, at: Date.now() } })
     },
     []
   )

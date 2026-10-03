@@ -7,6 +7,7 @@ import { useEditor } from '@/hooks/useEditor'
 import { useSave } from '@/hooks/useSave'
 import { useMediaUpload } from '@/hooks/useMediaUpload'
 import { useToast } from '@/hooks/useToast'
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { bannerService } from '@/api/bannerService'
 import { layerService } from '@/api/layerService'
 import { nextFreeZIndex } from '@/api/bannerMapper'
@@ -24,12 +25,15 @@ const CONTENT_PROPERTIES = new Set([
   'mediaFileId', 'mediaUrl', 'alt', 'objectFit',
   'poster', 'autoPlay', 'loop', 'muted',
   'shapeType', 'fillColor', 'strokeColor', 'strokeWidth',
+  // effect, rotating pictures and rotating videos
+  'effect', 'slides', 'slideIntervalSeconds', 'slideTransition', 'slideTransitionMs',
+  'playlist', 'rotationMode', 'secondsPerVideo', 'volume', 'duration',
 ])
 
 function EditorContent() {
   const { bannerId } = useParams()
   const id = typeof bannerId === 'string' ? bannerId : ''
-  const { state, setBanner, setError, setPreviewMode, selectComponent, addComponent, updateComponent, deleteComponent } = useEditor()
+  const { state, setBanner, setError, setPreviewMode, selectComponent, addComponent, updateComponent, deleteComponent, undo, redo } = useEditor()
   const save = useSave(id, state.components, state.banner)
   const toast = useToast()
   const media = useMediaUpload()
@@ -134,6 +138,7 @@ function EditorContent() {
         ...(selected.data as object),
         mediaFileId: result.mediaFileId,
         mediaUrl: result.url,
+        ...(selected.type === 'video' ? { duration: result.durationSeconds ?? 0 } : {}),
         ...(selected.type === 'image' ? { alt: (selected.data as any).alt && (selected.data as any).alt !== 'Image' ? (selected.data as any).alt : file.name } : {}),
       } as typeof selected.data,
     })
@@ -153,7 +158,7 @@ function EditorContent() {
         ...data,
         mediaFileId: item.id,
         mediaUrl: item.url,
-        ...(selected.type === 'image' ? { alt: data.alt && data.alt !== 'Image' ? data.alt : item.fileName } : {}),
+        ...(selected.type === 'image' ? { alt: data.alt && data.alt !== 'Image' ? data.alt : item.fileName } : { duration: item.durationSeconds ?? 0 }),
       } as typeof selected.data,
     })
     save.markDirty()
@@ -181,6 +186,19 @@ function EditorContent() {
       toast.error(error instanceof Error ? error.message : 'Failed to save banner')
     }
   }
+
+  // Undo and redo cover moving, resizing and changing settings. They start afresh after adding or deleting a component,
+  // because those are stored straight away and cannot be taken back here.
+  const handleUndo = () => {
+    undo()
+    save.markDirty()
+  }
+  const handleRedo = () => {
+    redo()
+    save.markDirty()
+  }
+
+  useKeyboardShortcuts({ onSave: handleSave, onUndo: handleUndo, onRedo: handleRedo })
 
   if (state.isLoading && !state.error) {
     return (
@@ -218,13 +236,13 @@ function EditorContent() {
         bannerName={state.banner?.title}
         backHref="/banners"
         onSave={handleSave}
-        onUndo={() => {}}
-        onRedo={() => {}}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
         onTogglePreview={() => setPreviewMode(!state.isPreviewMode)}
         isSaving={save.isSaving}
         isDirty={save.isDirty}
-        canUndo={false}
-        canRedo={false}
+        canUndo={state.past.length > 0}
+        canRedo={state.future.length > 0}
         isPreviewMode={state.isPreviewMode}
       />
 
@@ -251,6 +269,7 @@ function EditorContent() {
           selectedComponent={selectedComponent || null}
           onPropertyChange={handlePropertyChange}
           onDeleteComponent={handleDeleteComponent}
+          bannerSize={{ width: state.banner?.width || 1200, height: state.banner?.height || 600 }}
           onUploadMedia={handleUploadMedia}
           onChooseFromLibrary={selectedComponent && (selectedComponent.type === 'image' || selectedComponent.type === 'video') ? () => setPicking(selectedComponent.type as 'image' | 'video') : undefined}
           uploadProgress={media.isUploading ? media.progress : null}

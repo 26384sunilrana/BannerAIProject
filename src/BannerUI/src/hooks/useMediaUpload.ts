@@ -18,6 +18,8 @@ export interface UploadResult {
   mediaFileId: string
   /** A link the browser can load right now (it expires; the media file id is what gets saved). */
   url: string
+  /** Video length in seconds when it could be read from the file. */
+  durationSeconds?: number | null
 }
 
 /** Why a file cannot be uploaded, or null when it can. */
@@ -88,10 +90,10 @@ export function useMediaUpload() {
         }
       }
 
-      await mediaService.completeUpload(session.mediaFileId)
+      const stored = await mediaService.completeUpload(session.mediaFileId)
       const link = await mediaService.getMediaUrl(session.mediaFileId)
       setProgress(100)
-      return { mediaFileId: session.mediaFileId, url: link.url }
+      return { mediaFileId: session.mediaFileId, url: link.url, durationSeconds: stored?.durationSeconds ?? null }
     } catch (err) {
       setError(getErrorMessage(err, 'The upload failed.'))
       return null

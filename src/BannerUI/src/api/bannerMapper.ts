@@ -62,6 +62,17 @@ const clampInt = (value: number, min: number, max: number) => {
   return Math.min(max, Math.max(min, n))
 }
 
+/** The list without the temporary links of its files (only entries that name a file lose theirs). */
+function withoutLinks(list: unknown): unknown {
+  if (!Array.isArray(list)) return undefined
+  return list.map((entry) => {
+    if (!entry || typeof entry !== 'object') return entry
+    const copy = { ...(entry as Record<string, unknown>) }
+    if (copy.mediaFileId) delete copy.mediaUrl
+    return copy
+  })
+}
+
 export function toApiComponent(component: {
   type: ComponentType
   x: number
@@ -77,6 +88,12 @@ export function toApiComponent(component: {
   const content = { ...(component.data as Record<string, unknown>) }
   // A media file is referenced by id and its link is made fresh whenever the banner is opened
   if (content.mediaFileId) delete content.mediaUrl
+  // the same for the pictures and videos in a rotating list, and the playback plan is worked out by the server on every read
+  content.slides = withoutLinks(content.slides)
+  content.playlist = withoutLinks(content.playlist)
+  delete content.playbackPlan
+  if (content.slides === undefined) delete content.slides
+  if (content.playlist === undefined) delete content.playlist
 
   return {
     componentType: TYPE_TO_API[component.type],

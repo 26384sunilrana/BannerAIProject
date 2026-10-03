@@ -74,17 +74,35 @@ export const bannerService = {
 
 /** Images and videos that were uploaded are stored by id; give each one a link the browser can load now. */
 async function attachMediaLinks(banner: Banner): Promise<void> {
+  // one request per file, even when several components (or slides) use the same one
+  const links = new Map<string, Promise<string>>()
+  const linkFor = (mediaFileId: string): Promise<string> => {
+    if (!links.has(mediaFileId)) {
+      links.set(
+        mediaFileId,
+        mediaService
+          .getMediaUrl(mediaFileId)
+          .then((link) => link.url)
+          // the file may still be uploading or was removed: it simply shows nothing
+          .catch(() => '')
+      )
+    }
+    return links.get(mediaFileId)!
+  }
+
+  const attach = async (entry: unknown) => {
+    if (!entry || typeof entry !== 'object') return
+    const record = entry as Record<string, unknown>
+    if (typeof record.mediaFileId === 'string' && record.mediaFileId) record.mediaUrl = await linkFor(record.mediaFileId)
+  }
+
   await Promise.all(
     banner.components.map(async (component) => {
       const data = component.data as unknown as Record<string, unknown>
-      const mediaFileId = typeof data.mediaFileId === 'string' ? data.mediaFileId : ''
-      if (!mediaFileId) return
-
-      try {
-        data.mediaUrl = (await mediaService.getMediaUrl(mediaFileId)).url
-      } catch {
-        // the file may still be uploading or was removed: the component simply shows no picture
-        data.mediaUrl = ''
+      await attach(data)
+      for (const key of ['slides', 'playlist']) {
+        const list = data[key]
+        if (Array.isArray(list)) await Promise.all(list.map(attach))
       }
     })
   )

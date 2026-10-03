@@ -12,21 +12,19 @@ export interface EditorState {
   canvasHeight: number
   scale: number
   isPreviewMode: boolean
-  history: EditorHistoryEntry[]
-  historyIndex: number
-}
-
-export interface EditorHistoryEntry {
-  state: BannerComponent[]
-  timestamp: number
-  description: string
+  /** Earlier states of the components, oldest first, for undo. Cleared when components are added or removed. */
+  past: BannerComponent[][]
+  /** States that were undone, nearest first, for redo. Cleared by any new change. */
+  future: BannerComponent[][]
+  /** The latest edit, so a drag or a run of typing becomes one undo step instead of hundreds. */
+  lastEdit: { id: string; at: number } | null
 }
 
 export type EditorAction =
   | { type: 'SET_BANNER'; payload: Banner }
   | { type: 'SELECT_COMPONENT'; payload: string | null }
   | { type: 'ADD_COMPONENT'; payload: BannerComponent }
-  | { type: 'UPDATE_COMPONENT'; payload: { id: string; updates: Partial<BannerComponent> } }
+  | { type: 'UPDATE_COMPONENT'; payload: { id: string; updates: Partial<BannerComponent>; at?: number } }
   | { type: 'DELETE_COMPONENT'; payload: string }
   | { type: 'SET_COMPONENTS'; payload: BannerComponent[] }
   | { type: 'SET_DIRTY'; payload: boolean }
@@ -35,7 +33,6 @@ export type EditorAction =
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_SCALE'; payload: number }
   | { type: 'SET_PREVIEW_MODE'; payload: boolean }
-  | { type: 'PUSH_HISTORY'; payload: EditorHistoryEntry }
   | { type: 'UNDO' }
   | { type: 'REDO' }
 

@@ -46,6 +46,18 @@ describe('checkUploadFile', () => {
 })
 
 describe('useMediaUpload', () => {
+  it('hands back the video length the server read from the file', async () => {
+    mocked.completeUpload.mockResolvedValue({ durationSeconds: 42.5 } as never)
+    const { result } = renderHook(() => useMediaUpload())
+
+    let uploaded: Awaited<ReturnType<typeof result.current.upload>> = null
+    await act(async () => {
+      uploaded = await result.current.upload(file(), 'image')
+    })
+
+    expect(uploaded).toMatchObject({ durationSeconds: 42.5 })
+  })
+
   it('cuts the file to the size the server asked for and sends each piece with its checksum', async () => {
     const { result } = renderHook(() => useMediaUpload())
 
@@ -58,7 +70,7 @@ describe('useMediaUpload', () => {
     expect(mocked.uploadChunk.mock.calls.map((c) => [c[1], (c[2] as Blob).size])).toEqual([[0, 8], [1, 8], [2, 4]])
     expect(mocked.uploadChunk.mock.calls.every((c) => /^[0-9a-f]{32}$/.test(c[3] as string))).toBe(true)
     expect(mocked.completeUpload).toHaveBeenCalledWith('m1')
-    expect(uploaded).toEqual({ mediaFileId: 'm1', url: 'http://localhost:5000/api/media/m1/download' })
+    expect(uploaded).toEqual({ mediaFileId: 'm1', url: 'http://localhost:5000/api/media/m1/download', durationSeconds: null })
     expect(result.current.progress).toBe(100)
     expect(result.current.isUploading).toBe(false)
   })
