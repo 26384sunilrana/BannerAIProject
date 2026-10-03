@@ -23,7 +23,7 @@ are saved, versioned, restored, previewed and approved with the banner for free.
 - The media links of a rotation are fetched once per file.
 
 ## Verified
-- Domain 622 (45 new), Application 222, Integration 37 (9 new), Jest 668, tsc clean, next build OK.
+- Domain 622 (45 new), Application 222, Integration 37 (9 new), Jest 667, tsc clean, next build OK.
 - Chrome against the real API with **real media** (three PNGs, two WebM clips recorded in the browser): 15/15 checks - the rotation is built in the editor,
   undo/redo, saved, survives a reload, rotates and plays its effect in Preview, and on the published banner on `/display` the pictures rotate,
   all load, the effect plays and the second video follows the first when it ends.
