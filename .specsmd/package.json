@@ -1,0 +1,9 @@
+{
+  "name": "specsmd-scripts",
+  "private": true,
+  "description": "Dependencies of the specsmd scripts in aidlc/scripts (run `npm install` here once).",
+  "dependencies": {
+    "fs-extra": "^11.2.0",
+    "js-yaml": "^4.1.0"
+  }
+}

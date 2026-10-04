@@ -1,5 +1,5 @@
 # Bolt 047 - Two-step sign-in
 
-Built: authenticator-app codes (RFC 6238, tested against the standard vectors), setup with QR picture and typed secret, first-code confirmation, ten one-time recovery codes (stored hashed), sign-in in two steps (a 5-minute signed challenge that cannot be used as an access token), replay protection, wrong codes counted toward the lockout (and the count is not reset by re-entering the password), disable and new codes need password + code, required for administrators in production (stateless claim + middleware that shuts every screen but My account), admin reset in Users, `--reset-two-factor` command, secret encrypted in the database, login and account screens, forced redirect for administrators.
-Verified: Domain 801 (16 new), Integration 92 (5 new), Jest 777 (10 new), tsc clean, Chrome against the compose containers 14/14 (owner set-up, code at sign-in, wrong code, recovery code once; administrator forced to set it up, then in).
-Not done: SSO (Microsoft/Google), WebAuthn/passkeys, remembering a trusted device, SMS codes (SMS provider).
+Built: authenticator-app codes (RFC 6238, tested against the standard vectors), setup with QR picture and typed secret, first-code confirmation, ten one-time recovery codes (stored hashed), sign-in in two steps (a 5-m...
+
+Full record: [docs/archive/bolts/047-two-step-sign-in/bolt.md](../../../docs/archive/bolts/047-two-step-sign-in/bolt.md)

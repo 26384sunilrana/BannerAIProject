@@ -75,7 +75,7 @@ const patterns = {
     intent: /^\d{3}-.+$/,           // {NNN}-{name}
     unit: /^\d{3}-.+$/,             // {UUU}-{name}
     story: /^\d{3}-.+$/,            // {SSS}-{title-slug}
-    bolt: /^\d{3}-.+$/,             // {BBB}-{unit-name}
+    bolt: /^\d{3}[a-z]?-.+$/,       // {BBB}-{unit-name}; this project also splits a bolt into 036a, 036b...
     timestamp: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/  // ISO 8601 without ms
 };
 
