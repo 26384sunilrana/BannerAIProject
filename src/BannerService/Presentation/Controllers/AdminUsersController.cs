@@ -35,6 +35,38 @@ public class AdminUsersController : ControllerBase
     [HttpGet("users/{userId}")]
     public Task<IActionResult> GetUser(string userId) => Run(() => _users.GetAsync(userId));
 
+    /// <summary>Create a new global administrator account.</summary>
+    [HttpPost("users/create-admin")]
+    public Task<IActionResult> CreateAdmin([FromBody] CreateAdminDto request) =>
+        Run(() => _users.CreateAdminAsync(request));
+
+    /// <summary>List all global administrators (Super Admin and Admins).</summary>
+    [HttpGet("admins")]
+    public Task<IActionResult> GetAllAdmins() => Run(() => _users.GetAllAdminsAsync());
+
+    /// <summary>Request deletion of a global administrator (requires Super Admin approval).</summary>
+    [HttpPost("admins/{adminId}/request-deletion")]
+    public Task<IActionResult> RequestAdminDeletion(string adminId, [FromBody] DeleteAdminRequestDto request) =>
+        Run(() => _users.RequestAdminDeletionAsync(adminId, User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty, request.Reason));
+
+    /// <summary>Get pending admin deletion requests (Super Admin only).</summary>
+    [HttpGet("super-admin/deletion-requests")]
+    [Authorize(Roles = "SuperAdmin")]
+    public Task<IActionResult> GetPendingDeletionRequests() =>
+        Run(() => _users.GetPendingDeletionRequestsAsync(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty));
+
+    /// <summary>Approve an admin deletion request (Super Admin only).</summary>
+    [HttpPost("super-admin/deletion-requests/{requestId}/approve")]
+    [Authorize(Roles = "SuperAdmin")]
+    public Task<IActionResult> ApproveDeletion(string requestId) =>
+        Run(() => _users.ApproveDeletionAsync(requestId, User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty));
+
+    /// <summary>Reject an admin deletion request (Super Admin only).</summary>
+    [HttpPost("super-admin/deletion-requests/{requestId}/reject")]
+    [Authorize(Roles = "SuperAdmin")]
+    public Task<IActionResult> RejectDeletion(string requestId) =>
+        Run(() => _users.RejectDeletionAsync(requestId, User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty));
+
     [HttpPost("users/{userId}/deactivate")]
     public Task<IActionResult> Deactivate(string userId) =>
         Run(() => _users.DeactivateAsync(userId, User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty));
@@ -46,6 +78,7 @@ public class AdminUsersController : ControllerBase
     [HttpPost("users/{userId}/reset-two-factor")]
     public Task<IActionResult> ResetTwoFactor(string userId) => Run(async () =>
     {
+        await _users.EnsureNotOwnerAsync(userId, User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty);
         await _twoFactor.ResetForUserAsync(userId);
         return new { message = "Two-step sign-in was switched off for this person." };
     });
@@ -121,6 +154,14 @@ public class AdminUsersController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return Conflict(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
     }
 }

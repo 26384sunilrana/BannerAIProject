@@ -34,6 +34,7 @@ const CARDS: Card[] = [
   { href: '/admin/locations', title: 'Places', text: 'Countries, states, cities and groups with their identifiers, and which shops are in each.', roles: [Roles.Admin] },
   { href: '/admin/subscriptions', title: 'Subscriptions', text: 'See each shop plan, reactivate shops that were switched off, run the renewal job.', roles: [Roles.Admin] },
   { href: '/admin/users', title: 'Users', text: 'Search logins, deactivate, reactivate or unlock them.', roles: [Roles.Admin] },
+  { href: '/admin/admins', title: 'Administrators', text: 'Add administrators and ask for one to be removed. The Super Admin decides on removals.', roles: [Roles.Admin] },
   { href: '/admin/audit-log', title: 'Activity log', text: 'Who called what and when, with failures highlighted.', roles: [Roles.Admin] },
 ]
 

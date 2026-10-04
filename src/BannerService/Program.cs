@@ -41,6 +41,7 @@ builder.Services.AddScoped<IShopContextAccessor, ShopContextAccessor>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IAdminDeletionRequestRepository, AdminDeletionRequestRepository>();
 
 // Address master data repositories
 builder.Services.AddScoped<IAddressRepository, AddressRepository>();
@@ -270,6 +271,22 @@ if (adminIndex >= 0)
         scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(),
         scope.ServiceProvider.GetRequiredService<BannerService.Domain.Services.IPasswordHashService>(),
         args.Skip(adminIndex + 1).TakeWhile(a => !a.StartsWith("--")).ToArray());
+    Log.Information("{Message}", message);
+    Log.CloseAndFlush();
+    return;
+}
+
+// dotnet BannerService.dll --create-super-admin <password> [first name] [last name]
+//   creates or updates the permanent Super Admin account (Sunil Rana). Auto-seeded during migration with a placeholder password.
+//   Run this to set a real password.
+var superAdminIndex = Array.IndexOf(args, "--create-super-admin");
+if (superAdminIndex >= 0)
+{
+    using var scope = app.Services.CreateScope();
+    var message = await BannerService.Infrastructure.Data.SuperAdminBootstrap.RunAsync(
+        scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(),
+        scope.ServiceProvider.GetRequiredService<BannerService.Domain.Services.IPasswordHashService>(),
+        args.Skip(superAdminIndex + 1).TakeWhile(a => !a.StartsWith("--")).ToArray());
     Log.Information("{Message}", message);
     Log.CloseAndFlush();
     return;

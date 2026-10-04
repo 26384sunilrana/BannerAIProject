@@ -146,6 +146,8 @@ export function hasRole(user: SessionUser | null, role: string): boolean {
 }
 
 export const Roles = {
+  /** The product owner. Always also holds Admin, so every administrator screen is open to the owner. */
+  SuperAdmin: 'SuperAdmin',
   Admin: 'Admin',
   ShopOwner: 'ShopOwner',
   SalesExecutive: 'SalesExecutive',

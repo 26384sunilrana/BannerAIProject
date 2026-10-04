@@ -1,6 +1,7 @@
 namespace BannerService.Infrastructure.Data
 {
     using Domain.Entities;
+    using Domain.Services;
     using Domain.ValueObjects;
     using Microsoft.EntityFrameworkCore;
 
@@ -16,11 +17,8 @@ namespace BannerService.Infrastructure.Data
                 // Seed Subscription Plans
                 await SeedSubscriptionPlansAsync(context);
 
-                // Seed System User
-                await SeedSystemUserAsync(context);
-
-                // Seed System Shop
-                await SeedSystemShopAsync(context);
+                // Seed the product owner and the system shop
+                await SeedSuperAdminAndSystemShopAsync(context);
 
                 // Seed India Master Data
                 await IndiaDataSeeder.SeedIndiaDataAsync(context);
@@ -37,9 +35,10 @@ namespace BannerService.Infrastructure.Data
         {
             var roles = new List<Role>
             {
-                new() { Id = "1", Name = "Admin", Description = "System Administrator" },
-                new() { Id = "2", Name = "ShopOwner", Description = "Shop Owner" },
-                new() { Id = "3", Name = "SalesExecutive", Description = "Sales Executive" }
+                new() { Id = "0", Name = "SuperAdmin", Description = "Permanent product owner with absolute control" },
+                new() { Id = "1", Name = "Admin", Description = "Global administrator with full access" },
+                new() { Id = "2", Name = "ShopOwner", Description = "Shop owner with shop management access" },
+                new() { Id = "3", Name = "SalesExecutive", Description = "Sales executive with limited access" }
             };
 
             foreach (var role in roles)
@@ -48,6 +47,12 @@ namespace BannerService.Infrastructure.Data
                 if (existingRole == null)
                 {
                     context.Set<Role>().Add(role);
+                }
+                else if (existingRole.Name != role.Name || existingRole.Description != role.Description)
+                {
+                    existingRole.Name = role.Name;
+                    existingRole.Description = role.Description;
+                    context.Set<Role>().Update(existingRole);
                 }
             }
         }
@@ -116,67 +121,63 @@ namespace BannerService.Infrastructure.Data
             }
         }
 
-        private static async Task SeedSystemUserAsync(ApplicationDbContext context)
+        /// <summary>
+        /// The product owner. Holds Admin as well as SuperAdmin so every screen and endpoint that accepts an administrator accepts the owner,
+        /// and is put back in place at every start, so the account and its rights cannot be lost.
+        /// </summary>
+        private static async Task SeedSuperAdminAndSystemShopAsync(ApplicationDbContext context)
         {
-            var systemUserExists = await context.Set<User>()
-                .FirstOrDefaultAsync(u => u.Email == "system@bannersai.local");
+            const string superAdminEmail = "26384sunilrana@gmail.com";
 
-            if (systemUserExists == null)
+            var oldSystemUser = await context.Set<User>().Include(u => u.UserRoles).FirstOrDefaultAsync(u => u.Email == "system@bannersai.local");
+            if (oldSystemUser != null)
             {
-                var systemUserId = Guid.NewGuid().ToString();
-                var systemUser = new User
+                context.Set<UserRole>().RemoveRange(oldSystemUser.UserRoles);
+                context.Set<User>().Remove(oldSystemUser);
+            }
+
+            var owner = await context.Set<User>().Include(u => u.UserRoles).FirstOrDefaultAsync(u => u.Email == superAdminEmail);
+            if (owner == null)
+            {
+                owner = new User
                 {
-                    Id = systemUserId,
-                    Email = "system@bannersai.local",
-                    FirstName = "System",
-                    LastName = "User",
-                    PasswordHash = "SYSTEM_ACCOUNT", // Never used for login
-                    IsActive = true,
+                    Id = Guid.NewGuid().ToString(),
+                    Email = superAdminEmail,
+                    FirstName = "Sunil",
+                    LastName = "Rana",
+                    PasswordHash = "SUPER_ADMIN_PLACEHOLDER", // cannot sign in until --create-super-admin sets a password
                     EmailVerified = true,
                     CreatedAt = DateTime.UtcNow
                 };
-
-                context.Set<User>().Add(systemUser);
-
-                // Assign Admin role to system user
-                var adminRole = await context.Set<Role>().FirstOrDefaultAsync(r => r.Id == "1");
-                if (adminRole != null)
-                {
-                    var userRole = new UserRole
-                    {
-                        UserId = systemUser.Id,
-                        RoleId = adminRole.Id
-                    };
-                    context.Set<UserRole>().Add(userRole);
-                }
+                context.Set<User>().Add(owner);
             }
-        }
 
-        private static async Task SeedSystemShopAsync(ApplicationDbContext context)
-        {
-            var systemShopExists = await context.Set<Shop>()
-                .FirstOrDefaultAsync(s => s.Name == "System Shop");
-
-            if (systemShopExists == null)
+            owner.IsActive = true;
+            foreach (var roleId in new[] { "0", "1" })
             {
-                var systemUser = await context.Set<User>()
-                    .FirstOrDefaultAsync(u => u.Email == "system@bannersai.local");
-
-                if (systemUser != null && Guid.TryParse(systemUser.Id, out var userId))
-                {
-                    var systemShop = new Shop
-                    {
-                        Id = Guid.NewGuid(),
-                        Name = "System Shop",
-                        Description = "System-managed shop for internal operations",
-                        Status = ShopStatus.Active,
-                        CreatedByUserId = userId,
-                        CreatedAt = DateTime.UtcNow
-                    };
-
-                    context.Set<Shop>().Add(systemShop);
-                }
+                if (!owner.UserRoles.Any(r => r.RoleId == roleId))
+                    context.Set<UserRole>().Add(new UserRole { UserId = owner.Id, RoleId = roleId });
             }
+            await context.SaveChangesAsync();
+
+            var systemShop = await context.Set<Shop>().FirstOrDefaultAsync(s => s.Name == "System Shop");
+            if (systemShop == null)
+            {
+                systemShop = new Shop
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "System Shop",
+                    Description = "System-managed shop for internal operations",
+                    Status = ShopStatus.Active,
+                    CreatedByUserId = Guid.Parse(owner.Id),
+                    CreatedAt = DateTime.UtcNow
+                };
+                context.Set<Shop>().Add(systemShop);
+            }
+
+            // administrators belong to no shop; the system shop gives the login the shop id the sign-in token expects
+            if (owner.ShopId != systemShop.Id.ToString())
+                owner.ShopId = systemShop.Id.ToString();
         }
     }
 }

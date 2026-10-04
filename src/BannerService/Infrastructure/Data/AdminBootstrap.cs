@@ -16,6 +16,7 @@ public static class AdminBootstrap
         var password = args[1];
         if (!email.Contains('@') || email.Length > 200) throw new ArgumentException("That does not look like an e-mail address.");
         if (password.Length < 10) throw new ArgumentException("An administrator password needs at least 10 characters.");
+        if (email == "26384sunilrana@gmail.com") throw new ArgumentException("That is the product owner: use --create-super-admin.");
 
         if (!await context.Roles.AnyAsync(r => r.Id == "1"))
             throw new InvalidOperationException("The database has no roles yet. Start the API once (or run --migrate) first.");

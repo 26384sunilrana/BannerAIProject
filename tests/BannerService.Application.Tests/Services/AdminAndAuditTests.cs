@@ -15,14 +15,88 @@ public class UserAdminServiceTests
 {
     private readonly Mock<IUserRepository> _users = new();
     private readonly Mock<IRefreshTokenRepository> _tokens = new();
+    private readonly Mock<IAdminDeletionRequestRepository> _requests = new();
     private readonly UserAdminService _service;
     private readonly User _user = new() { Id = Guid.NewGuid().ToString(), Email = "a@example.com", FirstName = "A", LastName = "B" };
+    private readonly User _owner = new() { Id = Guid.NewGuid().ToString(), Email = "26384sunilrana@gmail.com", FirstName = "Sunil", LastName = "Rana" };
+    private readonly User _otherAdmin = new() { Id = Guid.NewGuid().ToString(), Email = "admin2@example.com", FirstName = "Other", LastName = "Admin" };
+
+    private static UserRole RoleOf(User user, string id, string name) => new() { UserId = user.Id, RoleId = id, Role = new Role { Id = id, Name = name } };
 
     public UserAdminServiceTests()
     {
         _users.Setup(r => r.GetByIdAsync(_user.Id)).ReturnsAsync(_user);
+        _users.Setup(r => r.GetByIdAsync(_owner.Id)).ReturnsAsync(_owner);
+        _users.Setup(r => r.GetByIdAsync(_otherAdmin.Id)).ReturnsAsync(_otherAdmin);
         _users.Setup(r => r.UpdateAsync(It.IsAny<User>())).ReturnsAsync((User u) => u);
-        _service = new UserAdminService(_users.Object, _tokens.Object);
+        _requests.Setup(r => r.CreateAsync(It.IsAny<AdminDeletionRequest>())).ReturnsAsync((AdminDeletionRequest q) => q);
+        _requests.Setup(r => r.UpdateAsync(It.IsAny<AdminDeletionRequest>())).ReturnsAsync((AdminDeletionRequest q) => q);
+        _owner.UserRoles.Add(RoleOf(_owner, "0", Role.SuperAdmin));
+        _owner.UserRoles.Add(RoleOf(_owner, "1", Role.Admin));
+        _otherAdmin.UserRoles.Add(RoleOf(_otherAdmin, "1", Role.Admin));
+        _service = new UserAdminService(_users.Object, _tokens.Object, new Mock<IRoleRepository>().Object,
+            new Mock<BannerService.Domain.Services.IPasswordHashService>().Object, new Mock<IShopRepository>().Object, _requests.Object);
+    }
+
+    [Fact]
+    public async Task Deactivate_TheOwner_IsRejected()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.DeactivateAsync(_owner.Id, _otherAdmin.Id));
+    }
+
+    [Fact]
+    public async Task RequestDeletion_OfTheOwner_IsRejected()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.RequestAdminDeletionAsync(_owner.Id, _otherAdmin.Id));
+    }
+
+    [Fact]
+    public async Task RequestDeletion_OfSomeoneWhoIsNotAnAdmin_IsRejected()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.RequestAdminDeletionAsync(_user.Id, _owner.Id));
+    }
+
+    [Fact]
+    public async Task Approve_SwitchesTheAdminOffAndEndsTheirSessions()
+    {
+        var request = new AdminDeletionRequest { Id = "r1", AdminIdToDelete = _otherAdmin.Id, RequestedByAdminId = _owner.Id };
+        _requests.Setup(r => r.GetByIdAsync("r1")).ReturnsAsync(request);
+        var token = new RefreshToken { UserId = _otherAdmin.Id, Token = "t" };
+        _tokens.Setup(r => r.GetActiveByUserIdAsync(_otherAdmin.Id)).ReturnsAsync(new List<RefreshToken> { token });
+
+        var result = await _service.ApproveDeletionAsync("r1", _owner.Id);
+
+        Assert.False(_otherAdmin.IsActive);
+        Assert.True(token.IsRevoked);
+        Assert.Equal(AdminDeletionStatus.Completed, request.Status);
+        Assert.Equal("Completed", result.StatusName);
+    }
+
+    [Fact]
+    public async Task Approve_ByAnotherAdmin_IsRefused()
+    {
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.ApproveDeletionAsync("r1", _otherAdmin.Id));
+        Assert.True(_otherAdmin.IsActive);
+    }
+
+    [Fact]
+    public async Task Reject_KeepsTheAdminActive()
+    {
+        var request = new AdminDeletionRequest { Id = "r2", AdminIdToDelete = _otherAdmin.Id, RequestedByAdminId = _owner.Id };
+        _requests.Setup(r => r.GetByIdAsync("r2")).ReturnsAsync(request);
+
+        await _service.RejectDeletionAsync("r2", _owner.Id);
+
+        Assert.True(_otherAdmin.IsActive);
+        Assert.Equal(AdminDeletionStatus.Rejected, request.Status);
+    }
+
+    [Fact]
+    public async Task OwnersSignIn_CanBeChangedOnlyByTheOwner()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.EnsureNotOwnerAsync(_owner.Id, _otherAdmin.Id));
+        await _service.EnsureNotOwnerAsync(_owner.Id, _owner.Id);
+        await _service.EnsureNotOwnerAsync(_otherAdmin.Id, _owner.Id);
     }
 
     [Fact]

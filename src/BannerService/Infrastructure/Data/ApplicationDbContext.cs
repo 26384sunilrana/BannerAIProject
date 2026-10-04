@@ -14,6 +14,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Role> Roles { get; set; } = null!;
     public DbSet<UserRole> UserRoles { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+    public DbSet<AdminDeletionRequest> AdminDeletionRequests { get; set; } = null!;
 
     // Address master data
     public DbSet<Country> Countries { get; set; } = null!;

@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import { AdminSubscription, AdminUser, AuditEntry, LifecycleReport, Page } from '@/types/admin'
+import { AdminSubscription, AdminUser, AuditEntry, LifecycleReport, Page, AdminDeletionRequest } from '@/types/admin'
 
 /** Query string from the values that are set. */
 export function toQuery(params: Record<string, string | number | boolean | undefined | null>): string {
@@ -102,5 +102,30 @@ export const adminService = {
         pageSize: filter.pageSize,
       })}`
     )
+  },
+
+  // Admin Management
+  listAllAdmins(): Promise<AdminUser[]> {
+    return apiClient.get<AdminUser[]>(`/admin/admins`)
+  },
+
+  createAdmin(data: { email: string; password: string; firstName: string; lastName: string }): Promise<AdminUser> {
+    return apiClient.post<AdminUser>(`/admin/users/create-admin`, data)
+  },
+
+  requestAdminDeletion(adminId: string, reason?: string): Promise<AdminDeletionRequest> {
+    return apiClient.post<AdminDeletionRequest>(`/admin/admins/${encodeURIComponent(adminId)}/request-deletion`, { reason })
+  },
+
+  getPendingDeletionRequests(): Promise<AdminDeletionRequest[]> {
+    return apiClient.get<AdminDeletionRequest[]>(`/admin/super-admin/deletion-requests`)
+  },
+
+  approveDeletion(requestId: string): Promise<AdminDeletionRequest> {
+    return apiClient.post<AdminDeletionRequest>(`/admin/super-admin/deletion-requests/${encodeURIComponent(requestId)}/approve`, {})
+  },
+
+  rejectDeletion(requestId: string): Promise<AdminDeletionRequest> {
+    return apiClient.post<AdminDeletionRequest>(`/admin/super-admin/deletion-requests/${encodeURIComponent(requestId)}/reject`, {})
   },
 }

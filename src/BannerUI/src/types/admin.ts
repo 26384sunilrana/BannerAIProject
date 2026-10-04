@@ -52,3 +52,19 @@ export interface LifecycleReport {
   expired: number
   messagesSent: number
 }
+
+export interface AdminDeletionRequest {
+  id: string
+  adminIdToDelete: string
+  adminToDeleteEmail: string
+  adminToDeleteName: string
+  requestedByAdminId: string
+  requestedByAdminEmail: string
+  status: number
+  statusName: string
+  approvedByAdminId: string | null
+  approvedByAdminEmail: string | null
+  reason: string | null
+  createdAt: string
+  approvedAt: string | null
+}
