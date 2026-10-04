@@ -131,3 +131,5 @@ Establish the foundation of the Banner Service: core domain model, banner CRUD o
 ## Estimated Duration
 
 **3-5 days** for full DDD cycle (domain modeling, technical design, implementation, testing)
+
+> The design papers listed above moved to `docs/history/bolts/001-banner-service/`.

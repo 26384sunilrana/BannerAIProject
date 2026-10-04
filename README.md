@@ -8,4 +8,4 @@ Digital banner editor and subscription platform for shops. Next.js UI (`src/Bann
 - What is left to do: [memory-bank/intents/002-requirements-gap-closure/backlog.md](memory-bank/intents/002-requirements-gap-closure/backlog.md)
 - All documentation: [docs/](docs/)
 
-Folders: `src/` code, `tests/` .NET tests, `deploy/` Kubernetes and monitoring files, `demo/` demo data and screenshot scripts, `docs/` documentation, `memory-bank/` planning and history.
+Folders: `src/` code, `tests/` .NET tests, `deploy/` Kubernetes and monitoring files, `demo/` demo data and screenshot scripts, `docs/` documentation (`docs/history/` holds the early design papers), `memory-bank/` backlog, decisions, standards and one note per bolt.

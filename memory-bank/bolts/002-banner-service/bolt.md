@@ -122,3 +122,5 @@ Extend Banner Service with video and graphics component types, plus comprehensiv
 ## Estimated Duration
 
 **3-5 days** (media service integration adds some complexity)
+
+> The design papers listed above moved to `docs/history/bolts/002-banner-service/`.

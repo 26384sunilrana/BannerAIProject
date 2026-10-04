@@ -107,3 +107,5 @@ Complete Banner Service with component layering (z-index management) and preview
 ## Estimated Duration
 
 **2-3 days** (straightforward operations, lower complexity)
+
+> The design papers listed above moved to `docs/history/bolts/003-banner-service/`.
