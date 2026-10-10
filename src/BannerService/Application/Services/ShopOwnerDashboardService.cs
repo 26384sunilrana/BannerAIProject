@@ -3,25 +3,23 @@ namespace BannerService.Application.Services
     using Domain.Entities;
     using Domain.Interfaces;
     using Domain.ValueObjects;
-    using Microsoft.EntityFrameworkCore;
-    using Infrastructure.Data;
 
     public class ShopOwnerDashboardService : IShopOwnerDashboardService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDashboardMetricsRepository _metricsRepository;
         private readonly IShopOwnerDashboardRepository _dashboardRepository;
         private readonly ISubscriptionRepository _subscriptionRepository;
         private readonly IInvoiceRepository _invoiceRepository;
         private readonly ISubscriptionPlanRepository _planRepository;
 
         public ShopOwnerDashboardService(
-            ApplicationDbContext context,
+            IDashboardMetricsRepository metricsRepository,
             IShopOwnerDashboardRepository dashboardRepository,
             ISubscriptionRepository subscriptionRepository,
             IInvoiceRepository invoiceRepository,
             ISubscriptionPlanRepository planRepository)
         {
-            _context = context;
+            _metricsRepository = metricsRepository;
             _dashboardRepository = dashboardRepository;
             _subscriptionRepository = subscriptionRepository;
             _invoiceRepository = invoiceRepository;
@@ -129,68 +127,32 @@ namespace BannerService.Application.Services
 
         public async Task<ShopBannerMetrics> GetBannerMetricsAsync(Guid shopId)
         {
-            var banners = await _context.Set<Banner>()
-                .Where(b => b.ShopId == shopId)
-                .ToListAsync();
-
-            var components = await _context.Set<Component>()
-                .Where(c => banners.Select(b => b.Id).Contains(c.BannerId))
-                .ToListAsync();
-
-            var effects = await _context.Set<Effect>()
-                .Where(e => components.Select(c => c.Id).Contains(e.ComponentId))
-                .ToListAsync();
-
-            var carousels = await _context.Set<Carousel>()
-                .Where(c => banners.Select(b => b.Id).Contains(c.BannerId))
-                .ToListAsync();
-
-            var mediaFiles = await _context.Set<MediaFile>()
-                .Where(m => m.ShopId == shopId)
-                .ToListAsync();
-
-            var publishedBanners = banners.Where(b => b.IsPublished).Count();
-            var draftBanners = banners.Count - publishedBanners;
-
-            var bannersWithVersions = _context.Set<BannerVersion>()
-                .Where(v => banners.Select(b => b.Id).Contains(v.BannerId))
-                .Select(v => v.BannerId)
-                .Distinct()
-                .Count();
-
-            var totalMediaSize = mediaFiles.Sum(m => m.SizeBytes);
+            var banners = await _metricsRepository.GetBannerCountsAsync(shopId);
 
             return new ShopBannerMetrics
             {
-                TotalBanners = banners.Count,
-                PublishedBanners = publishedBanners,
-                DraftBanners = draftBanners,
-                BannersWithVersionControl = bannersWithVersions,
-                TotalMediaStorageBytes = totalMediaSize,
-                TotalComponents = components.Count,
-                TotalEffects = effects.Count,
-                TotalCarousels = carousels.Count
+                TotalBanners = banners.Banners,
+                PublishedBanners = banners.Published,
+                DraftBanners = banners.Banners - banners.Published,
+                BannersWithVersionControl = banners.WithVersions,
+                TotalMediaStorageBytes = banners.MediaBytes,
+                TotalComponents = banners.Components,
+                TotalEffects = banners.Effects,
+                TotalCarousels = banners.Carousels
             };
         }
 
         public async Task<ShopUserMetrics> GetUserMetricsAsync(Guid shopId)
         {
-            var shopUsers = _context.Set<User>()
-                .Where(u => u.ShopId == shopId.ToString())
-                .ToList();
-
-            var activeUsers = shopUsers.Where(u => u.IsActive).Count();
-            var inactiveUsers = shopUsers.Count - activeUsers;
-            var failedLoginUsers = shopUsers.Where(u => u.LoginAttempts > 0).Count();
-            var lockedOutUsers = shopUsers.Where(u => u.IsLockedOut).Count();
+            var users = await _metricsRepository.GetUserCountsAsync(shopId);
 
             return new ShopUserMetrics
             {
-                TotalUsers = shopUsers.Count,
-                ActiveUsers = activeUsers,
-                InactiveUsers = inactiveUsers,
-                UsersWithFailedLogin = failedLoginUsers,
-                LockedOutUsers = lockedOutUsers
+                TotalUsers = users.Total,
+                ActiveUsers = users.Active,
+                InactiveUsers = users.Total - users.Active,
+                UsersWithFailedLogin = users.WithFailedLogin,
+                LockedOutUsers = users.LockedOut
             };
         }
 
@@ -221,35 +183,17 @@ namespace BannerService.Application.Services
 
         public async Task<List<TopBannerByPerformance>> GetTopBannersAsync(Guid shopId, int limit = 10)
         {
-            var banners = await _context.Set<Banner>()
-                .Where(b => b.ShopId == shopId)
-                .OrderByDescending(b => b.CreatedAt)
-                .Take(limit)
-                .ToListAsync();
+            var banners = await _metricsRepository.GetRecentBannerSummariesAsync(shopId, limit);
 
-            var result = new List<TopBannerByPerformance>();
-            foreach (var banner in banners)
+            return banners.Select(b => new TopBannerByPerformance
             {
-                var components = await _context.Set<Component>()
-                    .Where(c => c.BannerId == banner.Id)
-                    .ToListAsync();
-
-                var effects = await _context.Set<Effect>()
-                    .Where(e => components.Select(c => c.Id).Contains(e.ComponentId))
-                    .ToListAsync();
-
-                result.Add(new TopBannerByPerformance
-                {
-                    BannerId = banner.Id,
-                    BannerName = banner.Name,
-                    ComponentCount = components.Count,
-                    EffectCount = effects.Count,
-                    CreatedAt = banner.CreatedAt,
-                    PublishedAt = banner.IsPublished ? banner.UpdatedAt : null
-                });
-            }
-
-            return result;
+                BannerId = b.BannerId,
+                BannerName = b.Name,
+                ComponentCount = b.ComponentCount,
+                EffectCount = b.EffectCount,
+                CreatedAt = b.CreatedAt,
+                PublishedAt = b.PublishedAt
+            }).ToList();
         }
 
         public async Task<List<ShopDashboardAlert>> GetActiveAlertsAsync(Guid shopId)

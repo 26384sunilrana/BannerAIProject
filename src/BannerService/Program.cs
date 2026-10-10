@@ -71,6 +71,7 @@ builder.Services.AddScoped<RenewalService>();
 builder.Services.AddScoped<BillingService>();
 
 // Admin dashboard services
+builder.Services.AddScoped<IDashboardMetricsRepository, DashboardMetricsRepository>();
 builder.Services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 

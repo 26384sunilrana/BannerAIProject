@@ -3,12 +3,10 @@ namespace BannerService.Application.Services
     using Domain.Entities;
     using Domain.Interfaces;
     using Domain.ValueObjects;
-    using Microsoft.EntityFrameworkCore;
-    using Infrastructure.Data;
 
     public class DashboardService : IDashboardService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDashboardMetricsRepository _metricsRepository;
         private readonly IAdminDashboardRepository _dashboardRepository;
         private readonly ISubscriptionRepository _subscriptionRepository;
         private readonly IInvoiceRepository _invoiceRepository;
@@ -17,7 +15,7 @@ namespace BannerService.Application.Services
         private readonly ISubscriptionPlanRepository _planRepository;
 
         public DashboardService(
-            ApplicationDbContext context,
+            IDashboardMetricsRepository metricsRepository,
             IAdminDashboardRepository dashboardRepository,
             ISubscriptionRepository subscriptionRepository,
             IInvoiceRepository invoiceRepository,
@@ -25,7 +23,7 @@ namespace BannerService.Application.Services
             IUserRepository userRepository,
             ISubscriptionPlanRepository planRepository)
         {
-            _context = context;
+            _metricsRepository = metricsRepository;
             _dashboardRepository = dashboardRepository;
             _subscriptionRepository = subscriptionRepository;
             _invoiceRepository = invoiceRepository;
@@ -126,89 +124,53 @@ namespace BannerService.Application.Services
 
         public async Task<ShopMetrics> GetShopMetricsAsync()
         {
-            var allShops = _context.Set<Shop>().ToList();
-            var topLevelShops = allShops.Where(s => s.ParentShopId == null).Count();
-            var childShops = allShops.Count - topLevelShops;
-
-            var activeShops = allShops.Where(s => s.Status == ShopStatus.Active).Count();
-            var inactiveShops = allShops.Count - activeShops;
-
-            var allUsers = _context.Set<User>().ToList();
-            var avgShopsPerUser = allUsers.Any() ? (decimal)allShops.Count / allUsers.Count : 0m;
-
-            var shopsWithSubscription = _context.Set<Subscription>()
-                .Where(s => s.Status == SubscriptionStatus.Active)
-                .Select(s => s.ShopId)
-                .Distinct()
-                .Count();
+            var shops = await _metricsRepository.GetShopCountsAsync();
+            var totalUsers = await _metricsRepository.GetUserTotalCountAsync();
+            var avgShopsPerUser = totalUsers > 0 ? (decimal)shops.Total / totalUsers : 0m;
 
             return new ShopMetrics
             {
-                TotalShops = allShops.Count,
-                ActiveShops = activeShops,
-                InactiveShops = inactiveShops,
-                ShopsWithActiveSubscription = shopsWithSubscription,
-                TopLevelShops = topLevelShops,
-                ChildShopsCount = childShops,
+                TotalShops = shops.Total,
+                ActiveShops = shops.Active,
+                InactiveShops = shops.Total - shops.Active,
+                ShopsWithActiveSubscription = shops.WithActiveSubscription,
+                TopLevelShops = shops.TopLevel,
+                ChildShopsCount = shops.Total - shops.TopLevel,
                 AverageShopsPerUser = avgShopsPerUser
             };
         }
 
         public async Task<UserMetrics> GetUserMetricsAsync()
         {
-            var allUsers = _context.Set<User>().ToList();
-            var activeUsers = allUsers.Where(u => u.IsActive).Count();
-            var inactiveUsers = allUsers.Count - activeUsers;
-
-            var userRoles = _context.Set<UserRole>();
-            var adminCount = userRoles.Where(ur => ur.RoleId == "1").Count();
-            var ownerCount = userRoles.Where(ur => ur.RoleId == "2").Count();
-            var executiveCount = userRoles.Where(ur => ur.RoleId == "3").Count();
-
-            var failedLoginUsers = allUsers.Where(u => u.LoginAttempts > 0).Count();
-            var lockedOutUsers = allUsers.Where(u => u.IsLockedOut).Count();
+            var users = await _metricsRepository.GetUserCountsAsync();
 
             return new UserMetrics
             {
-                TotalUsers = allUsers.Count,
-                ActiveUsers = activeUsers,
-                InactiveUsers = inactiveUsers,
-                AdminCount = adminCount,
-                ShopOwnerCount = ownerCount,
-                SalesExecutiveCount = executiveCount,
-                UsersWithFailedLogin = failedLoginUsers,
-                LockedOutUsers = lockedOutUsers
+                TotalUsers = users.Total,
+                ActiveUsers = users.Active,
+                InactiveUsers = users.Total - users.Active,
+                AdminCount = users.AdminRole,
+                ShopOwnerCount = users.ShopOwnerRole,
+                SalesExecutiveCount = users.SalesExecutiveRole,
+                UsersWithFailedLogin = users.WithFailedLogin,
+                LockedOutUsers = users.LockedOut
             };
         }
 
         public async Task<BannerMetrics> GetBannerMetricsAsync()
         {
-            var banners = await _context.Set<Banner>().ToListAsync();
-            var components = await _context.Set<Component>().ToListAsync();
-            var effects = await _context.Set<Effect>().ToListAsync();
-            var carousels = await _context.Set<Carousel>().ToListAsync();
-            var mediaFiles = await _context.Set<MediaFile>().ToListAsync();
-
-            var publishedBanners = banners.Where(b => b.IsPublished).Count();
-            var draftBanners = banners.Count - publishedBanners;
-
-            var bannersWithVersions = _context.Set<BannerVersion>()
-                .Select(v => v.BannerId)
-                .Distinct()
-                .Count();
-
-            var totalMediaSize = mediaFiles.Sum(m => m.SizeBytes);
+            var banners = await _metricsRepository.GetBannerCountsAsync();
 
             return new BannerMetrics
             {
-                TotalBanners = banners.Count,
-                PublishedBanners = publishedBanners,
-                DraftBanners = draftBanners,
-                BannersWithVersionControl = bannersWithVersions,
-                TotalMediaStorageBytes = totalMediaSize,
-                TotalComponents = components.Count,
-                TotalEffects = effects.Count,
-                TotalCarousels = carousels.Count
+                TotalBanners = banners.Banners,
+                PublishedBanners = banners.Published,
+                DraftBanners = banners.Banners - banners.Published,
+                BannersWithVersionControl = banners.WithVersions,
+                TotalMediaStorageBytes = banners.MediaBytes,
+                TotalComponents = banners.Components,
+                TotalEffects = banners.Effects,
+                TotalCarousels = banners.Carousels
             };
         }
 
@@ -217,8 +179,8 @@ namespace BannerService.Application.Services
             var now = DateTime.UtcNow;
             var oneHourAgo = now.AddHours(-1);
 
-            var errorLogs = _context.Set<Subscription>().Count(); // Placeholder
-            var warningLogs = _context.Set<Invoice>().Count(); // Placeholder
+            var errorLogs = await _metricsRepository.GetSubscriptionCountAsync(); // Placeholder
+            var warningLogs = await _metricsRepository.GetInvoiceCountAsync(); // Placeholder
 
             return new SystemHealthMetrics
             {
@@ -299,7 +261,7 @@ namespace BannerService.Application.Services
         public async Task<List<SubscriptionPlanDistribution>> GetSubscriptionDistributionAsync()
         {
             var subscriptions = await _subscriptionRepository.GetAllAsync();
-            var plans = await _context.Set<SubscriptionPlan>().ToListAsync();
+            var plans = await _metricsRepository.GetAllPlansAsync();
             var totalSubs = subscriptions.Count;
 
             var distribution = plans
@@ -322,33 +284,19 @@ namespace BannerService.Application.Services
 
         public async Task<PaymentHealthMetrics> GetPaymentHealthAsync()
         {
-            var allInvoices = _context.Set<Invoice>();
-            var successfulPayments = allInvoices.Where(i => i.Status == InvoiceStatus.Paid).Count();
-            var failedPayments = allInvoices.Where(i => i.Status == InvoiceStatus.Overdue).Count();
-            var refundedPayments = allInvoices.Where(i => i.Status == InvoiceStatus.Refunded).Count();
-            var totalPayments = allInvoices.Count();
+            var payments = await _metricsRepository.GetPaymentCountsAsync();
 
-            var successRate = totalPayments > 0 ? (successfulPayments / (decimal)totalPayments) * 100 : 0m;
-            var avgAmount = allInvoices.Any() ? allInvoices.Average(i => i.Amount) : 0m;
-
-            var lastPayment = allInvoices
-                .Where(i => i.PaidDate.HasValue)
-                .OrderByDescending(i => i.PaidDate)
-                .FirstOrDefault();
-
-            var subscriptionsInGrace = await _context.Set<Subscription>()
-                .Where(s => s.Status == SubscriptionStatus.GracePeriod)
-                .CountAsync();
+            var successRate = payments.Total > 0 ? (payments.Paid / (decimal)payments.Total) * 100 : 0m;
 
             return new PaymentHealthMetrics
             {
-                SuccessfulPayments = successfulPayments,
-                FailedPayments = failedPayments,
-                RefundedPayments = refundedPayments,
+                SuccessfulPayments = payments.Paid,
+                FailedPayments = payments.Overdue,
+                RefundedPayments = payments.Refunded,
                 SuccessRate = successRate,
-                AveragePaymentAmount = avgAmount,
-                LastPaymentTime = lastPayment?.PaidDate ?? DateTime.UtcNow,
-                PaymentsInGracePeriod = subscriptionsInGrace
+                AveragePaymentAmount = payments.AverageAmount,
+                LastPaymentTime = payments.LastPaidDate ?? DateTime.UtcNow,
+                PaymentsInGracePeriod = payments.SubscriptionsInGracePeriod
             };
         }
 

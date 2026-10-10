@@ -4,17 +4,14 @@ namespace BannerService.Application.Services
     using Domain.Interfaces;
     using Domain.ValueObjects;
     using Microsoft.EntityFrameworkCore;
-    using Infrastructure.Data;
 
     public class AnalyticsService : IAnalyticsService
     {
         private readonly IAnalyticsRepository _repository;
-        private readonly ApplicationDbContext _context;
 
-        public AnalyticsService(IAnalyticsRepository repository, ApplicationDbContext context)
+        public AnalyticsService(IAnalyticsRepository repository)
         {
             _repository = repository;
-            _context = context;
         }
 
         public async Task<DashboardReport> GenerateReportAsync(Guid shopId, ReportType type, DateTime startDate, DateTime endDate, Guid userId)

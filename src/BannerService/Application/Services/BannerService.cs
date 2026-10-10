@@ -6,7 +6,6 @@ using Domain.Interfaces;
 using Domain.Services;
 using Domain.ValueObjects;
 using Dto;
-using Infrastructure.Data;
 using Microsoft.Extensions.Logging;
 
 public class BannerService : IBannerService
