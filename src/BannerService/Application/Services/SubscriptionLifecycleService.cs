@@ -33,6 +33,7 @@ public class SubscriptionLifecycleService
     private readonly IEmailService _email;
     private readonly ISmsSender _sms;
     private readonly IPaymentGateway _payments;
+    private readonly PaymentProviderRegistry _providers;
     private readonly ISubscriptionNotificationRepository _notifications;
     private readonly SubscriptionService _subscriptionService;
     private readonly ILogger<SubscriptionLifecycleService> _logger;
@@ -46,6 +47,7 @@ public class SubscriptionLifecycleService
         IEmailService email,
         ISmsSender sms,
         IPaymentGateway payments,
+        PaymentProviderRegistry providers,
         ISubscriptionNotificationRepository notifications,
         SubscriptionService subscriptionService,
         ILogger<SubscriptionLifecycleService> logger)
@@ -58,6 +60,7 @@ public class SubscriptionLifecycleService
         _email = email;
         _sms = sms;
         _payments = payments;
+        _providers = providers;
         _notifications = notifications;
         _subscriptionService = subscriptionService;
         _logger = logger;
@@ -121,21 +124,49 @@ public class SubscriptionLifecycleService
             return (false, charge.Error ?? "The payment was not accepted");
         }
 
+        await RenewAfterPaymentAsync(subscription, charge.Reference, subscription.Plan?.Currency);
+        await NotifyRenewedAsync(subscription);
+        return (true, "Subscription renewed successfully");
+    }
+
+    /// <summary>
+    /// Extends the subscription for one period and writes the paid invoice (database work only, so it can sit inside a transaction).
+    /// Renewing early adds to the current period; renewing after the date has passed starts a new period today.
+    /// </summary>
+    public async Task<Invoice> RenewAfterPaymentAsync(Subscription subscription, string? paymentReference, string? currency)
+    {
         var now = DateTime.UtcNow;
         var from = subscription.Status is SubscriptionStatus.Active or SubscriptionStatus.Trial && subscription.RenewalDate > now
             ? subscription.RenewalDate
             : now;
 
-        await RenewAsync(subscription, from, charge.Reference);
-        await NotifyAsync(subscription, "Renewed", now, RenewalMessages.Renewed(subscription));
-        return (true, "Subscription renewed successfully");
+        return await RenewAsync(subscription, from, paymentReference, currency);
     }
+
+    /// <summary>The "your plan was renewed" e-mail and text. Failures are logged and never stop the renewal.</summary>
+    public async Task NotifyRenewedAsync(Subscription subscription)
+    {
+        try
+        {
+            await NotifyAsync(subscription, "Renewed", DateTime.UtcNow, RenewalMessages.Renewed(subscription));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "The renewal message for subscription {SubscriptionId} could not be sent", subscription.Id);
+        }
+    }
+
+    /// <summary>
+    /// With a payment provider connected, auto-renew is ignored (ADR-005): saved-card charging is not built, so owners get the
+    /// reminders and pay by checkout. Without a provider the subscription's own switch decides.
+    /// </summary>
+    private bool EffectiveAutoRenew(Subscription subscription) => subscription.AutoRenew && !_providers.HasRealProvider;
 
     private async Task ProcessRunningAsync(Subscription subscription, DateTime now, LifecycleReport report)
     {
         if (subscription.RenewalDate > now)
         {
-            if (!subscription.AutoRenew)
+            if (!EffectiveAutoRenew(subscription))
             {
                 var daysLeft = (subscription.RenewalDate.Date - now.Date).Days;
                 if (ReminderDaysBefore.Contains(daysLeft))
@@ -146,7 +177,7 @@ public class SubscriptionLifecycleService
         }
 
         // The renewal date has arrived
-        if (subscription.AutoRenew)
+        if (EffectiveAutoRenew(subscription))
         {
             var charge = await _payments.ChargeAsync(subscription, subscription.CurrentPrice);
             if (charge.Success)
@@ -173,7 +204,7 @@ public class SubscriptionLifecycleService
         subscription.GraceEndsAt ??= subscription.RenewalDate.AddDays(Subscription.GraceDays);
 
         // With auto renewal on, the charge is tried again once a day during the grace week
-        if (subscription.AutoRenew && now < subscription.GraceEndsAt &&
+        if (EffectiveAutoRenew(subscription) && now < subscription.GraceEndsAt &&
             await _notifications.TryClaimAsync(new SubscriptionNotification
             {
                 SubscriptionId = subscription.Id,
@@ -205,16 +236,17 @@ public class SubscriptionLifecycleService
         report.MessagesSent += await NotifyAsync(subscription, "GraceDaily", now, RenewalMessages.Grace(subscription, now));
     }
 
-    private async Task RenewAsync(Subscription subscription, DateTime from, string? paymentReference)
+    private async Task<Invoice> RenewAsync(Subscription subscription, DateTime from, string? paymentReference, string? currency = null)
     {
         subscription.RenewFrom(from);
         await _subscriptions.UpdateAsync(subscription);
 
-        await _invoices.CreateAsync(new Invoice
+        return await _invoices.CreateAsync(new Invoice
         {
             SubscriptionId = subscription.Id,
             ShopId = subscription.ShopId,
             Amount = subscription.CurrentPrice,
+            Currency = Domain.ValueObjects.CurrencyCodes.Normalize(currency ?? subscription.Plan?.Currency, _providers.DefaultCurrency),
             Status = InvoiceStatus.Paid,
             InvoiceNumber = await _invoices.GenerateInvoiceNumberAsync(),
             IssuedDate = DateTime.UtcNow,
@@ -257,11 +289,29 @@ public class SubscriptionLifecycleService
 
         if (!string.IsNullOrWhiteSpace(shop.PhoneNumber))
         {
+            var (templateKey, values) = SmsFor(kind, subscription);
             sent += await SendOnceAsync(subscription, kind, NotificationChannel.Sms, now,
-                () => _sms.SendAsync(shop.PhoneNumber!, $"{message.subject}: {message.text}"));
+                () => _sms.SendTemplateAsync(shop.PhoneNumber!, templateKey, values));
         }
 
         return sent;
+    }
+
+    /// <summary>
+    /// Which registered text a kind of message uses and what fills its gaps. Only dates, plan names and amounts go in:
+    /// no names, addresses or other personal details are ever put into a text.
+    /// </summary>
+    public static (string templateKey, IReadOnlyList<string> values) SmsFor(string kind, Subscription subscription)
+    {
+        var plan = subscription.Plan?.Name ?? "Banner AI";
+        if (kind.StartsWith("Reminder", StringComparison.Ordinal))
+            return (SmsTemplateKeys.RenewalReminder, new[] { plan, subscription.RenewalDate.ToString("d MMM yyyy") });
+        if (kind is "Renewed" or "AutoRenewed")
+        {
+            var currency = subscription.Plan?.Currency ?? "INR";
+            return (SmsTemplateKeys.PaymentReceived, new[] { $"{subscription.CurrentPrice:0.##} {currency}" });
+        }
+        return (SmsTemplateKeys.PlanEnded, Array.Empty<string>());
     }
 
     private async Task<int> SendOnceAsync(Subscription subscription, string kind, NotificationChannel channel, DateTime now, Func<Task<bool>> send)
@@ -282,6 +332,14 @@ public class SubscriptionLifecycleService
             return 0;
         }
     }
+}
+
+/// <summary>The keys of the registered text messages (Sms:Templates:&lt;key&gt; in settings).</summary>
+public static class SmsTemplateKeys
+{
+    public const string RenewalReminder = "renewal-reminder";
+    public const string PlanEnded = "plan-ended";
+    public const string PaymentReceived = "payment-received";
 }
 
 public static class RenewalMessages

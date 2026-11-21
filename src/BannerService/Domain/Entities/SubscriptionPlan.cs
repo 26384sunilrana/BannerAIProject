@@ -7,6 +7,9 @@ namespace BannerService.Domain.Entities
         public string Description { get; set; } = string.Empty;
         public decimal MonthlyPrice { get; set; }
         public decimal AnnualPrice { get; set; }
+
+        /// <summary>ISO 4217 code the plan's prices are in.</summary>
+        public string Currency { get; set; } = "INR";
         public int DisplayOrder { get; set; }
         public SubscriptionFeatures Features { get; set; } = new();
         public bool IsActive { get; set; } = true;

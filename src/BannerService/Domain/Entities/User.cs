@@ -82,6 +82,14 @@ namespace BannerService.Domain.Entities
             UpdatedAt = DateTime.UtcNow;
         }
 
+        /// <summary>Stores the hash of a new e-mail verification token; it is valid for 24 hours (ADR-007).</summary>
+        public void SetVerificationToken(string tokenHash)
+        {
+            VerificationToken = tokenHash;
+            VerificationTokenExpires = DateTime.UtcNow.AddHours(24);
+            UpdatedAt = DateTime.UtcNow;
+        }
+
         public void SetPasswordResetToken(string token)
         {
             PasswordResetToken = token;

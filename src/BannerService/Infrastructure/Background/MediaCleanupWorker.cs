@@ -54,6 +54,9 @@ public class MediaCleanupWorker : BackgroundService
                 await screens.PurgePairingsAsync(DateTime.UtcNow.AddHours(-1));
                 var keepDays = _configuration.GetValue("Screens:PlayHistoryDays", 400);
                 if (keepDays > 0) await screens.PurgeStatsAsync(DateTime.UtcNow.AddDays(-keepDays));
+                // payment attempts nobody finished (7 days) and webhook receipts (180 days)
+                var cleaned = await scope.ServiceProvider.GetRequiredService<Domain.Interfaces.IPaymentRepository>().CleanUpAsync(DateTime.UtcNow);
+                if (cleaned > 0) _logger.LogInformation("Removed {Count} old payment records", cleaned);
                 JobHeartbeats.Succeeded("media-cleanup");
             }
             catch (Exception ex) when (ex is not OperationCanceledException)

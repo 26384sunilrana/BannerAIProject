@@ -20,12 +20,15 @@ namespace BannerService.Presentation.Controllers
         private readonly IAuthenticationService _authenticationService;
         private readonly IRefreshCookie _cookie;
         private readonly ILogger<AuthenticationController> _logger;
+        private readonly IConfiguration _configuration;
 
         public AuthenticationController(
             IAuthenticationService authenticationService,
             IRefreshCookie cookie,
-            ILogger<AuthenticationController> logger)
+            ILogger<AuthenticationController> logger,
+            IConfiguration configuration)
         {
+            _configuration = configuration;
             _authenticationService = authenticationService;
             _cookie = cookie;
             _logger = logger;
@@ -166,13 +169,14 @@ namespace BannerService.Presentation.Controllers
 
         [HttpGet("me")]
         [Authorize]
-        public IActionResult GetCurrentUser()
+        public async Task<IActionResult> GetCurrentUser()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
             var name = User.FindFirst(ClaimTypes.Name)?.Value;
             var shopId = User.FindFirst("shop_id")?.Value;
             var roles = User.FindAll(ClaimTypes.Role);
+            var emailVerified = !string.IsNullOrEmpty(userId) && await _authenticationService.IsEmailVerifiedAsync(userId);
 
             return Ok(new
             {
@@ -180,6 +184,9 @@ namespace BannerService.Presentation.Controllers
                 email,
                 name,
                 shopId,
+                emailVerified,
+                // the web app shows its "verify your e-mail" notice only when this installation can send mail
+                emailEnabled = ProviderSettings.EmailConfigured(_configuration),
                 roles = roles.Select(r => r.Value).ToList()
             });
         }
@@ -188,19 +195,24 @@ namespace BannerService.Presentation.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDto request)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var (success, message) = await _authenticationService.VerifyEmailAsync(request.Token);
+            return success ? Ok(new { message }) : BadRequest(new { message });
+        }
 
+        /// <summary>Sends the signed-in person a new verification link (at most one a minute).</summary>
+        [HttpPost("resend-verification")]
+        [Authorize]
+        public async Task<IActionResult> ResendVerification()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "User not authenticated" });
 
-            var (success, message) = await _authenticationService.VerifyEmailAsync(userId, request.Token);
-
-            if (!success)
-                return BadRequest(new { message });
-
-            return Ok(new { message });
+            var (success, message) = await _authenticationService.ResendVerificationAsync(userId);
+            return success ? Ok(new { message }) : StatusCode(StatusCodes.Status429TooManyRequests, new { message });
         }
 
+        /// <summary>The answer is the same whether or not the address has an account.</summary>
         [HttpPost("forgot-password")]
         [AllowAnonymous]
         public async Task<IActionResult> ForgotPassword([FromBody] RequestPasswordResetDto request)
@@ -208,12 +220,11 @@ namespace BannerService.Presentation.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var (success, message) = await _authenticationService.RequestPasswordResetAsync(request.Email);
-
-            // Return success regardless of whether email exists (security best practice)
+            var (_, message) = await _authenticationService.RequestPasswordResetAsync(request.Email);
             return Ok(new { message });
         }
 
+        /// <summary>The link's token alone identifies the person; no sign-in is needed (or possible) to use it.</summary>
         [HttpPost("reset-password")]
         [AllowAnonymous]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto request)
@@ -224,21 +235,8 @@ namespace BannerService.Presentation.Controllers
             if (request.NewPassword != request.ConfirmPassword)
                 return BadRequest(new { message = "Passwords do not match" });
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { message = "User not authenticated" });
-
-            var (success, message) = await _authenticationService.ResetPasswordAsync(
-                userId,
-                request.Token,
-                request.NewPassword
-            );
-
-            if (!success)
-                return BadRequest(new { message });
-
-            return Ok(new { message });
+            var (success, message) = await _authenticationService.ResetPasswordAsync(request.Token, request.NewPassword);
+            return success ? Ok(new { message }) : BadRequest(new { message });
         }
 
         [HttpGet("health")]

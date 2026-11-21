@@ -30,6 +30,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; } = null!;
     public DbSet<Subscription> Subscriptions { get; set; } = null!;
     public DbSet<Invoice> Invoices { get; set; } = null!;
+    public DbSet<PaymentAttempt> PaymentAttempts { get; set; } = null!;
+    public DbSet<Refund> Refunds { get; set; } = null!;
+    public DbSet<WebhookReceipt> WebhookReceipts { get; set; } = null!;
 
     // Analytics
     public DbSet<AnalyticsEvent> AnalyticsEvents { get; set; } = null!;
@@ -522,7 +525,60 @@ public class ApplicationDbContext : DbContext
         });
 
         ConfigurePublishAdvertisingAndDashboards(modelBuilder);
+        ConfigurePayments(modelBuilder);
         ConfigureFieldEncryption(modelBuilder);
+    }
+
+    // Payment attempts, refunds and webhook receipts (bolt 044a, ADR-006)
+    private static void ConfigurePayments(ModelBuilder modelBuilder)
+    {
+        var encrypted = new EncryptedStringConverter();
+
+        // recovery tokens are looked up by their hash (ADR-007)
+        modelBuilder.Entity<User>().HasIndex(u => u.PasswordResetToken).HasFilter("[PasswordResetToken] IS NOT NULL");
+        modelBuilder.Entity<User>().HasIndex(u => u.VerificationToken).HasFilter("[VerificationToken] IS NOT NULL");
+
+        modelBuilder.Entity<SubscriptionPlan>().Property(e => e.Currency).HasMaxLength(3).IsFixedLength().HasDefaultValue("INR");
+        modelBuilder.Entity<Invoice>().Property(e => e.Currency).HasMaxLength(3).IsFixedLength().HasDefaultValue("INR");
+
+        modelBuilder.Entity<PaymentAttempt>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Provider).HasMaxLength(32).IsRequired();
+            e.Property(x => x.ProviderOrderId).HasMaxLength(128).IsRequired();
+            e.Property(x => x.ProviderPaymentId).HasMaxLength(512).HasConversion(encrypted);
+            e.Property(x => x.Amount).HasPrecision(18, 2);
+            e.Property(x => x.Currency).HasMaxLength(3).IsFixedLength().IsRequired();
+            e.Property(x => x.FailureReason).HasMaxLength(256);
+            e.Property(x => x.RowVersion).IsRowVersion();
+            e.HasOne<Invoice>().WithMany().HasForeignKey(x => x.InvoiceId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne<Subscription>().WithMany().HasForeignKey(x => x.SubscriptionId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne<Shop>().WithMany().HasForeignKey(x => x.ShopId).OnDelete(DeleteBehavior.NoAction);
+            e.HasMany(x => x.Refunds).WithOne().HasForeignKey(r => r.PaymentAttemptId).OnDelete(DeleteBehavior.NoAction);
+            e.HasIndex(x => new { x.Provider, x.ProviderOrderId }).IsUnique();
+            e.HasIndex(x => x.ShopId);
+            // the database itself allows only one paid attempt per invoice (2 = Paid, 4 = PartlyRefunded, 5 = Refunded)
+            e.HasIndex(x => x.InvoiceId).IsUnique().HasFilter("[InvoiceId] IS NOT NULL AND [Status] IN (2, 4, 5)");
+        });
+
+        modelBuilder.Entity<Refund>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Amount).HasPrecision(18, 2);
+            e.Property(x => x.Currency).HasMaxLength(3).IsFixedLength().IsRequired();
+            e.Property(x => x.Reason).HasMaxLength(256).IsRequired();
+            e.Property(x => x.ProviderRefundId).HasMaxLength(128);
+        });
+
+        modelBuilder.Entity<WebhookReceipt>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Provider).HasMaxLength(32).IsRequired();
+            e.Property(x => x.ProviderEventId).HasMaxLength(128).IsRequired();
+            e.Property(x => x.EventType).HasMaxLength(64).IsRequired();
+            e.Property(x => x.Outcome).HasMaxLength(64);
+            e.HasIndex(x => new { x.Provider, x.ProviderEventId }).IsUnique();
+        });
     }
 
     // Personal and payment fields are encrypted before they reach the database

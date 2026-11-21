@@ -22,6 +22,12 @@ public class LoggingSmsSender : ISmsSender
         _logger.LogWarning("SMS provider not configured: message to {Phone} was not sent ({Length} characters)", masked, message.Length);
         return Task.FromResult(false);
     }
+
+    public Task<bool> SendTemplateAsync(string phoneNumber, string templateKey, IReadOnlyList<string> values)
+    {
+        _logger.LogWarning("SMS provider not configured: template {Template} to {Phone} was not sent", templateKey, Domain.ValueObjects.PhoneNumbers.Mask(phoneNumber));
+        return Task.FromResult(false);
+    }
 }
 
 /// <summary>

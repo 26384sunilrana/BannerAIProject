@@ -21,10 +21,10 @@ namespace BannerService.Application.Services
 
             var body = $@"
                 <h2>Email Verification</h2>
-                <p>Hello {userName},</p>
+                <p>Hello {System.Net.WebUtility.HtmlEncode(userName)},</p>
                 <p>Thank you for registering. Please verify your email by clicking the link below:</p>
                 <a href='{link}'>Verify Email</a>
-                <p>This link expires in 1 hour.</p>
+                <p>This link expires in 24 hours.</p>
             ";
 
             return await SendEmailAsync(email, "Email Verification", body, isHtml: true);
@@ -37,7 +37,7 @@ namespace BannerService.Application.Services
 
             var body = $@"
                 <h2>Password Reset Request</h2>
-                <p>Hello {userName},</p>
+                <p>Hello {System.Net.WebUtility.HtmlEncode(userName)},</p>
                 <p>You requested a password reset. Click the link below to reset your password:</p>
                 <a href='{link}'>Reset Password</a>
                 <p>This link expires in 1 hour. If you didn't request this, ignore this email.</p>
@@ -70,7 +70,8 @@ namespace BannerService.Application.Services
                 if (!string.IsNullOrEmpty(user))
                     client.Credentials = new System.Net.NetworkCredential(user, _configuration["Email:Smtp:Password"]);
 
-                var from = _configuration["Email:Smtp:From"] ?? user ?? "noreply@bannerai.local";
+                var configuredFrom = _configuration["Email:Smtp:From"];
+                var from = !string.IsNullOrWhiteSpace(configuredFrom) ? configuredFrom : (!string.IsNullOrWhiteSpace(user) ? user : "noreply@bannerai.local");
                 using var message = new System.Net.Mail.MailMessage(from, toEmail, subject, body) { IsBodyHtml = isHtml };
 
                 await client.SendMailAsync(message);

@@ -9,6 +9,7 @@ namespace BannerService.Domain.Entities
         public virtual Shop? Shop { get; set; }
 
         public decimal Amount { get; set; }
+        public string Currency { get; set; } = "INR";
         public InvoiceStatus Status { get; set; }
         public string InvoiceNumber { get; set; } = string.Empty;
 

@@ -19,9 +19,13 @@ namespace BannerService.Application.Services
         Task<LoginOutcome> CompleteTwoFactorLoginAsync(string challenge, string code, string? ipAddress, string? userAgent);
         /// <summary>Ends the session that holds this refresh token. False when the token is not known.</summary>
         Task<bool> RevokeTokenAsync(string refreshToken);
-        Task<(bool success, string message)> VerifyEmailAsync(string userId, string token);
+        Task<(bool success, string message)> VerifyEmailAsync(string token);
         Task<(bool success, string message)> RequestPasswordResetAsync(string email);
-        Task<(bool success, string message)> ResetPasswordAsync(string userId, string token, string newPassword);
+        Task<(bool success, string message)> ResetPasswordAsync(string token, string newPassword);
+
+        /// <summary>Sends a new e-mail verification link to a signed-in person who has not verified yet (at most one a minute).</summary>
+        Task<(bool success, string message)> ResendVerificationAsync(string userId);
+        Task<bool> IsEmailVerifiedAsync(string userId);
     }
 
     public class LoginOutcome
@@ -43,6 +47,8 @@ namespace BannerService.Application.Services
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IShopRepository _shopRepository;
         private readonly ISubscriptionRepository _subscriptionRepository;
+        private readonly IEmailService _email;
+        private readonly ILogger<AuthenticationService> _logger;
 
         /// <summary>How long a refresh token lasts (a signed-in person is asked to sign in again after this long without a visit).</summary>
         public static readonly TimeSpan RefreshLifetime = TimeSpan.FromDays(7);
@@ -64,7 +70,9 @@ namespace BannerService.Application.Services
             IPasswordHashService passwordHashService,
             IRefreshTokenRepository refreshTokenRepository,
             IShopRepository shopRepository,
-            ISubscriptionRepository subscriptionRepository)
+            ISubscriptionRepository subscriptionRepository,
+            IEmailService email,
+            ILogger<AuthenticationService> logger)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
@@ -73,6 +81,8 @@ namespace BannerService.Application.Services
             _refreshTokenRepository = refreshTokenRepository;
             _shopRepository = shopRepository;
             _subscriptionRepository = subscriptionRepository;
+            _email = email;
+            _logger = logger;
         }
 
         /// <summary>
@@ -147,6 +157,9 @@ namespace BannerService.Application.Services
 
             // Reload so the token carries the role names
             createdUser = await _userRepository.GetByEmailAsync(user.Email) ?? createdUser;
+
+            // The verification mail never stops a sign-up: without an e-mail setup it is only logged
+            await TrySendVerificationAsync(createdUser);
 
             var (accessToken, jwtId) = _jwtTokenService.GenerateAccessToken(createdUser);
             var refreshToken = _jwtTokenService.GenerateRefreshToken();
@@ -409,47 +422,99 @@ namespace BannerService.Application.Services
             return true;
         }
 
-        public async Task<(bool success, string message)> VerifyEmailAsync(string userId, string token)
+        public async Task<(bool success, string message)> VerifyEmailAsync(string token)
         {
-            var user = await _userRepository.GetByVerificationTokenAsync(token);
+            if (string.IsNullOrWhiteSpace(token))
+                return (false, "This link is not valid or has expired");
 
-            if (user == null || user.Id != userId)
-                return (false, "Invalid verification token");
-
-            if (user.VerificationTokenExpires < DateTime.UtcNow)
-                return (false, "Verification token has expired");
+            var user = await _userRepository.GetByVerificationTokenAsync(RecoveryTokens.Hash(token));
+            if (user == null || user.VerificationTokenExpires == null || user.VerificationTokenExpires < DateTime.UtcNow)
+                return (false, "This link is not valid or has expired");
 
             user.VerifyEmail();
             await _userRepository.UpdateAsync(user);
 
-            return (true, "Email verified successfully");
+            return (true, "Your e-mail address is verified");
         }
+
+        public async Task<(bool success, string message)> ResendVerificationAsync(string userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+                return (false, "Account not found");
+            if (user.EmailVerified)
+                return (true, "Your e-mail address is already verified");
+
+            // one a minute: the expiry is 24 hours after the last issue
+            if (user.VerificationTokenExpires.HasValue && user.VerificationTokenExpires.Value > DateTime.UtcNow.AddHours(24).AddMinutes(-1))
+                return (false, "A link was sent a moment ago. Please wait a minute and try again.");
+
+            await TrySendVerificationAsync(user);
+            return (true, "A new link was sent to your e-mail address");
+        }
+
+        public async Task<bool> IsEmailVerifiedAsync(string userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            return user?.EmailVerified == true;
+        }
+
+        private async Task TrySendVerificationAsync(User user)
+        {
+            try
+            {
+                var token = RecoveryTokens.NewToken();
+                user.SetVerificationToken(RecoveryTokens.Hash(token));
+                await _userRepository.UpdateAsync(user);
+                await _email.SendVerificationEmailAsync(user.Email, token, user.GetFullName());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "The verification e-mail could not be sent");
+            }
+        }
+
+        public const string PasswordResetRequestedMessage = "If an account with that e-mail address exists, a link to reset the password has been sent";
 
         public async Task<(bool success, string message)> RequestPasswordResetAsync(string email)
         {
-            var user = await _userRepository.GetByEmailAsync(email.ToLower());
+            // The answer is the same whether or not the address has an account (ADR-007)
+            if (string.IsNullOrWhiteSpace(email))
+                return (true, PasswordResetRequestedMessage);
 
-            if (user == null)
-                return (true, "If an account with that email exists, a password reset link has been sent");
+            var user = await _userRepository.GetByEmailAsync(email.Trim().ToLowerInvariant());
+            if (user == null || !user.IsActive)
+                return (true, PasswordResetRequestedMessage);
 
-            var resetToken = Guid.NewGuid().ToString("N");
-            user.SetPasswordResetToken(resetToken);
-            await _userRepository.UpdateAsync(user);
+            // a request in the last minute is not answered again, so nobody can flood an inbox (expiry is one hour after issue)
+            if (user.PasswordResetExpires.HasValue && user.PasswordResetExpires.Value > DateTime.UtcNow.AddHours(1).AddMinutes(-1))
+                return (true, PasswordResetRequestedMessage);
 
-            // TODO: Send reset email with token
+            try
+            {
+                var token = RecoveryTokens.NewToken();
+                user.SetPasswordResetToken(RecoveryTokens.Hash(token));
+                await _userRepository.UpdateAsync(user);
+                await _email.SendPasswordResetEmailAsync(user.Email, token, user.GetFullName());
+            }
+            catch (Exception ex)
+            {
+                // never tell the caller: that would show that the address exists
+                _logger.LogWarning(ex, "The password reset e-mail could not be sent");
+            }
 
-            return (true, "Password reset link sent to your email");
+            return (true, PasswordResetRequestedMessage);
         }
 
-        public async Task<(bool success, string message)> ResetPasswordAsync(string userId, string token, string newPassword)
+        public async Task<(bool success, string message)> ResetPasswordAsync(string token, string newPassword)
         {
-            var user = await _userRepository.GetByPasswordResetTokenAsync(token);
+            const string invalid = "This link is not valid or has expired";
+            if (string.IsNullOrWhiteSpace(token))
+                return (false, invalid);
 
-            if (user == null || user.Id != userId)
-                return (false, "Invalid or expired password reset token");
-
-            if (!user.IsPasswordResetTokenValid())
-                return (false, "Password reset token has expired");
+            var user = await _userRepository.GetByPasswordResetTokenAsync(RecoveryTokens.Hash(token));
+            if (user == null || !user.IsPasswordResetTokenValid())
+                return (false, invalid);
 
             if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 8)
                 return (false, "Password must be at least 8 characters");
@@ -458,7 +523,14 @@ namespace BannerService.Application.Services
             user.ClearPasswordResetToken();
             await _userRepository.UpdateAsync(user);
 
-            return (true, "Password reset successfully");
+            // a reset ends every session, so anyone who had the old password is signed out
+            foreach (var session in await _refreshTokenRepository.GetActiveByUserIdAsync(user.Id))
+            {
+                session.Revoke();
+                await _refreshTokenRepository.UpdateAsync(session);
+            }
+
+            return (true, "Your password was changed. Please sign in with the new password.");
         }
     }
 }

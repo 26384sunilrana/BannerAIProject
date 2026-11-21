@@ -113,7 +113,31 @@ builder.Services.AddScoped<BannerService.Application.Services.AccountService>();
 builder.Services.AddScoped<BannerService.Application.Services.ShopSettingsService>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<ISubscriptionNotificationRepository, SubscriptionNotificationRepository>();
-builder.Services.AddScoped<ISmsSender, BannerService.Infrastructure.Services.LoggingSmsSender>();
+// Payments, SMS and e-mail providers (bolt 044a, ADR-004). Every value starts empty; an empty setting means "off".
+// A provider that is named but not fully set up stops the application in production and falls back to None elsewhere (ADR-008).
+{
+    var providerProblems = BannerService.Application.Services.ProviderSettings.Validate(builder.Configuration, builder.Environment.IsProduction());
+    if (providerProblems.Count > 0)
+    {
+        var text = "Provider settings: " + string.Join("; ", providerProblems);
+        if (builder.Environment.IsProduction())
+            throw new InvalidOperationException(text);
+        Log.Warning("{Problems}. The provider stays off until this is fixed.", text);
+    }
+}
+builder.Services.AddHttpClient<BannerService.Infrastructure.Services.RazorpayPaymentProvider>(client => client.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddScoped<IPaymentProvider>(sp => sp.GetRequiredService<BannerService.Infrastructure.Services.RazorpayPaymentProvider>());
+builder.Services.AddScoped<BannerService.Application.Services.PaymentProviderRegistry>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<BannerService.Application.Services.PaymentService>();
+builder.Services.AddScoped<BannerService.Application.Services.ProviderStatusService>();
+builder.Services.AddScoped<ISmsTemplateCatalog, BannerService.Application.Services.SmsTemplateCatalog>();
+builder.Services.AddHttpClient<BannerService.Infrastructure.Services.Msg91SmsSender>(client => client.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddScoped<BannerService.Infrastructure.Services.LoggingSmsSender>();
+builder.Services.AddScoped<ISmsSender>(sp =>
+    BannerService.Application.Services.ProviderSettings.SmsConfigured(sp.GetRequiredService<IConfiguration>())
+        ? sp.GetRequiredService<BannerService.Infrastructure.Services.Msg91SmsSender>()
+        : sp.GetRequiredService<BannerService.Infrastructure.Services.LoggingSmsSender>());
 builder.Services.AddScoped<IPaymentGateway, BannerService.Infrastructure.Services.NoPaymentGateway>();
 builder.Services.AddScoped<BannerService.Application.Services.SubscriptionLifecycleService>();
 builder.Services.AddHostedService<BannerService.Infrastructure.Background.SubscriptionLifecycleWorker>();

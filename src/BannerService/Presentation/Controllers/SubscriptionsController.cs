@@ -17,6 +17,7 @@ namespace BannerService.Presentation.Controllers
         private readonly BillingService _billingService;
         private readonly SubscriptionLifecycleService _lifecycle;
         private readonly ILocationService _locations;
+        private readonly PaymentProviderRegistry _paymentProviders;
         private readonly ILogger<SubscriptionsController> _logger;
 
         public SubscriptionsController(
@@ -25,9 +26,11 @@ namespace BannerService.Presentation.Controllers
             BillingService billingService,
             SubscriptionLifecycleService lifecycle,
             ILocationService locations,
+            PaymentProviderRegistry paymentProviders,
             ILogger<SubscriptionsController> logger)
         {
             _locations = locations;
+            _paymentProviders = paymentProviders;
             _lifecycle = lifecycle;
             _subscriptionService = subscriptionService;
             _renewalService = renewalService;
@@ -48,6 +51,7 @@ namespace BannerService.Presentation.Controllers
                     Description = p.Description,
                     MonthlyPrice = p.MonthlyPrice,
                     AnnualPrice = p.AnnualPrice,
+                    Currency = p.Currency,
                     IsActive = p.IsActive
                 }).ToList();
 
@@ -76,6 +80,7 @@ namespace BannerService.Presentation.Controllers
                     Description = plan.Description,
                     MonthlyPrice = plan.MonthlyPrice,
                     AnnualPrice = plan.AnnualPrice,
+                    Currency = plan.Currency,
                     IsActive = plan.IsActive
                 };
 
@@ -257,6 +262,10 @@ namespace BannerService.Presentation.Controllers
         [HttpPost("{subscriptionId}/renew")]
         public async Task<IActionResult> RenewSubscription(Guid subscriptionId)
         {
+            // With online payment on, an owner renews by paying (ADR-005); an administrator can still renew by hand, for example to reactivate a shop
+            if (_paymentProviders.HasRealProvider && !User.IsInRole("Admin"))
+                return Conflict(new { success = false, message = "Please pay online to renew.", code = "payment_required" });
+
             try
             {
                 var result = await _lifecycle.RenewNowAsync(subscriptionId);
@@ -318,6 +327,7 @@ namespace BannerService.Presentation.Controllers
                 TrialEndDate = subscription.TrialEndDate,
                 CancellationDate = subscription.CancellationDate,
                 CurrentPrice = subscription.CurrentPrice,
+                Currency = subscription.Plan?.Currency ?? "INR",
                 PaymentFailureCount = subscription.PaymentFailureCount,
                 LastPaymentAttempt = subscription.LastPaymentAttempt,
                 AutoRenew = subscription.AutoRenew,

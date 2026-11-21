@@ -35,7 +35,7 @@ public class SubscriptionLockoutTests
         _tokens.Setup(r => r.AddAsync(It.IsAny<RefreshToken>())).ReturnsAsync((RefreshToken t) => t);
 
         _service = new AuthenticationService(_users.Object, Mock.Of<IRoleRepository>(), _jwt.Object, _hasher, _tokens.Object,
-            Mock.Of<IShopRepository>(), _subscriptions.Object);
+            Mock.Of<IShopRepository>(), _subscriptions.Object, Mock.Of<BannerService.Domain.Interfaces.IEmailService>(), Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthenticationService>.Instance);
     }
 
     private void SubscriptionIs(SubscriptionStatus? status) =>

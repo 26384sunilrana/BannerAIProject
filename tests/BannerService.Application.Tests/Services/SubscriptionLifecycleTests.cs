@@ -40,7 +40,7 @@ public class SubscriptionLifecycleTests
         _users.Setup(r => r.GetByIdAsync(_owner.Id)).ReturnsAsync(_owner);
         _users.Setup(r => r.GetByShopIdAsync(_shop.Id.ToString())).ReturnsAsync(new List<User> { _owner, _executive });
         _email.Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync(true);
-        _sms.Setup(s => s.SendAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+        _sms.Setup(s => s.SendTemplateAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>())).ReturnsAsync(true);
         _payments.Setup(p => p.ChargeAsync(It.IsAny<Subscription>(), It.IsAny<decimal>()))
             .ReturnsAsync(new PaymentResult { Success = true, Reference = "ref-1" });
         _subscriptions.Setup(r => r.GetByStatusAsync(It.IsAny<SubscriptionStatus>()))
@@ -53,7 +53,9 @@ public class SubscriptionLifecycleTests
         var subscriptionService = new SubscriptionService(Mock.Of<ISubscriptionPlanRepository>(), _subscriptions.Object, _invoices.Object);
         _service = new SubscriptionLifecycleService(
             _subscriptions.Object, _invoices.Object, _shops.Object, _users.Object, _refreshTokens.Object,
-            _email.Object, _sms.Object, _payments.Object, _notifications, subscriptionService,
+            _email.Object, _sms.Object, _payments.Object,
+            new PaymentProviderRegistry(Array.Empty<IPaymentProvider>(), new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build()),
+            _notifications, subscriptionService,
             NullLogger<SubscriptionLifecycleService>.Instance);
     }
 
@@ -85,7 +87,7 @@ public class SubscriptionLifecycleTests
 
         Assert.Equal(2, report.MessagesSent);
         _email.Verify(e => e.SendEmailAsync("owner@example.com", It.Is<string>(s => s.Contains("renews in")), It.IsAny<string>(), It.IsAny<bool>()), Times.Once);
-        _sms.Verify(s => s.SendAsync("9876543210", It.IsAny<string>()), Times.Once);
+        _sms.Verify(s => s.SendTemplateAsync("9876543210", It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>()), Times.Once);
     }
 
     [Theory]
@@ -121,7 +123,7 @@ public class SubscriptionLifecycleTests
         await _service.RunAsync(Now.AddHours(1));
 
         _email.Verify(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Once);
-        _sms.Verify(s => s.SendAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        _sms.Verify(s => s.SendTemplateAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>()), Times.Once);
     }
 
     [Fact]
@@ -185,7 +187,7 @@ public class SubscriptionLifecycleTests
         await _service.RunAsync(Now.AddDays(1).AddHours(2));   // same day again
 
         _email.Verify(e => e.SendEmailAsync("owner@example.com", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Exactly(2));
-        _sms.Verify(s => s.SendAsync("9876543210", It.IsAny<string>()), Times.Exactly(2));
+        _sms.Verify(s => s.SendTemplateAsync("9876543210", It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>()), Times.Exactly(2));
         Assert.Equal(SubscriptionStatus.GracePeriod, subscription.Status);
     }
 
@@ -276,7 +278,7 @@ public class SubscriptionLifecycleTests
     [Fact]
     public async Task ASmsFailureDoesNotPreventTheEmail()
     {
-        _sms.Setup(s => s.SendAsync(It.IsAny<string>(), It.IsAny<string>())).ThrowsAsync(new InvalidOperationException("gateway down"));
+        _sms.Setup(s => s.SendTemplateAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>())).ThrowsAsync(new InvalidOperationException("gateway down"));
         Sub(1, autoRenew: false);
 
         var report = await _service.RunAsync(Now);
@@ -292,6 +294,9 @@ public class SubscriptionLifecycleTests
     public async Task RenewNow_BeforeTheDate_AddsAPeriodToTheCurrentOne()
     {
         var subscription = Sub(10, autoRenew: false);
+        // RenewNowAsync reads the real clock, not the test's fixed Now, so "ten days ahead" must be ten days ahead of the real today
+        // (with the fixed date this test began to fail on 2026-11-20, when the real clock passed it)
+        subscription.RenewalDate = DateTime.UtcNow.Date.AddDays(10).AddHours(6);
         Finds(subscription);
         var due = subscription.RenewalDate;
 

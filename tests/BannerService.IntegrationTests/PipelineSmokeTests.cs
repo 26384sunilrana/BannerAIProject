@@ -64,7 +64,9 @@ public class SmokeFactory : WebApplicationFactory<Program>
                 services.Remove(descriptor);
             }
 
-            services.AddDbContext<ApplicationDbContext>(options => options.UseInMemoryDatabase(_databaseName));
+            // the in-memory store has no transactions: ignore the warning so code that wraps work in one (payments) can run here
+            services.AddDbContext<ApplicationDbContext>(options => options.UseInMemoryDatabase(_databaseName)
+                .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning)));
         });
     }
 

@@ -36,7 +36,7 @@ public class OwnerRegistrationTests
 
         _service = new AuthenticationService(
             _users.Object, _roles.Object, _jwt.Object, new PasswordHashService(), _refreshTokens.Object, _shops.Object,
-            Mock.Of<ISubscriptionRepository>());
+            Mock.Of<ISubscriptionRepository>(), Mock.Of<BannerService.Domain.Interfaces.IEmailService>(), Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthenticationService>.Instance);
     }
 
     private static RegisterDto Request() => new()

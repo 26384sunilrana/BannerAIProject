@@ -20,6 +20,7 @@ namespace BannerService.Application.DTOs
         public SubscriptionStatus Status { get; set; }
         public BillingPeriod BillingPeriod { get; set; }
         public decimal CurrentPrice { get; set; }
+        public string Currency { get; set; } = "INR";
         public DateTime StartDate { get; set; }
         public DateTime RenewalDate { get; set; }
         public DateTime? TrialEndDate { get; set; }
@@ -43,6 +44,7 @@ namespace BannerService.Application.DTOs
         public string Description { get; set; } = string.Empty;
         public decimal MonthlyPrice { get; set; }
         public decimal AnnualPrice { get; set; }
+        public string Currency { get; set; } = "INR";
         public SubscriptionFeaturesDto Features { get; set; } = new();
         public bool IsPopular { get; set; }
         public bool IsActive { get; set; }

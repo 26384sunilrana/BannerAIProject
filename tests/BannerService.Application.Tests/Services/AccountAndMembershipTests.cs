@@ -369,7 +369,7 @@ public class RefreshGraceTests
         _tokens.Setup(t => t.UpdateAsync(It.IsAny<RefreshToken>())).ReturnsAsync((RefreshToken t) => t);
         _tokens.Setup(t => t.AddAsync(It.IsAny<RefreshToken>())).ReturnsAsync((RefreshToken t) => t);
         _service = new AuthenticationService(_users.Object, Mock.Of<IRoleRepository>(), _jwt.Object, new PasswordHashService(), _tokens.Object,
-            Mock.Of<IShopRepository>(), Mock.Of<ISubscriptionRepository>());
+            Mock.Of<IShopRepository>(), Mock.Of<ISubscriptionRepository>(), Mock.Of<BannerService.Domain.Interfaces.IEmailService>(), Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthenticationService>.Instance);
     }
 
     private RefreshToken Stored(string token, bool revoked = false, string? replacedBy = null, TimeSpan? revokedAgo = null)
