@@ -1,3 +1,9 @@
+---
+id: 047-two-step-sign-in
+intent: 002-requirements-gap-closure
+status: complete
+---
+
 # Bolt 047 - Two-step sign-in
 
 Built: authenticator-app codes (RFC 6238, tested against the standard vectors), setup with QR picture and typed secret, first-code confirmation, ten one-time recovery codes (stored hashed), sign-in in two steps (a 5-m...

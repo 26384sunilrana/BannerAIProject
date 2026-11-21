@@ -1,3 +1,9 @@
+---
+id: 049-screens
+intent: 002-requirements-gap-closure
+status: complete
+---
+
 # Bolt 049: managed shop screens
 
 Device pairing by 6-character code; secret hashed on server; 1-hour Screen JWT limited by ScreenRestrictionMiddleware.

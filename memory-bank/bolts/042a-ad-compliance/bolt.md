@@ -1,3 +1,9 @@
+---
+id: 042a-ad-compliance
+intent: 002-requirements-gap-closure
+status: complete
+---
+
 # Bolt 042a - Personal and health information on ads, review, reports
 
 Status: complete (first half of 042; audit export and the HIPAA review are 042b). Screening of every ad text (advertiser name, headline, text) each time an ad is saved:

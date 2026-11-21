@@ -10,10 +10,10 @@ Nothing here is needed to **try** BannerAI: the demo ([start-here guide](../guid
 
 | You want | Needs | State in the application today |
 |---|---|---|
-| Real e-mails (reminders, forgot-password, verify e-mail) | An e-mail sending account (SMTP) | **Already built**: it only needs settings. The forgot-password and verify screens still have to be added (small). |
-| Reminders and alerts by SMS | An SMS provider account | A stand-in writes to the log. I connect the real one once you have an account. |
-| Owners paying and renewing by themselves | A payment provider account | A stand-in marks payments as done. I connect the real one, add the checkout and the "renew now" button. |
-| Files, keys and database in the cloud | An Azure account | Runs on disk and SQL Server today. I switch it over after your review. |
+| Real e-mails (reminders, forgot-password, verify e-mail) | An e-mail sending account (SMTP) | **Built.** Fill in the `Email__Smtp__*` values and it works. The forgot-password, reset and verify-e-mail screens exist. |
+| Reminders and alerts by SMS | An SMS provider account | **Built for MSG91** (India, registered templates). Fill in the `Sms__*` values. Until then nothing is sent. |
+| Owners paying and renewing by themselves | A payment provider account | **Built for Razorpay** (checkout, confirmation, webhook, refunds). Fill in the `Payments__*` values. Until then the Renew button extends the plan without charging. |
+| Files, keys and database in the cloud | An Azure account | Runs on disk and SQL Server today. Switched over after your review. |
 
 **Suggested order:** 1 e-mail (an hour), 2 payments (starts with paperwork: start it first, it is the slowest), 3 SMS (paperwork in India too), 4 Azure.
 
@@ -52,10 +52,9 @@ Nothing here is needed to **try** BannerAI: the demo ([start-here guide](../guid
 With Docker Compose, add those lines to `.env` and to the `api:` section's `environment:`; in Kubernetes put the password in the secret and the rest in the configmap
 (see [deployment guide](deployment.md)).
 
-**Check it works:** I add a "send me a test e-mail" button for administrators when we do this step. Until then, subscription reminders show in the API log
-as "sent" or "not sent".
+**Check it works:** sign in as an administrator, open **Providers**, and press **Send test e-mail**. The page also says whether e-mail is "Connected" and which setting is still empty (never the value).
 
-**Then I build:** the *Forgot password* and *Verify e-mail* screens, using the mail that is already written.
+**Already built:** the *Forgot password* link on the sign-in page, the *reset password* page, and the *verify e-mail* page and reminder. They start working the moment the SMTP values are set.
 
 ---
 
@@ -79,13 +78,26 @@ My suggestion for India: **Razorpay** (good test mode and documents, supports su
 5. Create a **webhook**: the provider calls an address of yours to say "this payment succeeded". You give it `https://<your-api-address>/api/payments/webhook`
    (I build it) and it gives you a **webhook secret**.
 
-**Give me**
-- The provider you chose, **Key ID** and **Key Secret** (test first, live later), the **webhook secret**.
-- The decisions in step 4.
-- Your company name, address, GSTIN and logo for the invoice.
+**Set these values** (on the server, in the secret store or `.env`; never in the code folder)
 
-**Then I build:** the real payment connection, a checkout on the *Subscription* screen, the "Renew now" button, payment-failed handling (the grace week already exists),
-receipts on invoices, refunds for the administrator, and tests against the provider's test mode. Keys go in secrets, never in code.
+| Setting | What it is |
+|---|---|
+| `Payments__Provider` | `Razorpay` (the only provider built so far; `None` or empty keeps today's Renew button) |
+| `Payments__Razorpay__KeyId` | the Key ID (test first, live later) |
+| `Payments__Razorpay__KeySecret` | the Key Secret |
+| `Payments__Razorpay__WebhookSecret` | the secret you typed when you made the webhook |
+| `Payments__DefaultCurrency` | `INR` (change for another country) |
+| `Payments__DefaultCountry` | `IN` |
+
+In the provider's dashboard make a webhook to `https://<your-api-address>/api/payments/webhook` for the events `payment.captured`, `order.paid` and `payment.failed`.
+If a provider is named but a value is empty, the application refuses to start in production and says which setting is missing (never its value).
+
+**Already built:** the payment form on the *Subscription* screen ("Pay and renew"), confirmation of the payment, the webhook (repeats are harmless; a payment for the wrong amount is never applied
+and the administrators are told), refunds for the administrator (all or part), and payment-failed handling (the grace week already exists). While online payment is on, the automatic-renewal switch is
+hidden and ignored: owners pay each period and are reminded by e-mail and text.
+
+**Still to decide before real money** (bolt 044): who pays for a brand-new subscription (today the first period starts without payment), GST and tax invoices, and the first test against your Razorpay test keys.
+Other countries or providers: a new provider is one adapter on the server and one small driver in the web app; currency and country are already settings.
 
 **Money safety:** the application never stores card numbers; the provider's own page or form takes them.
 
@@ -108,9 +120,23 @@ registers a **sender ID** (six letters, e.g. `BNRAIP`) and each **message templa
    - `Your payment of {#var#} was received. Thank you.`
 4. Get the **API key / auth key** and the **template IDs**.
 
-**Give me:** provider, API key, sender ID, and the template IDs with the exact texts.
+**Set these values**
 
-**Then I build:** the real sender behind the existing SMS stand-in, a test button, and a record of delivery. Optionally one-time codes (OTP) for sign-in.
+| Setting | What it is |
+|---|---|
+| `Sms__Provider` | `Msg91` (`None` or empty keeps SMS off) |
+| `Sms__Msg91__AuthKey` | the MSG91 auth key |
+| `Sms__DefaultCountryCode` | `+91` (numbers typed without a country code get this one) |
+| `Sms__Templates__renewal-reminder__ProviderTemplateId` | the DLT / MSG91 template id for the reminder text |
+| `Sms__Templates__plan-ended__ProviderTemplateId` | the template id for the "plan has ended" text |
+| `Sms__Templates__payment-received__ProviderTemplateId` | the template id for the payment text |
+
+The texts are already in the settings file (`Sms:Templates:<name>:Text`); register exactly those words (or change them in both places). If MSG91 names the gaps in a template something other than
+`var1`, `var2`, set `Sms__Templates__<name>__VariableNames__0`, `__1` and so on. Only a date, a plan name or an amount ever goes into a text.
+
+**Check it works:** administrator, **Providers**, **Send test text**.
+
+**Already built:** the sender behind the reminder texts, number clean-up (any way of typing an Indian or international number), and a log line (number masked) for every text. Free text is never sent.
 
 ---
 
@@ -141,13 +167,13 @@ command does first).
 
 ---
 
-## Checklist: what to bring back to me
+## Checklist: what to fill in
 
-- [ ] SMTP host, port, user, password, From address, and the web address of the app.
-- [ ] Payment provider name, test Key ID and Secret, webhook secret; the rules (periods, auto-renew or not, refunds, GST, company details).
-- [ ] SMS provider name, API key, sender ID, template IDs and texts.
+- [ ] E-mail: `Email__Smtp__Host`, `Port`, `User`, `Password`, `From`, and `AppUrl` (the web address of the app, https in production).
+- [ ] Payments: `Payments__Provider=Razorpay`, `Payments__Razorpay__KeyId`, `KeySecret`, `WebhookSecret`; the rules (periods, refunds, GST, company details).
+- [ ] SMS: `Sms__Provider=Msg91`, `Sms__Msg91__AuthKey`, the three template ids.
 - [ ] Azure resource names (or a decision to start on a simple host first).
 - [ ] The three policy pages on your website: terms, refund policy, privacy policy (the payment provider asks for them).
 
-Send them one at a time, in the order above, and I will finish each connection and test it before we go on. **Never paste a live secret into a chat or a
+Check each one on the **Providers** screen as you go. Then run the first real test of each with test keys. **Never paste a live secret into a chat or a
 file in the code folder**: give test keys while building, and put live keys straight into the production secret store yourself (I will show where).

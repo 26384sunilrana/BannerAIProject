@@ -1,3 +1,9 @@
+---
+id: 036b-shop-takeover
+intent: 002-requirements-gap-closure
+status: complete
+---
+
 # Bolt 036b - Shop identity and takeover
 
 Status: complete. Built from the rule you gave on 2026-10-03. Shop names may repeat. Sign-up never checked names; creating or renaming a shop no longer refuses a name that is in use.

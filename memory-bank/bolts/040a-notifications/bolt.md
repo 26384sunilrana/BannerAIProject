@@ -1,3 +1,9 @@
+---
+id: 040a-notifications
+intent: 002-requirements-gap-closure
+status: complete
+---
+
 # Bolt 040a - In-app notifications (first step of the ads work)
 
 Status: complete. Chosen first because the ads rules need it (an owner overriding an admin ad must notify the admin) and nothing else needs to exist before it.

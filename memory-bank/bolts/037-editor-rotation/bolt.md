@@ -1,3 +1,9 @@
+---
+id: 037-editor-rotation
+intent: 002-requirements-gap-closure
+status: complete
+---
+
 # Bolt 037 - Editor controls and screen playback
 
 Status: complete. Effects, rotating pictures and rotating videos are stored inside the component's own properties, not in the older separate

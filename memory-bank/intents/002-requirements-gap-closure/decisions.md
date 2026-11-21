@@ -15,3 +15,6 @@
 | 2026-10-03 | Payment | A "Renew" button click only until a payment provider exists. |
 | 2026-10-03 | GST | No company yet, so no GST handling. |
 | 2026-10-03 | PHI / PII | The system must never hold PHI or PII, and must never show it on screen, in ads or banners. It has to be verified. |
+| 2026-11-21 | Provider seams | Build payments, SMS and email so that going live means filling in empty config values (bolt 044a). Default India (INR, +91, Razorpay, MSG91 with DLT); country, currency and provider are settings so other countries need only an adapter. With every value empty the app behaves as today (Renew click, SMS and mail not sent). Real accounts, Stripe/Twilio adapters, GST and Azure stay in bolt 044. |
+| 2026-11-21 | Forgot password, e-mail verification | Build the screens and fix the backend now on top of the existing SMTP code; they work as soon as SMTP settings exist (bolt 044a). |
+| 2026-11-21 | Demo and walkthroughs | Re-check against the latest UI and refresh (bolt 050). Payment and e-mail are not part of the demo. |

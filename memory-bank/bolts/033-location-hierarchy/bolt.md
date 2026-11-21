@@ -1,3 +1,9 @@
+---
+id: 033-location-hierarchy
+intent: 002-requirements-gap-closure
+status: complete
+---
+
 # Bolt 033 - Location hierarchy (closes requirements 2a-f)
 
 Status: complete. Hierarchy: Country > State > City > Group > Shop. New `City` and `LocationGroup` tables; shops carry `CityId` and `GroupId`.

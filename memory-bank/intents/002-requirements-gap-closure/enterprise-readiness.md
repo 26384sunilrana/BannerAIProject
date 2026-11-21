@@ -1,5 +1,10 @@
 # Enterprise readiness: what is built, what is missing (assessment of 3 Oct 2026)
 
+> **Review note (checked against bolts 046 to 049 and backlog.md, last updated 2026-10-04).** This table is dated 3 Oct 2026 and some rows are now stale.
+> Built since: rate limiting (046), two-step sign-in (047), health checks and metrics (048), screen pairing, heartbeat and proof of play (049).
+> Still open or partly open: log shipping, tracing and dashboards (048); SSO, passkeys and SMS codes (047); several screens per shop and per-screen offline alerts (049).
+> For what is left, use [backlog.md](backlog.md); rows below are not rewritten line by line.
+
 Status words: **Done** (built and tested), **Partial**, **Missing**. "Needs you" = I cannot do it without an account, a decision or a person.
 
 ## 1. Money and providers

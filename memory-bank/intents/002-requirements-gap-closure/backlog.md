@@ -15,9 +15,13 @@ Related: [enterprise-readiness.md](enterprise-readiness.md) (gap table), [hipaa-
 8. Backup and restore scripts with a drill.
 9. Content-Security-Policy.
 
+## Done and planned
+- **Bolt 044a (provider seams) is complete** (payments, SMS and e-mail behind settings; forgot-password, reset and verify-e-mail screens; Providers screen). Report: memory-bank/bolts/044a-provider-seams/ddd-03-test-report.md. Run the integration suite once on a real SQL Server (SMOKE_SQL) before the first deployment.
+- **Next: bolt 050 (demo and walkthrough refresh)**, needs the stack running. See memory-bank/bolts/050-demo-refresh.
+
 ## Waiting on provider accounts (bolt 044, last)
 
-Real payments (and a real Renew), SMS, email; forgot-password and email verification screens (old endpoints read the signed-in user and cannot work); Azure Blob, Key Vault, Azure SQL; staging, pen test, legal pages. Guide: `docs/operations/providers-setup.md`.
+The seams are built (bolt 044a), so what is left here is the accounts and the first live check: real payments with Razorpay test keys (a real Renew, first payment of a new subscription, GST), SMS with MSG91 and its DLT template ids, an SMTP account; Azure Blob, Key Vault, Azure SQL; staging, pen test, legal pages. Guide: `docs/operations/providers-setup.md`.
 
 ## Known gaps by area
 

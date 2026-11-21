@@ -1,3 +1,9 @@
+---
+id: 032-safety-net
+intent: 002-requirements-gap-closure
+status: complete
+---
+
 # Bolt 032 - Safety net
 
 Status: complete (CI workflow not yet run on GitHub). Web tests: 103 failing -> 0. 542 pass. Causes, by kind:

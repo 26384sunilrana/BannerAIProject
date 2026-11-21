@@ -1,3 +1,9 @@
+---
+id: 043-delivery
+intent: 002-requirements-gap-closure
+status: in-progress
+---
+
 # Bolt 043 - Delivery
 
 Status: mostly complete. Done: the three user guides rewritten to the current app; API Dockerfile bug fixed (stray `\n` in `ENV`); both images build; compose stack runs and six browser scripts pass against the containers; `--migrate` and `--e...

@@ -1,3 +1,9 @@
+---
+id: 041b-campaign
+intent: 002-requirements-gap-closure
+status: complete
+---
+
 # Bolt 041b - Book an ad on every shop of a place
 
 Status: complete (not driven in Chrome; see below). The administrator can book one ad on every active shop in a city, a state, a country or everywhere ("Book for a whole place" on the Ads page, `POST api/shop-ads/campaign`).
