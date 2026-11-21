@@ -1,4 +1,4 @@
-# Shop owner walkthrough (about 25 minutes)
+# Shop owner walkthrough (about 30 minutes)
 
 You are **Olivia**, you run **Sunrise Cafe**. You will look at what is running, approve what Sam made, change a banner, book an ad and learn where everything is.
 
@@ -11,7 +11,7 @@ Sign in at <http://localhost:3000> with `demo-owner@bannerai.demo` / `Demo-Owner
 
 ## Step 1. The Home page: your map
 After signing in you land on **Home**. Every card is a place you can go; the same places are in the menu at the top: *Banners, Calendar, Ads, My files, Approvals, Team,
-Subscription, My shop, Default board, Takeover, Shop screen*.
+Subscription, My shop, Default board, Takeover, Screens, Shop screen*. A line under the welcome says which banner is **Now showing** and until when.
 
 ![Home](images/owner-01-home.png)
 
@@ -88,7 +88,7 @@ hours only: you set your own prices and BannerAI does not track what advertisers
 ![Statement](images/owner-09-statement.png)
 
 ## Step 11. Your team
-Click **Team**. You can add up to **two sales executives** and choose **who approves** banners (you, and/or an executive). Use *Hand the shop over* only when you really leave.
+Click **Team**. You can add up to **two sales executives** and choose **who approves new and changed banners** (you, and/or an executive). Use **Hand the shop over** only when you really leave.
 
 ![Team](images/owner-10-team.png)
 
@@ -103,7 +103,9 @@ Click **Default board**. This is what the screen shows when no banner is live. C
 ![Default board](images/owner-12-default-board.png)
 
 ## Step 14. Your plan
-Click **Subscription**. Your plan, price and renewal date. (Paying online is not connected in the demo: see the providers guide.)
+Click **Subscription**. **Your plan** shows the plan, its status, the billing period and price, and the **next renewal** date. **Renew early** renews for another period at once, and
+**Renew automatically** lets it renew by itself. Under **Change plan or billing period** pick a period (Monthly, Quarterly, Half yearly, Yearly) and a plan, then press the button under the
+plans. Every period costs the same per month, and a plan change takes effect from the next day.
 
 ![Subscription](images/owner-13-subscription.png)
 
@@ -117,7 +119,26 @@ Click the **bell**: banners and ads waiting for you, approvals, takeover request
 
 ![Messages](images/owner-16-messages.png)
 
-## Step 17. If a shop changes hands
+## Step 17. Add the shop television: Screens
+Click **Screens**. This is the television or tablet in your shop. Nobody signs in on it.
+1. On the television, open the web browser and go to the address shown on the page (`/player` on the BannerAI web address).
+2. The television shows a code of six characters.
+3. Type the code under **Code on the screen**, give the screen a name such as *Shop window* (optional) and press **Add the screen**.
+
+The television then starts by itself within a few seconds. The page shows its name, **Online** or **Offline** and when it was last heard from; **What was shown** adds up the hours each banner, ad
+and the default board were on the screen (it fills in as the screen reports, once a minute). **Rename** and **Remove this screen** are yours; a removed screen shows a new code and can be added again.
+
+![Screens](images/owner-18-screens.png)
+
+## Step 18. Your account and two-step sign-in
+Click your name at the top right. **My account** has your details, **Change password**, **Two-step sign-in** and **Signed-in devices**.
+- **Two-step sign-in**: press **Set up two-step sign-in**, type your password, scan the picture with an authenticator app on your phone (or type the secret) and type the six-digit code the app shows.
+  BannerAI then shows **ten recovery codes, once**: save them somewhere safe, each works once if you lose your phone. From then on, signing in asks for a code after the password.
+- **Sign out everywhere** signs every device out, this one included: use it after losing a phone or using a shared computer.
+
+![Account](images/owner-19-account.png)
+
+## Step 19. If a shop changes hands
 Click **Takeover**. If you bought or took over a shop, you ask here with the shop's name and address; the old owner agrees with their password and chooses whether the
 associates stay. Nothing changes until they agree.
 

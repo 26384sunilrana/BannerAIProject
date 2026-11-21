@@ -1,0 +1,16 @@
+{
+  "name": "bannerai-demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed": "node seed-demo.mjs",
+    "screenshots": "node take-screenshots.mjs",
+    "docx": "node build-docx.mjs",
+    "e2e": "node e2e-story.mjs",
+    "all": "node take-screenshots.mjs && node build-docx.mjs"
+  },
+  "dependencies": {
+    "docx": "^9.14.0",
+    "playwright-core": "^1.64.1"
+  }
+}

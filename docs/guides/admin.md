@@ -3,7 +3,7 @@
 For the product owner who runs BannerAI for many shops: users, plans and subscriptions, places, ads and their prices, compliance reviews, takeovers
 and the activity log.
 
-This guide matches the application as built through bolt 049 (October 2026).
+This guide was checked against the running application in November 2026 (bolt 050), screen by screen.
 
 ## Contents
 1. Signing in and the menu
@@ -20,20 +20,22 @@ This guide matches the application as built through bolt 049 (October 2026).
 12. Not available yet
 
 ## 1. Signing in and the menu
-Sign in with your administrator login. In production the **two-step code from an authenticator app is required**: on first sign-in you are taken to **My account** to set it up and nothing else opens until you do; keep the recovery codes safe. Too many tries in a minute (for example many wrong passwords from one place) show a message to wait a minute; nothing is broken. The menu: Home, Ads, Shops, Places, Ad rates, Ad report, Plans, Subscriptions, Users, Activity, Takeover.
+Sign in with your administrator login. In production the **two-step code from an authenticator app is required**: on first sign-in you are taken to **My account** to set it up and nothing else opens until you do; keep the recovery codes safe. The demo started with `docker compose` does not ask for it (set `REQUIRE_TWO_FACTOR_FOR_ADMINS=true` in `.env` to ask for it there too). Too many tries in a minute (for example many wrong passwords from one place) show a message to wait a minute; nothing is broken. The menu: Home, Ads, Takeover, Shops, Places, Ad rates, Ad report, Plans, Subscriptions, Users, Admins, Providers, Activity.
 Administrators do not belong to a shop. The bell shows messages for you.
+**Admins** (page title *Administrators*) lists the administrators; **Create administrator** adds one, and **Request administrator deletion** asks for one to be removed: the Super Admin decides on removals.
+**Providers** shows the outside services the system can use and whether each is connected; see the [Providers setup guide](../operations/providers-setup.md). The demo connects none.
 
 ## 2. Users
-**Users** lists logins with search (name, e-mail, shop). For each: **Deactivate / Activate**, **Unlock** (after five wrong passwords) and a link to their
-**activity**. You cannot deactivate yourself. **Reset two-step** switches off a person's two-step sign-in when they lost their phone and codes (they set it up again). Reset the last administrator from the server: `dotnet BannerService.dll --reset-two-factor <email>`. **Move** sends a sales executive to another shop (that shop needs an active plan and a free place), and
+**Users** lists logins with **Search** (name or e-mail) and an **Include deactivated** box. For each: **Deactivate / Activate**, **Unlock** (after five wrong passwords) and a link to their
+**Activity**. You cannot deactivate yourself. A yellow **Email not verified** mark shows next to logins whose e-mail address has not been confirmed; it does not stop them signing in. **Reset two-step** switches off a person's two-step sign-in when they lost their phone and codes (they set it up again). Reset the last administrator from the server: `dotnet BannerService.dll --reset-two-factor <email>`. **Move** sends a sales executive to another shop (that shop needs an active plan and a free place), and
 **Make owner** makes a member of a shop its owner (the previous owner becomes an executive); everyone involved has to sign in again.
 
 ## 3. Plans and subscriptions
 - **Plans**: Basic, Silver, Gold, Platinum with price per month and per year (quarterly and half-yearly are worked out from the year), banners, shops, users and
   **storage** limits. A shop with no plan has the starter allowance of 1 GB.
 - **Subscriptions** lists every shop's plan, status (Trial, Active, Renewal pending, Payment failed, Grace period, Suspended, Expired, Cancelled) and renewal date; filter by status or shop.
-  **Run lifecycle now** applies reminders, grace and expiry at once (it also runs by itself every day). An expired or suspended shop cannot sign in; its screen
-  keeps the default board.
+  **Renew early** on a row renews that shop for another period at once. **Run renewal job now** applies renewals, grace and expiry for every shop at once (it also runs by itself every day).
+  An expired or suspended shop cannot sign in; its screen keeps the default board.
 
 ## 4. Places
 **Places** is the hierarchy: country → state → city → group (a group is a part of a city). Each has a unique identifier (CTY-…, GRP-…). Add, rename,
@@ -41,7 +43,7 @@ switch off or delete (a place with shops or children in it cannot be deleted). S
 country, unless the shop sets its own.
 
 ## 5. Shops
-**Shops** lists every shop with status and plan; shops are created by owners signing up. You can edit details, deactivate a shop, or archive it.
+**Shops** lists every shop as a card with its status (filter *All*, *Active*, *Inactive*) and a count of each; owners create their shop by signing up, and **Create Shop** adds one by hand. **View**, **Edit** and **Deactivate** are on each card. The platform's own *System Shop* is in the list.
 Two shops may share a name; one name at one address is one shop (see Takeovers).
 
 ## 6. Ads
@@ -91,5 +93,5 @@ Health and alerts: `/health/ready` for the load balancer, `/metrics` for Prometh
 `memory-bank/intents/002-requirements-gap-closure/hipaa-review.md` for the personal-data review and what a person still has to do.
 
 ## 12. Not available yet
-Payments, e-mail and SMS providers, forgot-password and e-mail verification, self-service renewal, Azure storage and Key Vault (bolt 044, after a full human
-review); pictures on admin ads; currency; statement export; marking a statement as paid.
+Azure storage and Key Vault (bolt 044, after a full human review); pictures on admin ads; one currency used everywhere (plan prices show $ on the Plans page and ₹ on the owner's Subscription page; ad prices are plain numbers); statement export;
+marking a statement as paid.

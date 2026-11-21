@@ -1,4 +1,4 @@
-# Sales executive walkthrough (about 15 minutes)
+# Sales executive walkthrough (about 20 minutes)
 
 You are **Sam**, you work for Olivia at **Sunrise Cafe**. You make banners and book ads; **Olivia approves** them. You will make a banner, send it in, book an ad and see what you
 can and cannot do.
@@ -11,12 +11,12 @@ Sign in at <http://localhost:3000> with `demo-seller@bannerai.demo` / `Demo-Sell
 ---
 
 ## Step 1. Home
-You land on **Home**. The menu is shorter than the owner's: *Banners, Calendar, Ads, My files, Approvals, Shop screen*. You do not see *Team*, *Subscription* or *My shop*:
+You land on **Home**. The menu is shorter than the owner's: *Banners, Calendar, Ads, My files, Approvals, Screens, Shop screen*. You do not see *Team*, *Subscription*, *My shop*, *Default board* or *Takeover*:
 those are the owner's.
 
 ![Home](images/seller-01-home.png)
 
-> First thing in real life: click your name (top right) and **change the password** you were given.
+> First thing in real life: click your name (top right) and **change the password** you were given (see Step 13).
 
 ## Step 2. Your banners
 Click **Banners**. *Weekend Special* is yours: it says *Waiting for approval*. Olivia has to approve it before it can run. You can still open it, but changing its schedule sends
@@ -38,10 +38,12 @@ If it overlaps another banner, BannerAI tells you which and you change the hours
 
 ## Step 5. Send it for approval
 Click **Submit for approval**. Olivia gets a message in her bell. Your banner shows *Waiting for approval*; later it shows **Approved** or **Rejected** with her reason
-(then you fix it and submit again).
+(then you fix it and submit again). The **Approvals** page lists your banners with where each one stands, and shows the reason when one was sent back.
 
 ## Step 6. The calendar
-Click **Calendar** to see the week: your banners and everyone's, so you can plan around them.
+Click **Calendar** to see the week, Monday to Sunday with the hours down the side: your banners and everyone's, so you can plan around them. Faded blocks are not approved yet. **Next week** looks ahead.
+
+![Calendar](images/seller-05-calendar.png)
 
 ## Step 7. Book an ad for a customer
 Someone asks you to advertise their business on the shop screen. Click **Ads → Book an ad**.
@@ -68,6 +70,24 @@ The **bell** tells you when Olivia approves or sends back something of yours. Cl
 ## Step 10. The shop screen
 **Shop screen** plays what is live in the shop. Open it on a TV or a second window.
 
+## Step 11. Your files
+Click **My files**. The pictures and videos of the whole shop are here: what Olivia or you uploaded once can be used in any banner or ad (**Choose from my files** in the editor). **Upload a file** adds
+one. The bar shows how much of the plan's storage is used; a file that a banner uses cannot be deleted.
+
+![My files](images/seller-06-files.png)
+
+## Step 12. The shop's television: Screens
+Click **Screens**. You see whether the television in the shop is **Online** or **Offline**, when it was last heard from, and **What was shown**: the hours each banner and ad was on the screen. Only Olivia
+can add, rename or remove a screen.
+
+![Screens](images/seller-07-screens.png)
+
+## Step 13. Your account
+Click your name at the top right. Here you change your details and your **password**, and you can switch on **Two-step sign-in**: after the password, signing in asks for a six-digit code from an
+authenticator app on your phone, and BannerAI gives you ten one-time recovery codes for a lost phone. **Sign out everywhere** signs every device out.
+
+![My account](images/seller-08-account.png)
+
 ---
 
 ## What you cannot do (by design)
@@ -75,6 +95,7 @@ The **bell** tells you when Olivia approves or sends back something of yours. Cl
 |---|---|
 | Approve or publish banners | Olivia (or an approver she chose) |
 | Change the plan, the team or the shop's details | Olivia |
+| Add, rename or remove the shop's screen | Olivia |
 | See the monthly money statement | Olivia and the administrator |
 
 Read the [Sales Executive Guide](../banner-creator.md) for every detail.

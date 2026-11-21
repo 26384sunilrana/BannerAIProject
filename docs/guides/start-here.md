@@ -77,6 +77,7 @@ docker compose down
 - Three ads: *Fresh bread at 7 am* (booked by Olivia, live), *Open an account today* (booked by you, the administrator, live, with a price) and *Cold juice, 49*
   (booked by Sam, **waiting for Olivia**).
 - A price list (100 an hour, 70% to the shop) so administrator ads can be priced.
+- No television is added yet: the owner does that under **Screens** (see the owner walkthrough).
 
 Open **<http://localhost:3000/display>** signed in as the owner to see the shop screen as a customer would: the banner in the middle and the two ads at the sides.
 
@@ -91,7 +92,14 @@ Open **<http://localhost:3000/display>** signed in as the owner to see the shop 
 | A port is busy (3000, 5000, 1433) | Close the program using it, or stop other Docker projects. |
 | You forgot a password | Administrator: run step 3 again with a new password. Others: sign in as the administrator, *Users*, and ask in the guide. |
 
-## What the demo does not do yet
+## Check that the demo still works
 
-No real e-mails, text messages or payments: those need accounts of yours. The guide **[Providers setup guide](../operations/providers-setup.md)** explains,
-step by step, what to sign up for and what to give me so I can connect them. Everything else in the guides works for real.
+The folder `demo/` also holds the scripts that keep these guides honest. They drive a real browser against the running demo (run `npm install` once in `demo/`; Google Chrome is needed):
+
+| Command (in `demo/`) | What it does |
+|---|---|
+| `node e2e-story.mjs` | Plays one story with all three roles, start to finish (about 40 checked steps), on a **new** shop each time, and writes one Word file with a picture of every step. |
+| `node take-screenshots.mjs` | Takes the pictures used in the three walkthroughs from the demo cafe. |
+| `node build-docx.mjs` | Builds the three Word walkthroughs (in `docs/guides/walkthroughs/docx/`) from the walkthroughs and pictures. |
+
+The demo runs on its own: nothing outside your computer is connected, and the walkthroughs show only what works here.

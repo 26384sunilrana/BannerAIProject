@@ -2,7 +2,7 @@
 
 For a login created by a shop owner. You make banners and book ads for **your shop**; the owner (or the people the owner chose) approves.
 
-This guide matches the application as built through bolt 049 (October 2026).
+This guide was checked against the running application in November 2026 (bolt 050), screen by screen.
 
 ## Contents
 1. Signing in
@@ -18,18 +18,18 @@ This guide matches the application as built through bolt 049 (October 2026).
 11. Not available yet
 
 ## 1. Signing in
-Your owner gives you an e-mail and a first password. Sign in, then open **My account** (your name, top right) and change the password. Five wrong
+Your owner gives you an e-mail and a temporary password. Sign in, then open **My account** (your name, top right) and change the password. Five wrong
 passwords lock the login; ask your owner or the administrator to unlock it. Too many tries in a minute (for example many wrong passwords from one place) show a message to wait a minute; nothing is broken.
 
 ## 2. What you can and cannot do
 | Always, once the owner has added you | Only if the owner chose you | Never |
 |---|---|---|
-| Make and edit banners, set schedules, upload files; submit banners for approval; book ads (they wait for approval); see the calendar, Screens and the shop's ads | **Approve or reject banners**, and publish them (**Team → Who approves banners**). **Approve or send back the ads other executives book** (**Team → Who approves ads**) | Approve your own ad; change the plan, the team or the shop's details; hand over or take over the shop; see the monthly ad statement |
+| Make and edit banners, set schedules, upload files; submit banners for approval; book ads (they wait for approval); see the calendar, Screens and the shop's ads | **Approve or reject banners**, and publish them (**Team → Who approves new and changed banners**). **Approve or send back the ads other executives book** (**Team → Who approves ads booked by sales executives**) | Approve your own ad; change the plan, the team or the shop's details; hand over or take over the shop; see the monthly ad statement |
 
 **Who decides what.** Adding you to **Team** is the owner's approval for you to create banners and book ads; there is no separate switch for either. Removing you
 from the team ends it. What your owner *can* choose for you is approving banners: the owner alone, the owner and/or you, or the other executive. When you are an
 approver, **Approvals** shows the banners waiting and you can approve or reject them with a reason; when you are not, you only submit. A banner you made
-can be approved by you only if the owner made you an approver. Ads have their own choice: an ad an executive books is approved by the owner, or by another executive the owner named under **Who approves ads**. Nobody approves an ad they booked themselves; that one always waits for someone else. If you are named, a waiting ad shows **Approve** and **Send back** under **Ads**, and you get a message when one is booked.
+can be approved by you only if the owner made you an approver. Ads have their own choice: an ad an executive books is approved by the owner, or by another executive the owner named under **Who approves ads booked by sales executives**. Nobody approves an ad they booked themselves; that one always waits for someone else. If you are named, a waiting ad shows **Approve** and **Send back** under **Ads**, and you get a message when one is booked.
 
 ## 3. Making a banner
 **Banners → Create banner** (name, width and height in pixels) → **Open editor**.
@@ -40,13 +40,13 @@ can be approved by you only if the owner made you an approver. Ads have their ow
 - A picture or video comes from **My files** (**Choose from my files**) or is uploaded on the spot.
 
 ## 4. Scheduling and the calendar
-Under the banner in the list use **Set schedule**: start and end, optionally **only certain hours each day** and **weekdays**. Times are the shop's clock.
+Under the banner in the list use **Set schedule** (it reads **Change schedule** once one is set): start and end, optionally **only certain hours each day** and **weekdays**. Times are the shop's clock.
 Two banners can share dates when their hours do not meet; the program refuses a clash and names the other banner. **Calendar** shows the week; a faded block
 is not approved yet.
 
 ## 5. Submitting for approval
 **Submit for approval** needs a schedule. The owner and the chosen approvers are told in the bell. You see **Waiting for approval**, then **Approved**
-or **Rejected** with the reason. Fix a rejected banner and submit it again. If you change the schedule of an approved banner it goes back for approval.
+or **Rejected** with the reason. Fix a rejected banner and submit it again. **Approvals** lists your banners with where each stands and shows the reason when one was sent back. If you change the schedule of an approved banner it goes back for approval.
 
 ## 6. My files
 Upload PNG, JPEG, GIF, WebP pictures and MP4, WebM videos (up to 500 MB). Files in use by a banner or ad cannot be deleted. The bar shows the plan's storage;
@@ -72,7 +72,7 @@ Change your name, phone and password; **Sign out everywhere** ends every session
 
 Two-step sign-in (recommended): under **My account**, **Set up two-step sign-in**. Scan the picture with an authenticator app (Google Authenticator,
 Microsoft Authenticator or similar), type the six-digit code, and **save the ten recovery codes** somewhere safe: each works once if you lose your phone.
-From then on sign-in asks for the code after your password. **New recovery codes** and **Turn off** are on the same page (both ask for a code).
+From then on sign-in asks for the code after your password. **New recovery codes** and **Switch it off** are on the same page (both ask for your password and a code).
 
 ## 11. Not available yet
-Forgot-password and e-mail verification, reminders by real e-mail or SMS (they wait for the providers); ask your owner or the administrator.
+A shop has one screen, and only the owner adds, renames or removes it. Ask your owner for anything you cannot do yourself.

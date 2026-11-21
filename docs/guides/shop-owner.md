@@ -3,7 +3,7 @@
 For the person who runs a shop on BannerAI: you sign up, design banners, schedule them, approve what your team makes, book ads on your own
 screen and keep the shop screen playing.
 
-This guide matches the application as built through bolt 049 (October 2026). Things that are not available yet are listed at the end.
+This guide was checked against the running application in November 2026 (bolt 050), screen by screen. Things that are not available yet are listed at the end.
 
 ## Contents
 1. Signing up and signing in
@@ -22,7 +22,7 @@ This guide matches the application as built through bolt 049 (October 2026). Thi
 14. Not available yet
 
 ## 1. Signing up and signing in
-- **Register**: your name, e-mail, a password of at least 8 characters, and the **shop name**. You become the owner of that shop.
+- **Register**: your first and last name, e-mail, a password of at least 8 characters (typed twice), and the **shop name**. You become the owner of that shop.
 - **Sign in** with your e-mail and password. Five wrong passwords lock the login; ask the administrator to unlock it. Too many tries in a minute (for example many wrong passwords from one place) show a message to wait a minute; nothing is broken.
 - You stay signed in in the browser; the page keeps a protected cookie, never your password. **Sign out** is at the top right. *My account* has
   **Sign out everywhere** if you used a shared computer.
@@ -41,10 +41,10 @@ Open **My shop**, then **Edit**.
 
 ## 4. Your team and who approves
 Open **Team**.
-- Add up to **two sales executives** (their e-mail and a first password). They make banners and ads; they cannot approve, change the plan or hand over the shop.
-- Choose **who approves banners**: you, and/or an executive. This is the only permission you hand to an executive. Executives you add can always make banners and book
+- Add up to **two sales executives** (first and last name, e-mail and a temporary password, then **Add login**). They make banners and ads; they cannot approve, change the plan or hand over the shop.
+- Under **Who approves new and changed banners**, choose: you, and/or an executive. This is the only permission you hand to an executive. Executives you add can always make banners and book
   ads (adding them is your approval; removing them ends it), and their ads come to you to approve.
-- Choose **who approves ads booked by executives**: tick an executive to let them approve or send back the ads of the *other* executives. You always can, and nobody approves their own ad. You can hand the shop to an executive (your password is asked).
+- Under **Who approves ads booked by sales executives**, tick an executive to let them approve or send back the ads of the *other* executives. You always can, and nobody approves their own ad. You can hand the shop to an executive (your password is asked).
 - If you just took over a shop, a yellow notice asks you to **confirm the approvers**. Nothing can be approved until you do.
 
 ## 5. Banners
@@ -75,7 +75,7 @@ Your shop has **one screen** (a television or Android tablet). Nobody signs in o
 3. Within seconds the television starts by itself. After a power cut it starts again by itself.
 
 **Screens** shows whether it is **Online** or **Offline**, when it was last heard from, and **What was shown**: hours each banner, ad and the default board
-were on the screen (last 7, 30 or 90 days). If the screen stays offline for about 10 minutes you get a message in the bell. **Remove this screen** makes it
+were on the screen (last 7, 30 or 90 days). If the screen stays offline for about 10 minutes you get a message in the bell. **Rename** changes its name. **Remove this screen** makes it
 forget your shop and show a new code (use it when the television is sold or replaced).
 
 It shows the live banner, swaps it by the schedule and falls back to the default board; ads are drawn around it. It keeps working if the connection
@@ -101,15 +101,16 @@ The bell shows how many messages are unread: banners sent for approval, approved
 and clear it, or **Mark all as read**.
 
 ## 11. Subscription and storage
-**Subscription** shows your plan, period and renewal date; reminders arrive before it ends and there is a grace week. When a plan ends the shop screen
-shows only the default board. Your plan includes storage; at 80% a warning appears, and a file that does not fit is refused with a link to the plans.
+**Subscription** shows **Your plan**: the plan, its status, the billing period and price, and the next renewal date. **Renew early** renews for another period at once and **Renew automatically**
+lets it renew by itself. To change, pick a period (Monthly, Quarterly, Half yearly, Yearly) and a plan and press the button under the plans: every period costs the same per month, and a plan change takes
+effect from the next day. When the renewal date passes there is a grace week; after that the shop screen shows only the default board. Your plan includes storage; at 80% a warning appears, and a file that does not fit is refused with a link to the plans.
 
 ## 12. Your account
 Click your name: change your first and last name, phone and password (the e-mail is your sign-in name and cannot be changed here), and sign out of every device.
 
 Two-step sign-in (recommended): under **My account**, **Set up two-step sign-in**. Scan the picture with an authenticator app (Google Authenticator,
 Microsoft Authenticator or similar), type the six-digit code, and **save the ten recovery codes** somewhere safe: each works once if you lose your phone.
-From then on sign-in asks for the code after your password. **New recovery codes** and **Turn off** are on the same page (both ask for a code).
+From then on sign-in asks for the code after your password. **New recovery codes** and **Switch it off** are on the same page (both ask for your password and a code).
 Lost your phone and the codes? The administrator can reset it for you.
 
 ## 13. A shop that changes hands
@@ -120,8 +121,6 @@ Lost your phone and the codes? The administrator can reset it for you.
 - If the old owner cannot be reached, the administrator can answer for them with a written reason.
 
 ## 14. Not available yet
-- Paying for or renewing the plan yourself, forgot-password and e-mail verification, reminders by real e-mail or SMS (they wait for the providers).
-  Ask the administrator for these today.
 - Admin-booked ads carry text only (no pictures).
 - Only one screen per shop. The player page has been tried in a desktop browser only, not yet on an Android television.
-- Currency is not shown: amounts are plain numbers.
+- One currency is not used everywhere: plan prices show ₹ on your Subscription page and $ on the administrator's Plans page, and ad prices are plain numbers.
