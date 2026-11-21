@@ -37,7 +37,7 @@ created: 2026-11-21T13:11:37Z
 
 - None open. Found and fixed during implementation: the administrator's plan API had no currency at all (response, create or update), which is why the Plans page showed a fixed dollar sign; the first version of the statement page warned "not in the total" when an older response lacked the flag (now only on an explicit false).
 - `next lint` cannot run: the project has no ESLint configuration (it only offers to create one). The type check is the static check used.
-- The new migration was applied to a real SQL Server container holding only the wiped, freshly seeded database; it was not tried on a database that already holds ads (the default INR is in the migration).
+- The new migration was first applied to a wiped, freshly seeded database. It was then also tried on a scratch database that already held ads, a priced ad, a rate, a plan and a user with outstanding tokens (built at the last migration on GitHub, brought forward with the generated script): it applied cleanly, every row kept, INR on every ad and rate, amounts untouched. See memory-bank/maintenance-log.md.
 
 ### Notes
 

@@ -8,4 +8,4 @@
 
 **Counts**: web 830 to 839, application 396 to 416, integration 137 to 143, domain 809. Story 42/42 twice (f2cuj, f51ov), pictures 46/46, on a freshly wiped database.
 
-**Still open, for later**: no conversion between currencies; the new migration on a database that already holds ads; a lint setup for the web project.
+**Still open, for later**: no conversion between currencies; a lint setup for the web project.
