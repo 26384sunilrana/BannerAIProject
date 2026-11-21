@@ -6,6 +6,8 @@ import { Button, Toast } from '@/components/Common'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/hooks/useToast'
 import { PlanSummary, ShopSubscription, subscriptionService } from '@/api/subscriptionService'
+import { PaymentConfig, paymentService } from '@/api/paymentService'
+import { CheckoutCancelled, getCheckoutDriver } from '@/lib/checkout'
 import { getErrorMessage } from '@/api/client'
 import { subscriptionNotice } from '@/lib/subscriptionNotice'
 import { SubscriptionNoticeCard } from '@/components/SubscriptionNoticeCard'
@@ -39,10 +41,13 @@ function Subscription() {
   const [planId, setPlanId] = useState<string>('')
   const [period, setPeriod] = useState<number>(BillingPeriod.Yearly)
   const [busy, setBusy] = useState(false)
+  // null until known; enabled=false (or a failed call) means the plain Renew button, as before online payment existed
+  const [payments, setPayments] = useState<PaymentConfig | null>(null)
 
   const load = useCallback(async () => {
     if (!shopId) return
     try {
+      paymentService.getConfig().then(setPayments).catch(() => setPayments(null))
       const [planList, subscription] = await Promise.all([subscriptionService.getPlans(), subscriptionService.getCurrent(shopId)])
       const active = planList.filter((p) => p.isActive)
       setPlans(active)
@@ -85,6 +90,25 @@ function Subscription() {
     }
   }
 
+  // With online payment on, renewing means paying through the provider's own form (ADR-005, ADR-006); otherwise the plain Renew click
+  const online = payments?.enabled === true && getCheckoutDriver(payments.provider) !== null
+  const renew = (subscription: ShopSubscription, done: string) =>
+    online
+      ? act(async () => {
+          const driver = getCheckoutDriver(payments?.provider)
+          if (!driver) throw new Error('Online payment is not available in this app.')
+          const session = await paymentService.startCheckout(subscription.id)
+          try {
+            const result = await driver.open(session)
+            await paymentService.confirm(subscription.id, result)
+          } catch (err) {
+            if (err instanceof CheckoutCancelled) return
+            throw err
+          }
+        }, done)
+      : act(() => subscriptionService.renewNow(subscription.id), done)
+  const renewLabel = online ? 'Pay and renew' : 'Renew early'
+
   const currentPlan = current ? plans.find((p) => p.id === current.planId) : undefined
   const pendingPlan = current?.pendingPlanId ? plans.find((p) => p.id === current.pendingPlanId) : undefined
 
@@ -105,7 +129,7 @@ function Subscription() {
           <SubscriptionNoticeCard
             notice={notice}
             renewing={busy}
-            onRenew={() => act(() => subscriptionService.renewNow(current.id), 'Your plan was renewed.')}
+            onRenew={() => renew(current, 'Your plan was renewed.')}
           />
         ) : null
       })()}
@@ -127,7 +151,7 @@ function Subscription() {
             <div>
               <dt className="text-gray-500">Billing</dt>
               <dd className="font-medium text-gray-900">
-                {periodLabel(current.billingPeriod)} · {formatMoney(current.currentPrice)}
+                {periodLabel(current.billingPeriod)} · {formatMoney(current.currentPrice, current.currency)}
               </dd>
             </div>
             <div>
@@ -144,12 +168,19 @@ function Subscription() {
 
           {current.status !== 8 && current.status !== 7 && current.status !== 5 && !subscriptionNotice(current)?.canRenew && (
             <div className="mt-4">
-              <Button size="sm" variant="secondary" isLoading={busy} onClick={() => act(() => subscriptionService.renewNow(current.id), 'Your plan was renewed for another period.')}>
-                Renew early
+              <Button size="sm" variant="secondary" isLoading={busy} onClick={() => renew(current, 'Your plan was renewed for another period.')}>
+                {renewLabel}
               </Button>
             </div>
           )}
 
+          {online && (
+            <p className="mt-4 text-sm text-gray-600">
+              Plans are renewed by paying online. We remind you by e-mail and text before the renewal date.
+            </p>
+          )}
+
+          {!online && (
           <label className="mt-4 flex items-center gap-3">
             <input
               type="checkbox"
@@ -161,6 +192,7 @@ function Subscription() {
             />
             <span className="text-gray-900">Renew automatically</span>
           </label>
+          )}
         </section>
       )}
 
@@ -198,7 +230,7 @@ function Subscription() {
                 >
                   <span className="block font-semibold text-gray-900">{plan.name}</span>
                   <span className="mt-1 block text-sm text-gray-600">{plan.description}</span>
-                  <span className="mt-3 block text-lg font-semibold text-gray-900">{formatMoney(priceFor(plan, period))}</span>
+                  <span className="mt-3 block text-lg font-semibold text-gray-900">{formatMoney(priceFor(plan, period), plan.currency)}</span>
                   <span className="block text-xs text-gray-500">per {periodLabel(period).toLowerCase().replace(/ \(.*\)/, '')}</span>
                 </button>
               </li>

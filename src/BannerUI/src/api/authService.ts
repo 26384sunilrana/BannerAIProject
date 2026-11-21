@@ -35,6 +35,34 @@ export const authService = {
     return result
   },
 
+  /** Asks for a reset link. The answer is the same whether or not the address has an account. */
+  async forgotPassword(email: string): Promise<string> {
+    const result = await apiClient.post<{ message: string }>('/authentication/forgot-password', { email: email.trim() })
+    return result.message
+  },
+
+  /** The token is the one from the link in the e-mail; no sign-in is needed. */
+  async resetPassword(token: string, newPassword: string, confirmPassword: string): Promise<string> {
+    const result = await apiClient.post<{ message: string }>('/authentication/reset-password', { token, newPassword, confirmPassword })
+    return result.message
+  },
+
+  async verifyEmail(token: string): Promise<string> {
+    const result = await apiClient.post<{ message: string }>('/authentication/verify-email', { token })
+    return result.message
+  },
+
+  /** For a signed-in person who has not verified yet. */
+  async resendVerification(): Promise<string> {
+    const result = await apiClient.post<{ message: string }>('/authentication/resend-verification', {})
+    return result.message
+  },
+
+  /** Whether the signed-in person has verified their e-mail address, and whether this installation can send mail at all. */
+  getEmailStatus(): Promise<{ emailVerified: boolean; emailEnabled: boolean }> {
+    return apiClient.get<{ emailVerified: boolean; emailEnabled: boolean }>('/authentication/me')
+  },
+
   /**
    * Picks the session up again after a page load or in a new tab: the refresh cookie is exchanged for an access token.
    * Skipped when this browser never signed in. Returns whether there is a session now.

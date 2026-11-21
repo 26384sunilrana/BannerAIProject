@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { Roles } from '@/lib/session'
 import { NotificationBell } from './NotificationBell'
+import { VerifyEmailBanner } from './VerifyEmailBanner'
 
 interface NavItem {
   href: string
@@ -36,6 +37,7 @@ const NAV: NavItem[] = [
   { href: '/admin/subscriptions', label: 'Subscriptions', roles: [Roles.Admin] },
   { href: '/admin/users', label: 'Users', roles: [Roles.Admin] },
   { href: '/admin/admins', label: 'Admins', roles: [Roles.Admin] },
+  { href: '/admin/providers', label: 'Providers', roles: [Roles.Admin] },
   { href: '/admin/audit-log', label: 'Activity', roles: [Roles.Admin] },
 ]
 
@@ -110,6 +112,7 @@ function Frame({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </nav>
+      <VerifyEmailBanner />
       <main className="max-w-6xl mx-auto px-6 py-8">{children}</main>
     </div>
   )

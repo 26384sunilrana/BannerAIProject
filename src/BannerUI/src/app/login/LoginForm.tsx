@@ -135,6 +135,13 @@ export function LoginForm() {
         <Button type="submit" isLoading={busy} className="w-full">
           Sign in
         </Button>
+        {!challenge && (
+          <p className="text-center text-sm">
+            <Link href="/forgot-password" className="text-blue-600 hover:text-blue-800">
+              Forgot your password?
+            </Link>
+          </p>
+        )}
       </form>
     </AuthCard>
   )

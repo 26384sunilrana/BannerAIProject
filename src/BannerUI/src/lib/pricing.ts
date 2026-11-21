@@ -33,8 +33,9 @@ export function priceFor(plan: { monthlyPrice: number; annualPrice: number }, pe
   return Math.round((plan.annualPrice / 12) * periodMonths(period) * 100) / 100
 }
 
-export function formatMoney(value: number): string {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(value)
+/** Formats an amount in the given ISO currency (INR when none is given). Indian grouping (lakhs) only for rupees. */
+export function formatMoney(value: number, currency: string = 'INR'): string {
+  return new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : undefined, { style: 'currency', currency, maximumFractionDigits: 2 }).format(value)
 }
 
 export const SubscriptionStatus: Record<number, string> = {

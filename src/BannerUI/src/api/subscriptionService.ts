@@ -6,6 +6,8 @@ export interface PlanSummary {
   description: string
   monthlyPrice: number
   annualPrice: number
+  /** ISO currency of the plan's prices; INR when the API does not say. */
+  currency?: string
   isActive: boolean
 }
 
@@ -17,6 +19,7 @@ export interface ShopSubscription {
   status: number
   billingPeriod: number
   currentPrice: number
+  currency?: string
   startDate: string
   renewalDate: string
   autoRenew: boolean
