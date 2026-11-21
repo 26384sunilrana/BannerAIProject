@@ -2,26 +2,17 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { AppShell } from '@/components/layout/AppShell'
 import { Input } from '@/components/Common'
 import { reportService, UserReportRow } from '@/api/adService'
 import { getErrorMessage } from '@/api/client'
-import { Roles } from '@/lib/session'
 
 const currentMonth = () => {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
+/** The page frame and the administrators-only check come from app/admin/layout.tsx. */
 export default function AdReportsPage() {
-  return (
-    <AppShell roles={[Roles.Admin]}>
-      <Report />
-    </AppShell>
-  )
-}
-
-function Report() {
   const [month, setMonth] = useState(currentMonth())
   const [rows, setRows] = useState<UserReportRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)

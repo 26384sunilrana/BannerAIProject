@@ -76,7 +76,7 @@ docker compose down
 - **Welcome Offer**: a banner that is live this week. **Weekend Special**: made by Sam, **waiting for Olivia's approval**.
 - Three ads: *Fresh bread at 7 am* (booked by Olivia, live), *Open an account today* (booked by you, the administrator, live, with a price) and *Cold juice, 49*
   (booked by Sam, **waiting for Olivia**).
-- A price list (100 an hour, 70% to the shop) so administrator ads can be priced.
+- A price list (₹100 an hour, 70% to the shop) so administrator ads can be priced.
 - No television is added yet: the owner does that under **Screens** (see the owner walkthrough).
 
 Open **<http://localhost:3000/display>** signed in as the owner to see the shop screen as a customer would: the banner in the middle and the two ads at the sides.

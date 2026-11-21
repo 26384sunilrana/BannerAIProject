@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { SubscriptionPlan } from '@/types/subscription';
+import { formatMoney } from '@/lib/pricing';
 
 interface SubscriptionPlansTableProps {
   plans: SubscriptionPlan[];
@@ -50,10 +51,10 @@ export const SubscriptionPlansTable: React.FC<SubscriptionPlansTableProps> = ({
                 {plan.description}
               </td>
               <td className="border border-gray-300 px-4 py-2 text-right">
-                ${plan.monthlyPrice.toFixed(2)}/mo
+                {formatMoney(plan.monthlyPrice, plan.currency)}/mo
               </td>
               <td className="border border-gray-300 px-4 py-2 text-right">
-                ${plan.annualPrice.toFixed(2)}/yr
+                {formatMoney(plan.annualPrice, plan.currency)}/yr
               </td>
               <td className="border border-gray-300 px-4 py-2 text-center">
                 <span

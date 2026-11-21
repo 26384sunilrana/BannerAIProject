@@ -29,8 +29,8 @@ The job named in the message (`subscription-lifecycle`: reminders, renewals, gra
 ## Many failed sign-ins
 1. Open **Activity**, tick *Failures only*, look at the addresses and the e-mail addresses.
 2. One address: block it at the ingress or firewall. Many addresses against one account: unlock only when the owner confirms, and ask them to change the password and turn on two-step sign-in.
-3. The rate limits already slow guessing (20 a minute per address); a lockout follows five wrong passwords or codes per login.
-4. If it is real traffic (a big office behind one address), raise `RateLimiting__AuthPerMinute`.
+3. The rate limits already slow guessing (sign-in, sign-up and the other ways of proving who you are: 20 a minute per address; opening pages is not counted there); a lockout follows five wrong passwords or codes per login.
+4. If it is real traffic (a big office behind one address signing in at the same time), raise `RateLimiting__AuthPerMinute`.
 
 ## Ads waiting for review
 Administrators: **Ads**, choose the shop, read the reason, **Approve** or **Send back**. An ad waits for a person: nothing runs it without a decision.

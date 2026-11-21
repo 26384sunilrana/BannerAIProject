@@ -164,7 +164,7 @@ Manifests are in `deploy/k8s` (kustomize).
 - NOT done: running in a Kubernetes cluster, two API pods at once, and a real MP4 playback check (no video encoder on this machine; the media scripts use a hand-made MP4 header).
 
 ## Abuse limits (rate limiting)
-- Per minute: sign-in and sign-up 20 per IP address (`RateLimiting__AuthPerMinute`), session refresh 60, upload pieces 600 per user, everything else 1200 per user (or per address when nobody is signed in). Turn off with `RateLimiting__Enabled=false`. Refusals answer 429 with `Retry-After` and are written to the activity log.
+- Per minute: sign-in, sign-up, two-step, forgot-password and the other ways of proving who you are 20 per IP address (`RateLimiting__AuthPerMinute`; the "who am I" call every page makes is not among them, it counts with everything else), session refresh 60, upload pieces 600 per user, everything else 1200 per user (or per address when nobody is signed in). Turn off with `RateLimiting__Enabled=false`. Refusals answer 429 with `Retry-After` and are written to the activity log.
 - Behind an ingress or load balancer set `Proxy__TrustForwardedHeaders=true` (the Kubernetes configmap does) so the real caller's address is used. Never set it when the API is reachable directly: the header can be forged.
 - Many shop screens behind one office or mall address share the 1200 limit only when not signed in; signed-in screens are counted per user.
 

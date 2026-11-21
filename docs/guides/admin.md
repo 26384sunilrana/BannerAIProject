@@ -31,7 +31,7 @@ Administrators do not belong to a shop. The bell shows messages for you.
 **Make owner** makes a member of a shop its owner (the previous owner becomes an executive); everyone involved has to sign in again.
 
 ## 3. Plans and subscriptions
-- **Plans**: Basic, Silver, Gold, Platinum with price per month and per year (quarterly and half-yearly are worked out from the year), banners, shops, users and
+- **Plans**: Basic, Silver, Gold, Platinum with price per month and per year, in the plan's **Currency** (INR unless you choose another when you create the plan; it cannot be changed while shops are subscribed to the plan, like the price) (quarterly and half-yearly are worked out from the year), banners, shops, users and
   **storage** limits. A shop with no plan has the starter allowance of 1 GB.
 - **Subscriptions** lists every shop's plan, status (Trial, Active, Renewal pending, Payment failed, Grace period, Suspended, Expired, Cancelled) and renewal date; filter by status or shop.
   **Renew early** on a row renews that shop for another period at once. **Run renewal job now** applies renewals, grace and expiry for every shop at once (it also runs by itself every day).
@@ -58,11 +58,11 @@ the screen to itself; side strips share up to half; one popup at a time; one til
 ### Prices (**Ad rates**)
 A rate is the price of **one hour** for a place (every shop, a country, a state or a city) and a kind of ad (or every kind), and the **share paid to the shop**.
 The narrowest place wins, then the kind. Side and mega ads are priced for the whole screen and cut down to the share they take. An ad cannot be sent in
-until a rate covers its shop. Changing or switching off a rate does not touch ads already booked: they keep the price they were booked at.
+until a rate covers its shop. Changing or switching off a rate does not touch ads already booked: they keep the price they were booked at, **and the currency** (a rate takes the platform currency, the setting `Payments:DefaultCurrency`, INR when empty, whenever it is saved; an ad keeps the currency of the rate that priced it).
 
 ### Statement
 **Ads → Monthly statement**: for each shop, the hours every ad ran in the month on the shop's clock and, for your ads, what the shop is paid
-(hours × price × share). The shop's own ads show hours only. Filter by shop; the city totals are shown. A shop owner can **override** one of your ads for a better
+(hours × price × share). The shop's own ads show hours only. Filter by shop; the city totals are shown. Totals add up ads priced in the statement's currency (the platform's); an ad priced in another currency is shown in its own currency and marked *not in the total*. A shop owner can **override** one of your ads for a better
 local offer: it stops at once, the shop is paid for the hours it ran, and you get a message.
 
 ### Report
@@ -93,5 +93,5 @@ Health and alerts: `/health/ready` for the load balancer, `/metrics` for Prometh
 `memory-bank/intents/002-requirements-gap-closure/hipaa-review.md` for the personal-data review and what a person still has to do.
 
 ## 12. Not available yet
-Azure storage and Key Vault (bolt 044, after a full human review); pictures on admin ads; one currency used everywhere (plan prices show $ on the Plans page and ₹ on the owner's Subscription page; ad prices are plain numbers); statement export;
+Azure storage and Key Vault (bolt 044, after a full human review); pictures on admin ads; statement export; converting between currencies (a statement never adds amounts of two currencies);
 marking a statement as paid.

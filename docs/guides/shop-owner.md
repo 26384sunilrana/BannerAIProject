@@ -123,4 +123,4 @@ Lost your phone and the codes? The administrator can reset it for you.
 ## 14. Not available yet
 - Admin-booked ads carry text only (no pictures).
 - Only one screen per shop. The player page has been tried in a desktop browser only, not yet on an Android television.
-- One currency is not used everywhere: plan prices show ₹ on your Subscription page and $ on the administrator's Plans page, and ad prices are plain numbers.
+- No conversion between currencies: every amount is shown in the currency it was priced in (₹ unless the platform is set to another), and a statement adds up only the platform currency.

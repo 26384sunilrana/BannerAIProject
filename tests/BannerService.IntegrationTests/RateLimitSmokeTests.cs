@@ -69,6 +69,11 @@ public class RateLimitSmokeTests : IClassFixture<LimitedFactory>
     [InlineData("/api/authentication/login", "POST", RateClass.Authentication)]
     [InlineData("/api/authentication/register", "POST", RateClass.Authentication)]
     [InlineData("/api/authentication/refresh", "POST", RateClass.Refresh)]
+    [InlineData("/api/authentication/me", "GET", RateClass.Api)]
+    [InlineData("/api/authentication/ME/", "GET", RateClass.Api)]
+    [InlineData("/api/authentication/me", "POST", RateClass.Authentication)]
+    [InlineData("/api/authentication/menu", "GET", RateClass.Authentication)]
+    [InlineData("/api/authentication/logout", "POST", RateClass.Authentication)]
     [InlineData("/api/screens/pairing/poll", "POST", RateClass.Pairing)]
     [InlineData("/api/screens/token", "POST", RateClass.Pairing)]
     [InlineData("/api/media/upload/initialize", "POST", RateClass.Upload)]
@@ -78,4 +83,32 @@ public class RateLimitSmokeTests : IClassFixture<LimitedFactory>
     [InlineData(null, null, RateClass.Api)]
     public void RequestsAreSortedIntoTheRightClass(string? path, string? method, RateClass expected) =>
         Assert.Equal(expected, RateLimitRules.Classify(path, method));
+}
+
+/// <summary>"Who am I" is asked on every page the person opens; it must not use up the strict sign-in limit.</summary>
+public class WhoAmIRateLimitSmokeTests : IClassFixture<LimitedFactory>
+{
+    private readonly LimitedFactory _factory;
+
+    public WhoAmIRateLimitSmokeTests(LimitedFactory factory)
+    {
+        _factory = factory;
+    }
+
+    [Fact]
+    public async Task AskingWhoAmI_DoesNotUseUpTheSignInLimit_AndSignInIsStillLimited()
+    {
+        var client = _factory.CreateClient();
+
+        // sign-in is limited to 4 a minute in this factory: five calls to /me would use it up if they counted there
+        for (var i = 0; i < 5; i++)
+            Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/authentication/me")).StatusCode);
+
+        var logins = new List<HttpStatusCode>();
+        for (var i = 0; i < 5; i++)
+            logins.Add((await client.PostAsJsonAsync("/api/authentication/login", new { email = "nobody@example.com", password = "wrong-password" })).StatusCode);
+
+        Assert.Equal(4, logins.Count(c => c != HttpStatusCode.TooManyRequests));
+        Assert.Equal(HttpStatusCode.TooManyRequests, logins[4]);
+    }
 }

@@ -35,6 +35,8 @@ export interface ShopAd {
   createdByUserId: string
   /** Administrator ads: what an hour is worth (already cut to the share of the screen) and the part the shop is paid. */
   pricePerHour: number | null
+  /** Three-letter currency of pricePerHour: the one the ad was priced in. */
+  currency: string
   shopSharePercent: number | null
   stoppedAt: string | null
   /** Why an administrator has to review the ad (health wording), or null. */
@@ -129,6 +131,8 @@ export interface AdRate {
   place: string
   kind: AdKind | null
   pricePerHour: number
+  /** Three-letter currency of pricePerHour. */
+  currency: string
   shopSharePercent: number
   isActive: boolean
 }
@@ -159,8 +163,12 @@ export interface StatementLine {
   status: AdStatus
   hours: number
   pricePerHour: number | null
+  /** Currency of pricePerHour and payout: the one the ad was priced in. */
+  currency: string
   shopSharePercent: number | null
   payout: number | null
+  /** False when the ad was priced in another currency than the statement's: shown in its own currency, left out of the totals. */
+  inTotal: boolean
 }
 
 export interface ShopStatement {
@@ -176,6 +184,8 @@ export interface ShopStatement {
 
 export interface AdStatement {
   month: string
+  /** The currency of the totals. */
+  currency: string
   shops: ShopStatement[]
   totalPayout: number
 }

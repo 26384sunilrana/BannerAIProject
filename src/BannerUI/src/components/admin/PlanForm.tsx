@@ -3,6 +3,9 @@
 import React, { useState } from 'react';
 import { SubscriptionPlan, CreatePlanPayload, UpdatePlanPayload, SubscriptionFeatures } from '@/types/subscription';
 
+/** The currencies on offer; INR is the default. A plan that already has another code keeps it in the list. */
+const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD', 'AUD', 'CAD'];
+
 interface PlanFormProps {
   plan?: SubscriptionPlan;
   onSubmit: (payload: CreatePlanPayload | UpdatePlanPayload) => Promise<void>;
@@ -23,6 +26,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
     description: plan?.description || '',
     monthlyPrice: plan?.monthlyPrice || 0,
     annualPrice: plan?.annualPrice || 0,
+    currency: plan?.currency || 'INR',
     isActive: plan?.isActive !== undefined ? plan.isActive : true,
     displayOrder: plan?.displayOrder || 1,
   });
@@ -80,6 +84,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             description: formData.description,
             monthlyPrice: formData.monthlyPrice,
             annualPrice: formData.annualPrice,
+            currency: formData.currency,
             features,
             isActive: formData.isActive,
             displayOrder: formData.displayOrder,
@@ -89,6 +94,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             description: formData.description,
             monthlyPrice: formData.monthlyPrice,
             annualPrice: formData.annualPrice,
+            currency: formData.currency,
             features,
             isActive: formData.isActive,
             displayOrder: formData.displayOrder,
@@ -136,9 +142,25 @@ export const PlanForm: React.FC<PlanFormProps> = ({
       </div>
 
       {/* Pricing */}
+      <div>
+        <label htmlFor="plan-currency" className="block text-sm font-semibold text-gray-700 mb-2">Currency</label>
+        <select
+          id="plan-currency"
+          value={formData.currency}
+          onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          {Array.from(new Set([formData.currency, ...CURRENCIES])).map((code) => (
+            <option key={code} value={code}>
+              {code}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-gray-500">Both prices below are in this currency. It cannot be changed while shops are subscribed to the plan.</p>
+      </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="plan-monthly" className="block text-sm font-semibold text-gray-700 mb-2">Monthly Price ($)</label>
+          <label htmlFor="plan-monthly" className="block text-sm font-semibold text-gray-700 mb-2">Monthly Price ({formData.currency})</label>
           <input
             id="plan-monthly"
             type="number"
@@ -151,7 +173,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           />
         </div>
         <div>
-          <label htmlFor="plan-annual" className="block text-sm font-semibold text-gray-700 mb-2">Annual Price ($)</label>
+          <label htmlFor="plan-annual" className="block text-sm font-semibold text-gray-700 mb-2">Annual Price ({formData.currency})</label>
           <input
             id="plan-annual"
             type="number"

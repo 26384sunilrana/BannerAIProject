@@ -51,8 +51,8 @@ public class AdPricingServiceTests
         _statements = new AdStatementService(_ads.Object, _shops.Object);
     }
 
-    private void RateIs(decimal price, int share = 100) =>
-        _rateStore.Setup(r => r.FindCandidatesAsync("IN", 7, 70)).ReturnsAsync(new List<AdRate> { new() { Level = AdRateLevel.All, PricePerHour = price, ShopSharePercent = share } });
+    private void RateIs(decimal price, int share = 100, string currency = "INR") =>
+        _rateStore.Setup(r => r.FindCandidatesAsync("IN", 7, 70)).ReturnsAsync(new List<AdRate> { new() { Level = AdRateLevel.All, PricePerHour = price, ShopSharePercent = share, Currency = currency } });
 
     private ShopAd Ad(ShopAdSource source, ShopAdStatus status = ShopAdStatus.Draft, ShopAdKind kind = ShopAdKind.Side, int percent = 20, DateTime? start = null, int days = 10) => new()
     {
@@ -278,5 +278,80 @@ public class AdPricingServiceTests
         Assert.Equal(0m, empty.TotalPayout);
 
         _ads.Verify(r => r.ListApprovedAsync(_shop.Id, It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
+    }
+
+    // ----- currency: stored with the rate and with the ad, and never mixed into one total
+
+    [Fact]
+    public async Task ARateTakesThePlatformCurrencyWhenItIsSaved_InrWhenNoneIsSet()
+    {
+        var input = new AdRateInput { Level = AdRateLevel.All, PricePerHour = 100m, ShopSharePercent = 70 };
+
+        var inr = await new AdRateService(_rateStore.Object, _locations.Object).CreateAsync(input);
+        var usd = await new AdRateService(_rateStore.Object, _locations.Object, new PlatformCurrency("usd")).CreateAsync(input);
+
+        Assert.Equal("INR", inr.Currency);
+        Assert.Equal("USD", usd.Currency);
+    }
+
+    [Fact]
+    public async Task AnAdKeepsTheCurrencyOfTheRateThatPricedIt_EvenIfTheRateChangesLater()
+    {
+        RateIs(price: 200m, share: 70, currency: "USD");
+        var ad = Stored(Ad(ShopAdSource.Admin, percent: 25));
+
+        var sent = await _service.SubmitAsync(_admin, ad.Id, Monday.AddDays(-1));
+        RateIs(price: 999m, currency: "INR"); // the platform changes its currency afterwards
+
+        Assert.Equal(50m, ad.PricePerHour);
+        Assert.Equal("USD", ad.Currency);
+        Assert.Equal("USD", sent.Currency);
+        Assert.Equal(50m, sent.PricePerHour);
+    }
+
+    [Fact]
+    public async Task TheStatementAddsUpOnlyAdsPricedInItsOwnCurrency_AndShowsTheOthersInTheirOwn()
+    {
+        var rupees = Ad(ShopAdSource.Admin, ShopAdStatus.Approved, start: new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc), days: 1);
+        rupees.DecidedAt = rupees.StartAt;
+        rupees.PricePerHour = 10m;
+        rupees.ShopSharePercent = 100;
+        var dollars = Ad(ShopAdSource.Admin, ShopAdStatus.Approved, start: new DateTime(2030, 1, 5, 0, 0, 0, DateTimeKind.Utc), days: 1);
+        dollars.Headline = "In dollars";
+        dollars.DecidedAt = dollars.StartAt;
+        dollars.PricePerHour = 10m;
+        dollars.ShopSharePercent = 100;
+        dollars.Currency = "USD";
+        Approved(rupees, dollars);
+
+        var statement = await _statements.GetAsync(_admin, "2030-01", null, After);
+
+        Assert.Equal("INR", statement.Currency);
+        Assert.Equal(240m, statement.TotalPayout); // only the rupee ad: 24 h x 10
+        var lines = Assert.Single(statement.Shops).Lines;
+        var inr = lines.Single(l => l.Headline == "Save more");
+        var usd = lines.Single(l => l.Headline == "In dollars");
+        Assert.True(inr.InTotal);
+        Assert.Equal("INR", inr.Currency);
+        Assert.False(usd.InTotal);
+        Assert.Equal("USD", usd.Currency);
+        Assert.Equal(240m, usd.Payout); // still shown, in its own currency
+    }
+
+    [Fact]
+    public async Task TheStatementFollowsThePlatformCurrencySetting()
+    {
+        var dollars = Ad(ShopAdSource.Admin, ShopAdStatus.Approved, start: new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc), days: 1);
+        dollars.DecidedAt = dollars.StartAt;
+        dollars.PricePerHour = 10m;
+        dollars.ShopSharePercent = 100;
+        dollars.Currency = "USD";
+        Approved(dollars);
+
+        var statement = await new AdStatementService(_ads.Object, _shops.Object, null, new PlatformCurrency("USD")).GetAsync(_admin, "2030-01", null, After);
+
+        Assert.Equal("USD", statement.Currency);
+        Assert.Equal(240m, statement.TotalPayout);
+        Assert.True(Assert.Single(Assert.Single(statement.Shops).Lines).InTotal);
     }
 }

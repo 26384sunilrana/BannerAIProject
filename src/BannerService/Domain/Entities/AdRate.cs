@@ -27,6 +27,9 @@ public class AdRate
 
     public decimal PricePerHour { get; set; }
 
+    /// <summary>The currency of the price (three letters). Taken from the platform currency whenever the rate is saved.</summary>
+    public string Currency { get; set; } = "INR";
+
     /// <summary>The part of the price the shop is paid, in percent.</summary>
     public int ShopSharePercent { get; set; } = 100;
 

@@ -10,7 +10,7 @@ public enum RateClass
     /// <summary>Not limited: health checks.</summary>
     None,
 
-    /// <summary>Sign-in, sign-up and the other ways of proving who you are. Strictest, by IP address.</summary>
+    /// <summary>Sign-in, sign-up and the other ways of proving who you are. Strictest, by IP address. (Not "who am I": that is an ordinary call.)</summary>
     Authentication,
 
     /// <summary>Session refresh. By IP address.</summary>
@@ -34,6 +34,9 @@ public static class RateLimitRules
         if (path.StartsWith("/health", StringComparison.OrdinalIgnoreCase) || path.StartsWith("/metrics", StringComparison.OrdinalIgnoreCase)) return RateClass.None;
         if (path.StartsWith("/api/screens/pairing", StringComparison.OrdinalIgnoreCase) || path.StartsWith("/api/screens/token", StringComparison.OrdinalIgnoreCase)) return RateClass.Pairing;
         if (path.StartsWith("/api/authentication/refresh", StringComparison.OrdinalIgnoreCase)) return RateClass.Refresh;
+        // "Who am I" is asked by every page the person opens and needs a valid sign-in to be answered, so it cannot be used to guess anything:
+        // it is counted with the other calls of the signed-in person, not with sign-in and sign-up.
+        if (string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase) && string.Equals(path.TrimEnd('/'), "/api/authentication/me", StringComparison.OrdinalIgnoreCase)) return RateClass.Api;
         if (path.StartsWith("/api/authentication", StringComparison.OrdinalIgnoreCase)) return RateClass.Authentication;
         if (path.StartsWith("/api/media/upload", StringComparison.OrdinalIgnoreCase)
             || (string.Equals(method, "PUT", StringComparison.OrdinalIgnoreCase) && path.Contains("/chunks/", StringComparison.OrdinalIgnoreCase)))

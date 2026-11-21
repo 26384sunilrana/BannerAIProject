@@ -68,6 +68,9 @@ namespace BannerService.Application.Services
 
         /// <summary>Administrator ads: what an hour is worth, and the part of it the shop is paid.</summary>
         public decimal? PricePerHour { get; set; }
+
+        /// <summary>Three-letter currency of <see cref="PricePerHour"/> (the currency of the rate that priced the ad).</summary>
+        public string Currency { get; set; } = "INR";
         public int? ShopSharePercent { get; set; }
         public DateTime? StoppedAt { get; set; }
 
@@ -191,6 +194,7 @@ namespace BannerService.Application.Services
                 if (rate == null)
                     throw new InvalidOperationException("No rate is set for this shop's place and this kind of ad. Set one under Ad rates first.");
                 ad.PricePerHour = AdRateRules.HourlyPrice(rate, ad);
+                ad.Currency = rate.Currency;
                 ad.ShopSharePercent = rate.ShopSharePercent;
             }
 
@@ -583,6 +587,7 @@ namespace BannerService.Application.Services
                 DecisionNote = ad.DecisionNote,
                 CreatedByUserId = ad.CreatedByUserId,
                 PricePerHour = ad.PricePerHour,
+                Currency = ad.Currency,
                 ShopSharePercent = ad.ShopSharePercent,
                 ComplianceNote = ad.ComplianceNote,
                 StoppedAt = ad.StoppedAt == null ? null : DateTime.SpecifyKind(ad.StoppedAt.Value, DateTimeKind.Utc),

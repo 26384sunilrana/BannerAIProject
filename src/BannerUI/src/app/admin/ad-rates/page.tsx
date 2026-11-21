@@ -1,13 +1,12 @@
 'use client'
 
 import React, { FormEvent, useCallback, useEffect, useState } from 'react'
-import { AppShell } from '@/components/layout/AppShell'
 import { Button, Input, Select, Toast } from '@/components/Common'
 import { LocationPicker, PickedLocation } from '@/components/location/LocationPicker'
 import { useToast } from '@/hooks/useToast'
 import { AdKind, AdRate, AdRateInput, RateLevel, rateService } from '@/api/adService'
 import { getErrorMessage } from '@/api/client'
-import { Roles } from '@/lib/session'
+import { formatMoney } from '@/lib/pricing'
 
 const KIND_OPTIONS = [
   { value: 'Side', label: 'Side strip' },
@@ -21,15 +20,8 @@ const LEVEL_LABEL: Record<RateLevel, string> = { All: 'Every shop', Country: 'Co
 /** The level of a rate is the deepest place that was chosen. */
 const levelOf = (place: PickedLocation): RateLevel => (place.cityId ? 'City' : place.stateId ? 'State' : place.countryCode ? 'Country' : 'All')
 
+/** The page frame and the administrators-only check come from app/admin/layout.tsx. */
 export default function AdRatesPage() {
-  return (
-    <AppShell roles={[Roles.Admin]}>
-      <Rates />
-    </AppShell>
-  )
-}
-
-function Rates() {
   const toast = useToast()
   const [rates, setRates] = useState<AdRate[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -189,7 +181,7 @@ function Rates() {
                     {!rate.isActive && <span className="ml-2 text-xs">switched off</span>}
                   </td>
                   <td className="px-4 py-2">{rate.kind ? KIND_OPTIONS.find((k) => k.value === rate.kind)?.label : 'Every kind'}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{rate.pricePerHour.toFixed(2)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{formatMoney(rate.pricePerHour, rate.currency)}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{rate.shopSharePercent}%</td>
                   <td className="space-x-2 px-4 py-2 text-right">
                     {rate.isActive && (

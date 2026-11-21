@@ -153,6 +153,7 @@ builder.Services.AddScoped<IShopAdRepository, ShopAdRepository>();
 builder.Services.AddScoped<IShopTakeoverRepository, ShopTakeoverRepository>();
 builder.Services.AddScoped<ShopTakeoverService>();
 builder.Services.AddScoped<IAdRateRepository, AdRateRepository>();
+builder.Services.AddSingleton(new BannerService.Application.Services.PlatformCurrency(builder.Configuration));
 builder.Services.AddScoped<AdRateService>();
 builder.Services.AddScoped<AdStatementService>();
 builder.Services.AddScoped<AdReportService>();

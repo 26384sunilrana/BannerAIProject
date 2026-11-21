@@ -17,7 +17,7 @@ Related: [enterprise-readiness.md](enterprise-readiness.md) (gap table), [hipaa-
 
 ## Done and planned
 - **Bolt 044a (provider seams) is complete** (payments, SMS and e-mail behind settings; forgot-password, reset and verify-e-mail screens; Providers screen). Report: memory-bank/bolts/044a-provider-seams/ddd-03-test-report.md. Run the integration suite once on a real SQL Server (SMOKE_SQL) before the first deployment.
-- **Next: bolt 050 (demo and walkthrough refresh)**, needs the stack running. See memory-bank/bolts/050-demo-refresh.
+- Bolt 050 (demo and walkthrough refresh) is done (2026-11-21). **Next: bolt 051 (three application fixes: one page frame, `/me` outside the sign-in limit, one currency display)**, see memory-bank/bolts/051-app-fixes.
 
 ## Waiting on provider accounts (bolt 044, last)
 
@@ -41,7 +41,7 @@ The seams are built (bolt 044a), so what is left here is the accounts and the fi
 
 **Pricing and ads**
 - Banner-size pricing undefined; no 80% storage alert; downgrade below usage allowed.
-- Ads: no statement export or payout marking, hours are scheduled not measured (screen proof of play now exists, not yet used in statements), currency not modelled, no notification history page or opt-out per kind. Details in bolts 040b, 041, 042a.
+- Ads: no statement export or payout marking, hours are scheduled not measured (screen proof of play now exists, not yet used in statements), currency is stored with each rate and ad since bolt 051 (no conversion between currencies; statements add up the platform currency only), no notification history page or opt-out per kind. Details in bolts 040b, 041, 042a.
 - Takeover: ads on a closed shop, proof of sale. Details in bolt 036b.
 
 **Location**: old District level unused; owners cannot request a new city/group; no bulk city import; no search by identifier; admin-created shop has no owner login attached.

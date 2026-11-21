@@ -106,6 +106,9 @@ public class ShopAd
     public decimal? PricePerHour { get; set; }
     public int? ShopSharePercent { get; set; }
 
+    /// <summary>The currency of <see cref="PricePerHour"/>: the currency of the rate that priced the ad, kept with the amount from then on.</summary>
+    public string Currency { get; set; } = "INR";
+
     /// <summary>When an approved ad was cancelled or overridden: it stopped running here.</summary>
     public DateTime? StoppedAt { get; set; }
 

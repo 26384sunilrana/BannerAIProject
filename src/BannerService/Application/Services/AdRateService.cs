@@ -32,6 +32,9 @@ namespace BannerService.Application.Services
         public string Place { get; set; } = string.Empty;
         public string? Kind { get; set; }
         public decimal PricePerHour { get; set; }
+
+        /// <summary>Three-letter currency of the price, for example INR.</summary>
+        public string Currency { get; set; } = "INR";
         public int ShopSharePercent { get; set; }
         public bool IsActive { get; set; }
     }
@@ -41,11 +44,13 @@ namespace BannerService.Application.Services
     {
         private readonly IAdRateRepository _rates;
         private readonly ILocationRepository _locations;
+        private readonly PlatformCurrency _currency;
 
-        public AdRateService(IAdRateRepository rates, ILocationRepository locations)
+        public AdRateService(IAdRateRepository rates, ILocationRepository locations, PlatformCurrency? currency = null)
         {
             _rates = rates;
             _locations = locations;
+            _currency = currency ?? PlatformCurrency.Default;
         }
 
         public async Task<List<AdRateDto>> ListAsync()
@@ -95,6 +100,7 @@ namespace BannerService.Application.Services
             rate.CityId = input.Level == AdRateLevel.City ? input.CityId : null;
             rate.Kind = input.Kind;
             rate.PricePerHour = input.PricePerHour;
+            rate.Currency = _currency.Code; // the price is in the platform currency of the day it is saved
             rate.ShopSharePercent = input.ShopSharePercent;
             rate.UpdatedAt = DateTime.UtcNow;
 
@@ -129,6 +135,7 @@ namespace BannerService.Application.Services
                 Place = place,
                 Kind = rate.Kind?.ToString(),
                 PricePerHour = rate.PricePerHour,
+                Currency = rate.Currency,
                 ShopSharePercent = rate.ShopSharePercent,
                 IsActive = rate.IsActive,
             };

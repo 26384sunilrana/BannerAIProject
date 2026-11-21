@@ -17,6 +17,8 @@ export interface SubscriptionPlan {
   description: string;
   monthlyPrice: number;
   annualPrice: number;
+  /** Three-letter currency of both prices; INR when the API does not say. */
+  currency?: string;
   features: SubscriptionFeatures;
   isActive: boolean;
   displayOrder: number;
@@ -47,6 +49,7 @@ export interface CreatePlanPayload {
   description: string;
   monthlyPrice: number;
   annualPrice: number;
+  currency?: string;
   features?: SubscriptionFeatures;
   isActive: boolean;
   displayOrder: number;
@@ -56,6 +59,7 @@ export interface UpdatePlanPayload {
   description?: string;
   monthlyPrice: number;
   annualPrice: number;
+  currency?: string;
   features?: SubscriptionFeatures;
   isActive: boolean;
   displayOrder: number;

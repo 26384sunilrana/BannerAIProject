@@ -49,7 +49,7 @@ async function call(token, method, route, body) {
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   let response = await send()
-  // 20 sign-in and "who am I" calls a minute are allowed from one address: when refused, wait the minute out and ask again (once)
+  // Sign-in, sign-up and the like are limited to 20 a minute from one address (opening pages is not counted): when refused, wait the minute out and ask again (once)
   if (response.status === 429) {
     console.log(`         ${method} ${route}: refused by the rate limit, waiting a minute`)
     await new Promise((resolve) => setTimeout(resolve, 65000))
@@ -119,7 +119,7 @@ async function step({ role, title, does, expect, blocks = true }, action) {
     try {
       await action(page, snap)
     } catch (error) {
-      // The API allows 20 sign-in, sign-up and "who am I" calls a minute from one address. If the page says so, wait it out and do the step once more.
+      // Sign-in, sign-up and the like are limited to 20 a minute from one address. If the page says so, wait it out and do the step once more (a safety net: the story itself makes far fewer).
       if (!(await page.getByText('Too many requests').count().catch(() => 0))) throw error
       console.log(`         ${id}: refused by the rate limit, waiting a minute and trying the step again`)
       record.shots.length = 0
@@ -144,8 +144,8 @@ async function step({ role, title, does, expect, blocks = true }, action) {
 }
 
 async function signIn(page, who) {
-  // The API allows 20 sign-in and "who am I" calls a minute from one address, and every page load makes one. After many page loads in a row
-  // (for example a second run straight after the first) the sign-in is refused: wait out the minute and try once more.
+  // Sign-in and sign-up are limited to 20 a minute from one address (opening pages is not counted). If a run follows another one closely and the
+  // sign-in is refused, wait out the minute and try once more. A safety net: a normal run never needs it.
   for (let attempt = 1; ; attempt++) {
     await page.goto(`${WEB}/login`)
     await page.fill('#email', who.email)
@@ -805,7 +805,7 @@ await step({
 }, async (page, snap) => {
   await page.getByText('Sign out', { exact: true }).click()
   await page.waitForURL(/login/)
-  // Two sign-in calls and the page loads in between can run into the limit of 20 a minute (see signIn above): wait it out and start again once.
+  // The sign-in limit of 20 a minute (see signIn above) is a safety net here too: wait it out and start again once.
   const refused = page.getByText('Too many requests')
   for (let attempt = 1; ; attempt++) {
     if (attempt > 1) await page.goto(`${WEB}/login`)

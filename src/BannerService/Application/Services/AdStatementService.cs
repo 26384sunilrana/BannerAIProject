@@ -17,10 +17,16 @@ namespace BannerService.Application.Services
         /// <summary>Hours the ad was on the screen in the month.</summary>
         public decimal Hours { get; set; }
         public decimal? PricePerHour { get; set; }
+
+        /// <summary>Three-letter currency of <see cref="PricePerHour"/> and <see cref="Payout"/>: the one the ad was priced in.</summary>
+        public string Currency { get; set; } = "INR";
         public int? ShopSharePercent { get; set; }
 
         /// <summary>What the shop is paid for the month. Null for ads the shop booked itself: their price is the shop's own business.</summary>
         public decimal? Payout { get; set; }
+
+        /// <summary>False when the ad was priced in another currency than the statement's: its amount is shown in its own currency and is not added to the totals.</summary>
+        public bool InTotal { get; set; } = true;
     }
 
     public class ShopAdStatementDto
@@ -34,12 +40,17 @@ namespace BannerService.Application.Services
         public List<AdStatementLineDto> Lines { get; set; } = new();
         public decimal AdminAdHours { get; set; }
         public decimal OwnAdHours { get; set; }
+
+        /// <summary>The payout of the lines in the statement's currency.</summary>
         public decimal Payout { get; set; }
     }
 
     public class AdStatementDto
     {
         public string Month { get; set; } = string.Empty;
+
+        /// <summary>The currency of the totals: the platform currency.</summary>
+        public string Currency { get; set; } = "INR";
         public List<ShopAdStatementDto> Shops { get; set; } = new();
         public decimal TotalPayout { get; set; }
     }
@@ -53,9 +64,11 @@ namespace BannerService.Application.Services
         private readonly IShopAdRepository _ads;
         private readonly IShopRepository _shops;
         private readonly ILocationRepository? _locations;
+        private readonly PlatformCurrency _currency;
 
-        public AdStatementService(IShopAdRepository ads, IShopRepository shops, ILocationRepository? locations = null)
+        public AdStatementService(IShopAdRepository ads, IShopRepository shops, ILocationRepository? locations = null, PlatformCurrency? currency = null)
         {
+            _currency = currency ?? PlatformCurrency.Default;
             _locations = locations;
             _ads = ads;
             _shops = shops;
@@ -79,7 +92,7 @@ namespace BannerService.Application.Services
             // the month is wide enough on both sides for any time zone; each ad is then measured on its own shop's clock
             var ads = await _ads.ListApprovedAsync(shopId, DateTime.SpecifyKind(first, DateTimeKind.Utc).AddDays(-2), DateTime.SpecifyKind(first, DateTimeKind.Utc).AddMonths(1).AddDays(2));
 
-            var result = new AdStatementDto { Month = month };
+            var result = new AdStatementDto { Month = month, Currency = _currency.Code };
             foreach (var group in ads.GroupBy(a => a.ShopId))
             {
                 var shop = await _shops.GetByIdAsync(group.Key);
@@ -102,14 +115,15 @@ namespace BannerService.Application.Services
                     statement.Lines.Add(new AdStatementLineDto
                     {
                         AdId = ad.Id, Headline = ad.Headline, AdvertiserName = ad.AdvertiserName, Kind = ad.Kind.ToString(), Source = ad.Source.ToString(),
-                        Status = ad.Status.ToString(), Hours = hours, PricePerHour = ad.PricePerHour, ShopSharePercent = ad.ShopSharePercent, Payout = payout,
+                        Status = ad.Status.ToString(), Hours = hours, PricePerHour = ad.PricePerHour, Currency = ad.Currency, ShopSharePercent = ad.ShopSharePercent, Payout = payout,
+                        InTotal = string.Equals(ad.Currency, _currency.Code, StringComparison.OrdinalIgnoreCase),
                     });
                 }
 
                 if (statement.Lines.Count == 0) continue;
                 statement.AdminAdHours = statement.Lines.Where(l => l.Source == nameof(ShopAdSource.Admin)).Sum(l => l.Hours);
                 statement.OwnAdHours = statement.Lines.Where(l => l.Source != nameof(ShopAdSource.Admin)).Sum(l => l.Hours);
-                statement.Payout = statement.Lines.Sum(l => l.Payout ?? 0m);
+                statement.Payout = statement.Lines.Where(l => l.InTotal).Sum(l => l.Payout ?? 0m);
                 result.Shops.Add(statement);
             }
 

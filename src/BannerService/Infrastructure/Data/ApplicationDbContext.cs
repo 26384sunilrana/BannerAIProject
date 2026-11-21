@@ -630,6 +630,7 @@ public class ApplicationDbContext : DbContext
             e.Property(x => x.Background).HasMaxLength(7).IsRequired();
             e.Property(x => x.TextColor).HasMaxLength(7).IsRequired();
             e.Property(x => x.DecidedByName).HasMaxLength(200);
+            e.Property(x => x.Currency).HasMaxLength(3).IsRequired().HasDefaultValue("INR");
             e.Property(x => x.DecisionNote).HasMaxLength(500);
             e.Property(x => x.ComplianceNote).HasMaxLength(1000);
             e.Property(x => x.ComplianceApprovedBy).HasMaxLength(200);
@@ -685,6 +686,7 @@ public class ApplicationDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.CountryCode).HasMaxLength(8);
             e.Property(x => x.PricePerHour).HasPrecision(18, 2);
+            e.Property(x => x.Currency).HasMaxLength(3).IsRequired().HasDefaultValue("INR");
             e.HasIndex(x => new { x.Level, x.CountryCode, x.StateId, x.CityId, x.Kind });
         });
 

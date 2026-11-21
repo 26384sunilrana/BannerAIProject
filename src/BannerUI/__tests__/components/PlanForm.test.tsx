@@ -154,4 +154,28 @@ describe('PlanForm', () => {
 
     expect(screen.getByText('Failed to save plan')).toBeInTheDocument()
   })
+  it('prices in INR unless another currency is chosen, and labels the prices with it', async () => {
+    renderForm()
+    expect(screen.getByLabelText('Currency')).toHaveValue('INR')
+    expect(screen.getByLabelText(/monthly price \(INR\)/i)).toBeInTheDocument()
+    await fill('Basic', '9.99', '99.99')
+    fireEvent.click(screen.getByRole('button', { name: 'Create Plan' }))
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ currency: 'INR', monthlyPrice: 9.99 })))
+  })
+
+  it('can create a plan in another currency', async () => {
+    renderForm()
+    await userEvent.selectOptions(screen.getByLabelText('Currency'), 'USD')
+    expect(screen.getByLabelText(/annual price \(USD\)/i)).toBeInTheDocument()
+    await fill('Basic US', '9.99', '99.99')
+    fireEvent.click(screen.getByRole('button', { name: 'Create Plan' }))
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ name: 'Basic US', currency: 'USD' })))
+  })
+
+  it('keeps the currency of the plan being edited, even one that is not in the short list', async () => {
+    renderForm({ plan: { ...mockPlan, currency: 'JPY' } })
+    expect(screen.getByLabelText('Currency')).toHaveValue('JPY')
+    fireEvent.click(screen.getByRole('button', { name: 'Update Plan' }))
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ currency: 'JPY' })))
+  })
 })

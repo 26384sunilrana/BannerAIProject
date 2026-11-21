@@ -13,6 +13,7 @@ import { PickedLocation } from '@/components/location/LocationPicker'
 import { apiClient, getErrorMessage } from '@/api/client'
 import { describeDaily, formatInZone, BROWSER_ZONE } from '@/lib/timeZones'
 import { Roles } from '@/lib/session'
+import { formatMoney } from '@/lib/pricing'
 
 const KIND_LABEL: Record<string, string> = { Side: 'Side strip', Mega: 'Mega ad', Popup: 'Popup', Minor: 'Corner tile' }
 const STATUS_LABEL: Record<string, string> = {
@@ -292,7 +293,7 @@ function Ads() {
                 <p className="text-xs text-gray-500">{SOURCE_LABEL[ad.source] ?? ad.source}</p>
                 {ad.pricePerHour != null && (
                   <p className="text-xs text-gray-500" data-testid="ad-price">
-                    {ad.pricePerHour.toFixed(2)} an hour, the shop is paid {ad.shopSharePercent ?? 100}% of it
+                    {formatMoney(ad.pricePerHour, ad.currency)} an hour, the shop is paid {ad.shopSharePercent ?? 100}% of it
                   </p>
                 )}
                 {ad.stoppedAt && ad.status !== 'Draft' && <p className="text-xs text-gray-500">Stopped {formatInZone(ad.stoppedAt, zone)}</p>}

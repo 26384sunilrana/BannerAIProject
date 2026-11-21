@@ -47,12 +47,12 @@ const ad = (overrides: Partial<ShopAd> = {}): ShopAd => ({
   id: 'a1', shopId: 'shop-1', shopName: 'Olive Mart', source: 'Admin', advertiserName: 'City Bank', headline: 'Save more', body: null,
   mediaFileId: null, mediaUrl: null, background: '#ffffff', textColor: '#000000', kind: 'Side', placement: 'Left', spacePercent: 25,
   popupSeconds: 0, popupEveryMinutes: 0, startAt: '2035-01-08T00:00:00Z', endAt: '2035-01-15T00:00:00Z', dailyStartMinutes: null, dailyEndMinutes: null,
-  activeDays: 127, status: 'Approved', decidedByName: 'Admin', decidedAt: null, decisionNote: null, createdByUserId: 'admin', pricePerHour: 50, shopSharePercent: 70, complianceNote: null,
+  activeDays: 127, status: 'Approved', decidedByName: 'Admin', decidedAt: null, decisionNote: null, createdByUserId: 'admin', pricePerHour: 50, currency: 'INR', shopSharePercent: 70, complianceNote: null,
   stoppedAt: null, can: ['override'], ...overrides,
 })
 
 const rate = (overrides: Partial<AdRate> = {}): AdRate => ({
-  id: 'r1', level: 'City', countryCode: null, stateId: null, cityId: 70, place: 'Mumbai', kind: null, pricePerHour: 120, shopSharePercent: 70, isActive: true, ...overrides,
+  id: 'r1', level: 'City', countryCode: null, stateId: null, cityId: 70, place: 'Mumbai', kind: null, pricePerHour: 120, currency: 'INR', shopSharePercent: 70, isActive: true, ...overrides,
 })
 
 beforeEach(() => {
@@ -67,7 +67,7 @@ describe('Ads page: pricing and override', () => {
     render(<AdsPage />)
     const row = await screen.findByTestId('ad-row-Save more')
 
-    expect(within(row).getByTestId('ad-price')).toHaveTextContent('50.00 an hour, the shop is paid 70% of it')
+    expect(within(row).getByTestId('ad-price')).toHaveTextContent('₹50.00 an hour, the shop is paid 70% of it')
     expect(within(row).queryByRole('button', { name: 'Cancel ad' })).toBeNull()
 
     await userEvent.click(within(row).getByRole('button', { name: 'Override this ad' }))
@@ -89,6 +89,14 @@ describe('Ads page: pricing and override', () => {
     expect(within(row).queryByRole('button', { name: 'Override this ad' })).toBeNull()
   })
 
+  it('shows the price in the currency the ad was priced in, whatever the platform uses now', async () => {
+    api.get.mockResolvedValue([ad({ currency: 'USD' })])
+    render(<AdsPage />)
+    const row = await screen.findByTestId('ad-row-Save more')
+
+    expect(within(row).getByTestId('ad-price')).toHaveTextContent('$50.00 an hour, the shop is paid 70% of it')
+  })
+
   it('links to the statement for owners and administrators, not for executives', async () => {
     api.get.mockResolvedValue([])
     const { unmount } = render(<AdsPage />)
@@ -105,13 +113,14 @@ describe('Ads page: pricing and override', () => {
 describe('Statement page', () => {
   const statement = {
     month: '2030-01',
+    currency: 'INR',
     totalPayout: 420,
     shops: [
       {
         shopId: 'shop-1', shopName: 'Olive Mart', timeZoneId: 'UTC', adminAdHours: 48, ownAdHours: 24, payout: 420,
         lines: [
-          { adId: 'a', headline: 'Save more', advertiserName: 'City Bank', kind: 'Side', source: 'Admin', status: 'Approved', hours: 48, pricePerHour: 12.5, shopSharePercent: 70, payout: 420 },
-          { adId: 'b', headline: 'Own offer', advertiserName: 'Olive Cafe', kind: 'Popup', source: 'ShopOwner', status: 'Approved', hours: 24, pricePerHour: null, shopSharePercent: null, payout: null },
+          { adId: 'a', headline: 'Save more', advertiserName: 'City Bank', kind: 'Side', source: 'Admin', status: 'Approved', hours: 48, pricePerHour: 12.5, currency: 'INR', shopSharePercent: 70, payout: 420, inTotal: true },
+          { adId: 'b', headline: 'Own offer', advertiserName: 'Olive Cafe', kind: 'Popup', source: 'ShopOwner', status: 'Approved', hours: 24, pricePerHour: null, currency: 'INR', shopSharePercent: null, payout: null, inTotal: true },
         ],
       },
     ],
@@ -123,14 +132,36 @@ describe('Statement page', () => {
 
     const shop = await screen.findByTestId('statement-Olive Mart')
     expect(shop).toHaveTextContent('Administrator ads 48 h · own ads 24 h')
-    expect(shop).toHaveTextContent('paid 420.00')
+    expect(shop).toHaveTextContent('paid ₹420.00')
     const paid = within(screen.getByTestId('line-Save more'))
     expect(paid.getByText('Administrator')).toBeInTheDocument()
-    expect(paid.getByText('12.50')).toBeInTheDocument()
+    expect(paid.getByText('₹12.50')).toBeInTheDocument()
     expect(paid.getByText('70%')).toBeInTheDocument()
     expect(within(screen.getByTestId('line-Own offer')).getByText('not tracked')).toBeInTheDocument()
-    expect(screen.getByTestId('statement-total')).toHaveTextContent('Total paid to shops: 420.00')
+    expect(screen.getByTestId('statement-total')).toHaveTextContent('Total paid to shops: ₹420.00')
     expect(api.get).toHaveBeenCalledWith(expect.stringMatching(/^\/ad-statements\?month=\d{4}-\d{2}$/))
+  })
+
+  it('shows an ad priced in another currency in its own currency and says it is not in the total', async () => {
+    api.get.mockResolvedValue({
+      ...statement,
+      shops: [
+        {
+          ...statement.shops[0],
+          lines: [
+            statement.shops[0].lines[0],
+            { adId: 'c', headline: 'In dollars', advertiserName: 'Visitor', kind: 'Side', source: 'Admin', status: 'Approved', hours: 10, pricePerHour: 5, currency: 'USD', shopSharePercent: 100, payout: 50, inTotal: false },
+          ],
+        },
+      ],
+    })
+    render(<StatementPage />)
+
+    const dollars = within(await screen.findByTestId('line-In dollars'))
+    expect(dollars.getByText(/\$5\.00/)).toBeInTheDocument()
+    expect(dollars.getByText(/not in the total: USD, the statement is in INR/)).toBeInTheDocument()
+    expect(within(screen.getByTestId('line-Save more')).queryByText(/not in the total/)).toBeNull()
+    expect(screen.getByTestId('statement-total')).toHaveTextContent('Total paid to shops: ₹420.00')
   })
 
   it('asks for another month, and says when nothing ran', async () => {
@@ -173,7 +204,7 @@ describe('Ad rates page', () => {
 
     const city = await screen.findByTestId('rate-Mumbai-all')
     expect(city).toHaveTextContent('Mumbai (City)')
-    expect(city).toHaveTextContent('120.00')
+    expect(city).toHaveTextContent('₹120.00')
     expect(city).toHaveTextContent('70%')
     const off = screen.getByTestId('rate-Every shop-Popup')
     expect(off).toHaveTextContent('switched off')
@@ -388,7 +419,7 @@ describe('Compliance review and the user report', () => {
       path.startsWith('/shops?')
         ? { items: [] }
         : {
-            month: '2030-01', totalPayout: 30,
+            month: '2030-01', currency: 'INR', totalPayout: 30,
             shops: [
               { shopId: 'a', shopName: 'Olive Mart', timeZoneId: 'UTC', cityName: 'Mumbai', lines: [], adminAdHours: 1, ownAdHours: 0, payout: 10 },
               { shopId: 'b', shopName: 'Bread Shop', timeZoneId: 'UTC', cityName: 'Mumbai', lines: [], adminAdHours: 1, ownAdHours: 0, payout: 5 },
@@ -399,7 +430,7 @@ describe('Compliance review and the user report', () => {
     render(<StatementPage />)
 
     const cities = await screen.findByTestId('statement-cities')
-    expect(cities).toHaveTextContent('Mumbai: 2 shops, paid 15.00')
-    expect(cities).toHaveTextContent('Pune: 1 shop, paid 15.00')
+    expect(cities).toHaveTextContent('Mumbai: 2 shops, paid ₹15.00')
+    expect(cities).toHaveTextContent('Pune: 1 shop, paid ₹15.00')
   })
 })

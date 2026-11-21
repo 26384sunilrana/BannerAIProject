@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { SubscriptionPlan, PlanSubscription } from '@/types/subscription';
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 import Link from 'next/link';
+import { formatMoney } from '@/lib/pricing';
 
 
 export default function PlanDetailPage() {
@@ -83,11 +84,11 @@ export default function PlanDetailPage() {
           <div className="space-y-3">
             <div>
               <p className="text-sm text-gray-600">Monthly Price</p>
-              <p className="text-2xl font-bold text-gray-900">${plan.monthlyPrice.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-gray-900">{formatMoney(plan.monthlyPrice, plan.currency)}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Annual Price</p>
-              <p className="text-2xl font-bold text-gray-900">${plan.annualPrice.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-gray-900">{formatMoney(plan.annualPrice, plan.currency)}</p>
             </div>
           </div>
         </div>

@@ -84,6 +84,9 @@ namespace BannerService.Presentation.Controllers
                 if (dto.MonthlyPrice < 0 || dto.AnnualPrice < 0)
                     return BadRequest(new { success = false, message = "Prices cannot be negative" });
 
+                if (!string.IsNullOrWhiteSpace(dto.Currency) && !Domain.ValueObjects.CurrencyCodes.IsValid(dto.Currency.Trim().ToUpperInvariant()))
+                    return BadRequest(new { success = false, message = "The currency must be a three-letter code such as INR or USD" });
+
                 var existingPlan = (await _planRepository.GetAllAsync())
                     .FirstOrDefault(p => p.Name.Equals(dto.Name, StringComparison.OrdinalIgnoreCase));
 
@@ -97,6 +100,7 @@ namespace BannerService.Presentation.Controllers
                     Description = dto.Description ?? string.Empty,
                     MonthlyPrice = dto.MonthlyPrice,
                     AnnualPrice = dto.AnnualPrice,
+                    Currency = Domain.ValueObjects.CurrencyCodes.Normalize(dto.Currency),
                     Features = dto.Features ?? new Domain.Entities.SubscriptionFeatures(),
                     IsActive = dto.IsActive,
                     DisplayOrder = dto.DisplayOrder,
@@ -104,7 +108,7 @@ namespace BannerService.Presentation.Controllers
                 };
 
                 await _planRepository.CreateAsync(plan);
-                _logger.LogInformation("Subscription plan created: {PlanName} (${Price}/mo)", plan.Name, plan.MonthlyPrice);
+                _logger.LogInformation("Subscription plan created: {PlanName} ({Price} {Currency}/mo)", plan.Name, plan.MonthlyPrice, plan.Currency);
 
                 return Ok(new { success = true, data = MapToDto(plan), message = "Plan created successfully" });
             }
@@ -124,7 +128,13 @@ namespace BannerService.Presentation.Controllers
                 if (plan == null)
                     return NotFound(new { success = false, message = "Plan not found" });
 
-                var priceChanged = plan.MonthlyPrice != dto.MonthlyPrice || plan.AnnualPrice != dto.AnnualPrice;
+                if (!string.IsNullOrWhiteSpace(dto.Currency) && !Domain.ValueObjects.CurrencyCodes.IsValid(dto.Currency.Trim().ToUpperInvariant()))
+                    return BadRequest(new { success = false, message = "The currency must be a three-letter code such as INR or USD" });
+
+                // a price in another currency is another price: the same rule as for a changed amount
+                var newCurrency = string.IsNullOrWhiteSpace(dto.Currency) ? plan.Currency : Domain.ValueObjects.CurrencyCodes.Normalize(dto.Currency);
+                var priceChanged = plan.MonthlyPrice != dto.MonthlyPrice || plan.AnnualPrice != dto.AnnualPrice
+                    || !string.Equals(plan.Currency, newCurrency, StringComparison.OrdinalIgnoreCase);
 
                 if (priceChanged)
                 {
@@ -152,6 +162,7 @@ namespace BannerService.Presentation.Controllers
                 plan.Description = dto.Description ?? plan.Description;
                 plan.MonthlyPrice = dto.MonthlyPrice;
                 plan.AnnualPrice = dto.AnnualPrice;
+                plan.Currency = newCurrency;
                 plan.DisplayOrder = dto.DisplayOrder;
                 plan.IsActive = dto.IsActive;
 
@@ -298,6 +309,9 @@ namespace BannerService.Presentation.Controllers
             public string? Description { get; set; }
             public decimal MonthlyPrice { get; set; }
             public decimal AnnualPrice { get; set; }
+
+            /// <summary>Three-letter currency of both prices. Empty means INR.</summary>
+            public string? Currency { get; set; }
             public Domain.Entities.SubscriptionFeatures? Features { get; set; }
             public bool IsActive { get; set; } = true;
             public int DisplayOrder { get; set; }
@@ -308,6 +322,9 @@ namespace BannerService.Presentation.Controllers
             public string? Description { get; set; }
             public decimal MonthlyPrice { get; set; }
             public decimal AnnualPrice { get; set; }
+
+            /// <summary>Three-letter currency of both prices. Empty keeps the plan's own.</summary>
+            public string? Currency { get; set; }
             public Domain.Entities.SubscriptionFeatures? Features { get; set; }
             public bool IsActive { get; set; }
             public int DisplayOrder { get; set; }
@@ -322,6 +339,7 @@ namespace BannerService.Presentation.Controllers
                 Description = plan.Description,
                 MonthlyPrice = plan.MonthlyPrice,
                 AnnualPrice = plan.AnnualPrice,
+                Currency = plan.Currency,
                 Features = plan.Features,
                 IsActive = plan.IsActive,
                 DisplayOrder = plan.DisplayOrder,
@@ -336,6 +354,7 @@ namespace BannerService.Presentation.Controllers
             public string Description { get; set; } = string.Empty;
             public decimal MonthlyPrice { get; set; }
             public decimal AnnualPrice { get; set; }
+            public string Currency { get; set; } = "INR";
             public Domain.Entities.SubscriptionFeatures Features { get; set; } = new();
             public bool IsActive { get; set; }
             public int DisplayOrder { get; set; }

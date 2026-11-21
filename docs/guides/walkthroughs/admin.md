@@ -33,7 +33,7 @@ A shop whose plan has ended cannot sign in; its screen keeps the default board.
 
 ## Step 4. Plans
 Click **Plans**. Basic, Silver, Gold, Platinum, each with a monthly and an annual price. **View** shows the limits of a plan (banners, shops, users and **storage**), **Edit** changes them, **Deactivate**
-retires a plan, and **New Plan** makes another. A plan that shops are subscribed to keeps its price: make a new plan for a new price.
+retires a plan, and **New Plan** makes another. A plan that shops are subscribed to keeps its price: make a new plan for a new price. Prices are in the plan's **Currency** (INR unless you choose another when you create it).
 
 ![Plans](images/admin-05-plans.png)
 
@@ -50,7 +50,7 @@ Set a **time zone** on a country or city: shops follow it unless they set their 
 ![Places](images/admin-04-places.png)
 
 ## Step 7. Ad prices
-Click **Ad rates**. One rate exists: *every shop, every kind, 100 an hour, 70% paid to the shop*.
+Click **Ad rates**. One rate exists: *every shop, every kind, ₹100.00 an hour, 70% paid to the shop*.
 1. Click **Add a rate**.
 2. Choose where it applies (empty = every shop; or a country, state, city), the kind of ad, the **price for one hour** and the **shop's share**.
 3. The **narrowest place wins**: a Mumbai rate beats an India rate. Side and mega ads are priced for the whole screen and cut down to the share they take.

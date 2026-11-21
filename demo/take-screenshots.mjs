@@ -48,8 +48,7 @@ async function step(role, name, title, action) {
 }
 
 async function visit(page, url, name, wait, options) {
-  // After many page loads in a row the API refuses calls for a minute (limit of 20 a minute for sign-in and "who am I"), and a page can come up empty.
-  // If what the page should show does not appear, wait out the minute and load it once more.
+  // A safety net: if what the page should show does not appear (a slow start, a refused call), wait a minute and load it once more.
   for (let attempt = 1; ; attempt++) {
     await page.goto(`${BASE}${url}`)
     if (!wait) break
@@ -74,8 +73,8 @@ async function session(role) {
     await shot(page, `${role}-00-sign-in`)
   })
   await step(role, `${role}-signed-in`, 'Sign in', async () => {
-    // The API allows 20 sign-in and "who am I" calls a minute from one address; after many page loads in a row the sign-in is refused.
-    // Wait out the minute and try once more.
+    // Sign-in is limited to 20 a minute from one address (opening pages is not counted). If a run follows another one closely and the sign-in is
+    // refused, wait out the minute and try once more. A safety net: a normal run never needs it.
     for (let attempt = 1; ; attempt++) {
       await page.goto(`${BASE}/login`)
       await page.fill('#email', accounts[role][0])

@@ -8,11 +8,10 @@ import { useAuth } from '@/context/AuthContext'
 import { AdStatement, statementService } from '@/api/adService'
 import { apiClient, getErrorMessage } from '@/api/client'
 import { Roles } from '@/lib/session'
+import { formatMoney } from '@/lib/pricing'
 
 const KIND_LABEL: Record<string, string> = { Side: 'Side strip', Mega: 'Mega ad', Popup: 'Popup', Minor: 'Corner tile' }
 const STATUS_LABEL: Record<string, string> = { Approved: 'Ran', Cancelled: 'Cancelled', Overridden: 'Stopped by the shop' }
-
-const money = (value: number) => value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const currentMonth = () => {
   const now = new Date()
@@ -111,7 +110,7 @@ function Statement() {
         <ul className="flex flex-wrap gap-3 text-sm text-gray-700" aria-label="By city" data-testid="statement-cities">
           {cities.map((c) => (
             <li key={c.name} className="rounded-full bg-gray-100 px-3 py-1">
-              {c.name}: {c.shops} shop{c.shops === 1 ? '' : 's'}, paid {money(c.payout)}
+              {c.name}: {c.shops} shop{c.shops === 1 ? '' : 's'}, paid {formatMoney(c.payout, statement?.currency)}
             </li>
           ))}
         </ul>
@@ -125,7 +124,7 @@ function Statement() {
               {shop.cityName && <span className="ml-2 text-sm font-normal text-gray-500">{shop.cityName}</span>}
             </h2>
             <p className="text-sm text-gray-600">
-              Administrator ads {shop.adminAdHours} h · own ads {shop.ownAdHours} h · <span className="font-semibold text-gray-900">paid {money(shop.payout)}</span>
+              Administrator ads {shop.adminAdHours} h · own ads {shop.ownAdHours} h · <span className="font-semibold text-gray-900">paid {formatMoney(shop.payout, statement.currency)}</span>
             </p>
           </div>
           <div className="mt-3 overflow-x-auto">
@@ -151,9 +150,11 @@ function Statement() {
                     </td>
                     <td className="py-2 pr-3">{line.source === 'Admin' ? 'Administrator' : line.source === 'ShopOwner' ? 'Owner' : 'Sales executive'}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{line.hours}</td>
-                    <td className="py-2 pr-3 text-right tabular-nums">{line.pricePerHour != null ? money(line.pricePerHour) : '—'}</td>
+                    <td className="py-2 pr-3 text-right tabular-nums">{line.pricePerHour != null ? formatMoney(line.pricePerHour, line.currency) : '—'}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{line.shopSharePercent != null ? `${line.shopSharePercent}%` : '—'}</td>
-                    <td className="py-2 text-right tabular-nums">{line.payout != null ? money(line.payout) : 'not tracked'}</td>
+                    <td className="py-2 text-right tabular-nums">{line.payout != null ? formatMoney(line.payout, line.currency) : 'not tracked'}
+                      {line.payout != null && line.inTotal === false && <span className="block text-xs text-amber-700">not in the total: {line.currency}, the statement is in {statement.currency}</span>}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -164,7 +165,7 @@ function Statement() {
 
       {statement && statement.shops.length > 0 && (
         <p className="text-right text-lg font-semibold text-gray-900" data-testid="statement-total">
-          Total paid to shops: {money(statement.totalPayout)}
+          Total paid to shops: {formatMoney(statement.totalPayout, statement.currency)}
         </p>
       )}
     </div>

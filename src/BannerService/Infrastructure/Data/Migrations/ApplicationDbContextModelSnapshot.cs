@@ -38,6 +38,13 @@ namespace BannerService.Infrastructure.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("INR");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -1634,6 +1641,13 @@ namespace BannerService.Infrastructure.Data.Migrations
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("INR");
 
                     b.Property<int?>("DailyEndMinutes")
                         .HasColumnType("int");
